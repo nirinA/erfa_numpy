@@ -20,3 +20,5 @@ def pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b):
 ##            raise _erfa.error('argument have not the same shape')
     return _erfa.pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
 
+def s00(d1, d2, x, y):
+    return _erfa.s00(d1, d2, x, y)
