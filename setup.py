@@ -18,6 +18,7 @@ moduleerfa = Extension('_erfa',
                     include_dirs = INC_DIR,
                     libraries = ['erfa', 'm'],
                     library_dirs = LIB_DIR,
+                    extra_compile_args = ["-std=gnu99"],
                     sources = ['src/_erfamodule.c'])
 
 setup (name = 'erfa_numpy',

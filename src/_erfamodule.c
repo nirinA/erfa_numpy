@@ -1,6 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include "Python.h"
 #include "structseq.h"
+#include <stdio.h>
 #include <math.h>
 #include <time.h>
 #include "erfa.h"
@@ -224,11 +225,10 @@ _erfa_ab(PyObject *self, PyObject *args)
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
     int ndim, i;
-    if (!PyArg_ParseTuple(args, "OOOO", 
-                                 &pypnat, &pyv,
-                                 &pys, &pybm1))
+    if (!PyArg_ParseTuple(args, "O!O!O!O!", 
+                                 &PyArray_Type, &pypnat, &PyArray_Type, &pyv,
+                                 &PyArray_Type, &pys, &PyArray_Type, &pybm1))
         return NULL;
-    /* check if arguments is of type ndarray in the Python side */
     apnat = PyArray_FROM_OTF(pypnat, NPY_DOUBLE, NPY_IN_ARRAY);
     av = PyArray_FROM_OTF(pyv, NPY_DOUBLE, NPY_IN_ARRAY);
     as = PyArray_FROM_OTF(pys, NPY_DOUBLE, NPY_IN_ARRAY);
@@ -238,8 +238,17 @@ _erfa_ab(PyObject *self, PyObject *args)
     }
     ndim = PyArray_NDIM(apnat);
     dims = PyArray_DIMS(apnat);
+    if (dims[0] != PyArray_DIMS(av)[0] ||
+        dims[0] != PyArray_DIMS(as)[0] ||
+        dims[0] != PyArray_DIMS(abm1)[0]) {
+        PyErr_SetString(_erfaError, "arguments have not the same shape");
+        return NULL;
+    }    
     pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
-    if (NULL == pyout)  return NULL;
+    if (NULL == pyout) {
+        Py_DECREF(pyout);
+        return NULL;
+    }
     pnat = (double *)PyArray_DATA(apnat);
     v = (double *)PyArray_DATA(av);
     s = (double *)PyArray_DATA(as);
@@ -252,6 +261,7 @@ _erfa_ab(PyObject *self, PyObject *args)
     Py_DECREF(av);
     Py_DECREF(as);
     Py_DECREF(abm1);
+    //Py_INCREF(pyout);
     return (PyObject *)pyout;
 
 fail:
@@ -284,7 +294,7 @@ _erfa_epb2jd(PyObject *self, PyObject *args)
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
     int ndim, i;
-    if (!PyArg_ParseTuple(args, "O", &pyepb))
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyepb))
         return NULL;
     aepb = PyArray_FROM_OTF(pyepb, NPY_DOUBLE, NPY_IN_ARRAY);
     if (aepb == NULL) {
@@ -292,6 +302,10 @@ _erfa_epb2jd(PyObject *self, PyObject *args)
         return NULL;
     }
     ndim = PyArray_NDIM(aepb);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        return NULL;
+    }            
     dims = PyArray_DIMS(aepb);
     pyjd0 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     pyjd1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
@@ -302,7 +316,7 @@ _erfa_epb2jd(PyObject *self, PyObject *args)
     for (i=0;i<dims[0];i++) {
         eraEpb2jd(epb[i], &jd0[i], &jd1[i]);
     }
-    return Py_BuildValue("OO", (PyObject *)pyjd0, (PyObject *)pyjd1);
+    return Py_BuildValue("OO", pyjd0, pyjd1);
 }
 
 PyDoc_STRVAR(_erfa_epb2jd_doc,
@@ -312,10 +326,228 @@ PyDoc_STRVAR(_erfa_epb2jd_doc,
 "Returned:\n"
 "    djm        Modified Julian Date");
 
+static PyObject *
+_erfa_pmsafe(PyObject *self, PyObject *args)
+{
+    double *ra1, *dec1, *pmr1, *pmd1, *px1, *rv1, *ep1a, *ep1b, *ep2a, *ep2b;
+    double *ra2, *dec2, *pmr2, *pmd2, *px2, *rv2;
+    PyObject *pyra1, *pydec1, *pypmr1, *pypmd1, *pypx1, *pyrv1, *pyep1a, *pyep1b, *pyep2a, *pyep2b;
+    PyObject *ara1, *adec1, *apmr1, *apmd1, *apx1, *arv1, *aep1a, *aep1b, *aep2a, *aep2b;
+    PyArrayObject *pyra2, *pydec2, *pypmr2, *pypmd2, *pypx2, *pyrv2;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i, j;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!O!",
+                                 &PyArray_Type, &pyra1, &PyArray_Type, &pydec1,
+                                 &PyArray_Type, &pypmr1, &PyArray_Type, &pypmd1,
+                                 &PyArray_Type, &pypx1, &PyArray_Type, &pyrv1,
+                                 &PyArray_Type, &pyep1a, &PyArray_Type, &pyep1b,
+                                 &PyArray_Type, &pyep2a, &PyArray_Type, &pyep2b))
+        return NULL;
+    ara1 = PyArray_FROM_OTF(pyra1, NPY_DOUBLE, NPY_IN_ARRAY);
+    adec1 = PyArray_FROM_OTF(pydec1, NPY_DOUBLE, NPY_IN_ARRAY);
+    apmr1 = PyArray_FROM_OTF(pypmr1, NPY_DOUBLE, NPY_IN_ARRAY);
+    apmd1 = PyArray_FROM_OTF(pypmd1, NPY_DOUBLE, NPY_IN_ARRAY);
+    apx1 = PyArray_FROM_OTF(pypx1, NPY_DOUBLE, NPY_IN_ARRAY);
+    arv1 = PyArray_FROM_OTF(pyrv1, NPY_DOUBLE, NPY_IN_ARRAY);
+    aep1a = PyArray_FROM_OTF(pyep1a, NPY_DOUBLE, NPY_IN_ARRAY);
+    aep1b = PyArray_FROM_OTF(pyep1b, NPY_DOUBLE, NPY_IN_ARRAY);
+    aep2a = PyArray_FROM_OTF(pyep2a, NPY_DOUBLE, NPY_IN_ARRAY);
+    aep2b = PyArray_FROM_OTF(pyep2b, NPY_DOUBLE, NPY_IN_ARRAY);
+    if (ara1 == NULL || adec1 == NULL || apmr1 == NULL || apmd1 == NULL || apx1 == NULL ||
+        arv1 == NULL || aep1a == NULL || aep1b == NULL || aep2a == NULL || aep2b == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ara1);
+    dims = PyArray_DIMS(ara1);
+    if (dims[0] != PyArray_DIMS(ara1)[0] || dims[0] != PyArray_DIMS(adec1)[0] ||
+        dims[0] != PyArray_DIMS(apmr1)[0] || dims[0] != PyArray_DIMS(apmd1)[0] ||
+        dims[0] != PyArray_DIMS(apx1)[0] || dims[0] != PyArray_DIMS(arv1)[0] ||
+        dims[0] != PyArray_DIMS(aep1a)[0] || dims[0] != PyArray_DIMS(aep1b)[0] ||
+        dims[0] != PyArray_DIMS(aep2a)[0] || dims[0] != PyArray_DIMS(aep2b)[0]) {
+        PyErr_SetString(_erfaError, "arguments have not the same shape");
+        return NULL;
+    }    
+
+    pyra2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydec2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypmr2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypmd2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypx2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyrv2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyra2 || NULL == pydec2 || NULL == pypmr2 ||
+        NULL == pypmd2 || NULL == pypx2 || NULL == pyrv2)  return NULL;
+
+    ra1 = (double *)PyArray_DATA(ara1);
+    dec1 = (double *)PyArray_DATA(adec1);
+    pmr1 = (double *)PyArray_DATA(apmr1);
+    pmd1 = (double *)PyArray_DATA(apmd1);
+    px1 = (double *)PyArray_DATA(apx1);
+    rv1 = (double *)PyArray_DATA(arv1);
+    ep1a = (double *)PyArray_DATA(aep1a);
+    ep1b = (double *)PyArray_DATA(aep1b);
+    ep2a = (double *)PyArray_DATA(aep2a);
+    ep2b = (double *)PyArray_DATA(aep2b);
+
+    ra2 = (double *)PyArray_DATA(pyra2);
+    dec2 = (double *)PyArray_DATA(pydec2);
+    pmr2 = (double *)PyArray_DATA(pypmr2);
+    pmd2 = (double *)PyArray_DATA(pypmd2);
+    px2 = (double *)PyArray_DATA(pypx2);
+    rv2 = (double *)PyArray_DATA(pyrv2);
+    for (i=0;i<dims[0];i++) {
+
+        j = eraPmsafe(ra1[i], dec1[i], pmr1[i], pmd1[i], px1[i],
+                      rv1[i], ep1a[i], ep1b[i], ep2a[i], ep2b[i],
+                      &ra2[i], &dec2[i], &pmr2[i], &pmd2[i], &px2[i], &rv2[i]);
+        if (j == -1) {
+            PyErr_SetString(_erfaError, "system error (should not occur)");
+            return NULL;
+        }
+        else if (j == 1) {
+            PyErr_SetString(_erfaError, "distance overridden");
+            return NULL;
+        }
+        else if (j == 2) {
+            PyErr_SetString(_erfaError, "excessive velocity");
+            return NULL;
+        }
+        else if (j == 4) {
+            PyErr_SetString(_erfaError, "solution didn't converge");
+            return NULL;
+        }
+    }
+    Py_DECREF(ara1);
+    Py_DECREF(adec1);
+    Py_DECREF(apmr1);
+    Py_DECREF(apmd1);
+    Py_DECREF(apx1);
+    Py_DECREF(arv1);
+    Py_DECREF(aep1a);
+    Py_DECREF(aep1b);
+    Py_DECREF(aep2a);
+    Py_DECREF(aep2b);
+    return Py_BuildValue("OOOOOO", pyra2, pydec2, pypmr2, pypmd2, pypx2, pyrv2);
+
+fail:
+    Py_XDECREF(ara1);
+    Py_XDECREF(adec1);
+    Py_XDECREF(apmr1);
+    Py_XDECREF(apmd1);
+    Py_XDECREF(apx1);
+    Py_XDECREF(arv1);
+    Py_XDECREF(aep1a);
+    Py_XDECREF(aep1b);
+    Py_XDECREF(aep2a);
+    Py_XDECREF(aep2b);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pmsafe_doc,
+"\npmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b, -> ra2, dec2, pmr2, pmd2, px2, rv2)\n"
+"Star proper motion:  update star catalog data for space motion, with\n"
+"special handling to handle the zero parallax case.\n"
+"Given:\n"
+"    ra1    right ascension (radians), before\n"
+"    dec1   declination (radians), before\n"
+"    pmr1   RA proper motion (radians/year), before\n"
+"    pmd1   Dec proper motion (radians/year), before\n"
+"    px1    parallax (arcseconds), before\n"
+"    rv1    radial velocity (km/s, +ve = receding), before\n"
+"    ep1a   ''before'' epoch, part A\n"
+"    ep1b   ''before'' epoch, part B\n"
+"    ep2a   ''after'' epoch, part A\n"
+"    ep2b   ''after'' epoch, part B\n"
+"Returned:\n"
+"    ra2    double      right ascension (radians), after\n"
+"    dec2   double      declination (radians), after\n"
+"    pmr2   double      RA proper motion (radians/year), after\n"
+"    pmd2   double      Dec proper motion (radians/year), after\n"
+"    px2    double      parallax (arcseconds), after\n"
+"    rv2    double      radial velocity (km/s, +ve = receding), after");
+
+static PyObject *
+_erfa_plan94(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, **cpv, pv[2][3];
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2, *pv_result;
+    PyArrayObject *pyout = NULL;
+    int np, status;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dims_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "OOi", &pyd1, &pyd2, &np)) {
+        return NULL;
+    }
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    dims = PyArray_DIMS(ad1);
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    dims_out[0] = dims[0];
+    dims_out[1] = 2;
+    dims_out[2] = 3;
+    pyout = (PyArrayObject *) PyArray_Zeros(3, dims_out, dsc, 0);
+    if (NULL == pyout) {
+        goto fail;
+    }
+    cpv = (double **)PyArray_DATA(pyout);
+    if (NULL == cpv) {
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        status = eraPlan94(d1[i], d2[i], np, &cpv[i*6]);
+        if (status == -1){
+            PyErr_SetString(_erfaError, "illegal np,  not in range(1,8) for planet");
+            return NULL;
+        }
+        if (status == 1){
+            PyErr_WarnEx(PyExc_Warning, "year outside range(1000:3000)", 1);
+        }
+        if (status == 2){
+            PyErr_WarnEx(PyExc_Warning,  "computation failed to converge", 1);
+        }
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(cpv);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(cpv);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_plan94_doc,
+"\nplan94(d1, d2, np) -> pv\n\n"
+"Approximate heliocentric position and velocity of a nominated major\n"
+"planet:  Mercury, Venus, EMB, Mars, Jupiter, Saturn, Uranus or\n"
+"Neptune (but not the Earth itself).\n"
+"Given:\n"
+"    d1         TDB date part A\n"
+"    d2         TDB date part B\n"
+"    np         planet (1=Mercury, 2=Venus, 3=EMB, 4=Mars,\n"
+"                       5=Jupiter, 6=Saturn, 7=Uranus, 8=Neptune)\n"
+"Returned:\n"
+"    pv         planet p,v (heliocentric, J2000.0, AU,AU/d)");
+
 
 static PyMethodDef _erfa_methods[] = {
     {"ab", _erfa_ab, METH_VARARGS, _erfa_ab_doc},
     {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
+    {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
+    {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
     {NULL,		NULL}		/* sentinel */
 };
 
