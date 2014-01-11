@@ -336,8 +336,8 @@ _erfa_apcs(PyObject *self, PyObject *args)
     PyObject *pyout = NULL;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
-    npy_intp *dims, d1[] = {3}, d2[] = {2,3}; //d1[2], d2[3];
-    int ndim, i;
+    npy_intp *dims;
+    int i;
     eraASTROM astrom;
     if (!PyArg_ParseTuple(args, "O!O!O!O!O!",
                                  &PyArray_Type, &pydate1,
@@ -351,13 +351,7 @@ _erfa_apcs(PyObject *self, PyObject *args)
     if (adate1 == NULL || adate2 == NULL) {
         goto fail;
     }
-    ndim = PyArray_NDIM(adate1);
     dims = PyArray_DIMS(adate1);
-/*    d1[0] = dims[0];
-    d1[1] = 3;
-    d2[0] = dims[0];
-    d2[1] = 2;
-    d2[2] = 3;*/
     pyout = PyList_New(dims[0]);
     if (NULL == pyout)  goto fail;
     date1 = (double *)PyArray_DATA(adate1);
@@ -392,10 +386,10 @@ _erfa_apcs(PyObject *self, PyObject *args)
                 }
                 Py_INCREF(apv);Py_INCREF(aebpv);
                 p = (double)PyFloat_AsDouble(apv);
-                if (p == -1 && PyErr_Occurred()) return NULL;
+                if (p == -1 && PyErr_Occurred()) goto fail;
                 pv[j][k] = p;
                 e = (double)PyFloat_AsDouble(aebpv);
-                if (e == -1 && PyErr_Occurred()) return NULL;
+                if (e == -1 && PyErr_Occurred()) goto fail;
                 ebpv[j][k] = e;
                 PyArray_ITER_NEXT(pv_iter); 
                 PyArray_ITER_NEXT(ebpv_iter); 
@@ -733,6 +727,67 @@ PyDoc_STRVAR(_erfa_s00_doc,
 "Returned:\n"
 "   s       the CIO locator s in radians");
 
+static PyObject *
+_erfa_xys06a(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *x, *y, *s;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyx = NULL, *pyy = NULL, *pys = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!", 
+                                 &PyArray_Type, &pyd1, &PyArray_Type, &pyd2))
+        return NULL;
+
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad1)[0] || dims[0] != PyArray_DIMS(ad2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have not the same shape");
+        return NULL;
+    }    
+
+    pyx = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyy = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pys = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyx || NULL == pyy || NULL == pys) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    x = (double *)PyArray_DATA(pyx);
+    y = (double *)PyArray_DATA(pyy);
+    s = (double *)PyArray_DATA(pys);
+    for (i=0;i<dims[0];i++) {
+        eraXys06a(d1[i], d2[i], &x[i], &y[i], &s[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pyx);Py_INCREF(pyy);Py_INCREF(pys);
+    return Py_BuildValue("OOO", pyx, pyy, pys);
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_xys06a_doc,
+"\nxys06a(d1, d2) -> x, y, s\n\n"
+"For a given TT date, compute the X,Y coordinates of the Celestial\n"
+"Intermediate Pole and the CIO locator s, using the IAU 2006\n"
+"precession and IAU 2000A nutation model.\n"
+"Given:\n"
+"   d1,d2   TT as a 2-part Julian Date\n"
+"Returned:\n"
+"   x,y     Celestial Intermediate Pole\n"
+"   s       the CIO locator s");
+
 
 static PyMethodDef _erfa_methods[] = {
     {"ab", _erfa_ab, METH_VARARGS, _erfa_ab_doc},
@@ -741,6 +796,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
+    {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
     {NULL,		NULL}		/* sentinel */
 };
 

@@ -31,3 +31,7 @@ def besselian_epoch_jd(epd):
 def s00(d1, d2, x, y):
     check_args(d1, d2, x, y)
     return _erfa.s00(d1, d2, x, y)
+
+def xys06a(d1, d2):
+    check_args(d1, d2)
+    return _erfa.xys06a(d1, d2)
