@@ -56,6 +56,10 @@ def d_tai_utc(iy, im, id, fd):
     return _erfa.dat(iy, im, id, fd)
 
 ## Astronomy/PrecNutPolar
+def nut80(d1, d2):
+    check_args(d1, d2)
+    return _erfa.nut80(d1, d2)
+    
 def pmat00():
     pass
 

@@ -846,6 +846,77 @@ PyDoc_STRVAR(_erfa_pmsafe_doc,
 "    rv2    radial velocity (km/s, +ve = receding), after");
 
 static PyObject *
+_erfa_nut80(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, dpsi, deps;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyout = NULL;
+    PyObject *out_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dims_out[2];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2)) {
+        return NULL;
+    }
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    dims = PyArray_DIMS(ad1);
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    dims_out[0] = 2;
+    dims_out[1] = dims[0];
+    pyout = (PyArrayObject *) PyArray_Zeros(2, dims_out, dsc, 0);
+    if (NULL == pyout) {
+        goto fail;
+    }
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    if (out_iter == NULL) goto fail;
+    for (i=0;i<dims[0];i++) {
+        eraNut80(d1[i], d2[i], &dpsi, &deps);
+        if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(dpsi))) {
+            PyErr_SetString(_erfaError, "unable to set dpsi");
+            goto fail;
+        }
+        PyArray_ITER_NEXT(out_iter);
+        eraNut80(d1[i], d2[i], &dpsi, &deps);
+        if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(deps))) {
+            PyErr_SetString(_erfaError, "unable to set deps");
+            goto fail;
+        }
+        PyArray_ITER_NEXT(out_iter);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(out_iter);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(out_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_nut80_doc,
+"\nnut80(d1, d2) -> dpsi, deps\n\n"
+"Nutation, IAU 1980 model.\n"
+"Given:\n"
+"    d1,d2      TT as a 2-part Julian Date\n"
+"Returned:\n"
+"    dpsi        nutation in longitude (radians)\n"
+"    deps        nutation in obliquity (radians)\n");
+
+static PyObject *
 _erfa_plan94(PyObject *self, PyObject *args)
 {
     double *d1, *d2, **cpv, pv[2][3];
@@ -1143,6 +1214,7 @@ static PyMethodDef _erfa_methods[] = {
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
+    {"nut80", _erfa_nut80, METH_VARARGS, _erfa_nut80_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
     {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
