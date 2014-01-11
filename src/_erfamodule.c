@@ -261,7 +261,7 @@ _erfa_ab(PyObject *self, PyObject *args)
     Py_DECREF(av);
     Py_DECREF(as);
     Py_DECREF(abm1);
-    //Py_INCREF(pyout);
+    Py_INCREF(pyout);
     return (PyObject *)pyout;
 
 fail:
@@ -273,7 +273,7 @@ fail:
 }
 
 PyDoc_STRVAR(_erfa_ab_doc,
-"\nab(pnat[3], v[3], s, bm1) -> ppr\n"
+"\nab(pnat[3], v[3], s, bm1) -> ppr[3]\n"
 "Apply aberration to transform natural direction into proper direction.\n"
 "Given:\n"
 "    pnat       natural direction to the source (unit vector)\n"
@@ -282,6 +282,88 @@ PyDoc_STRVAR(_erfa_ab_doc,
 "    bm1        sqrt(1-|v|^2): reciprocal of Lorenz factor\n"
 "Returned:\n"
 "    ppr        proper direction to source (unit vector)");
+
+static PyObject *
+_erfa_ld(PyObject *self, PyObject *args)
+{
+    double *bm, *p, *q, *e, *em, *dlim, *p1;
+    PyObject *pybm, *pyp, *pyq, *pye, *pyem, *pydlim;
+    PyObject *abm, *ap, *aq, *ae, *aem, *adlim;
+    PyArrayObject *pyp1;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!", 
+                                 &PyArray_Type, &pybm, &PyArray_Type, &pyp,
+                                 &PyArray_Type, &pyq, &PyArray_Type, &pye,
+                                 &PyArray_Type, &pyem, &PyArray_Type, &pydlim))
+        return NULL;
+    abm = PyArray_FROM_OTF(pybm, NPY_DOUBLE, NPY_IN_ARRAY);
+    ap = PyArray_FROM_OTF(pyp, NPY_DOUBLE, NPY_IN_ARRAY);
+    aq = PyArray_FROM_OTF(pyq, NPY_DOUBLE, NPY_IN_ARRAY);
+    ae = PyArray_FROM_OTF(pye, NPY_DOUBLE, NPY_IN_ARRAY);
+    aem = PyArray_FROM_OTF(pyem, NPY_DOUBLE, NPY_IN_ARRAY);
+    adlim = PyArray_FROM_OTF(pydlim, NPY_DOUBLE, NPY_IN_ARRAY);
+    if (abm == NULL || ap == NULL || aq == NULL ||
+        ae == NULL || aem == NULL || adlim == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ap);
+    dims = PyArray_DIMS(ap);
+    if (dims[0] != PyArray_DIMS(abm)[0] || dims[0] != PyArray_DIMS(ap)[0] ||
+        dims[0] != PyArray_DIMS(aq)[0] || dims[0] != PyArray_DIMS(ae)[0] ||
+        dims[0] != PyArray_DIMS(aem)[0] || dims[0] != PyArray_DIMS(adlim)[0]) {
+        PyErr_SetString(_erfaError, "arguments have not the same shape");
+        return NULL;
+    }    
+    pyp1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyp1) {
+        Py_DECREF(pyp1);
+        goto fail;
+    }
+    bm = (double *)PyArray_DATA(abm);
+    p = (double *)PyArray_DATA(ap);
+    q = (double *)PyArray_DATA(aq);
+    e = (double *)PyArray_DATA(ae);
+    em = (double *)PyArray_DATA(aem);
+    dlim = (double *)PyArray_DATA(adlim);
+    p1 = (double *)PyArray_DATA(pyp1);
+    for (i=0;i<dims[0];i++) {
+        eraLd(bm[i], &p[i*3], &q[i*3], &e[i*3], em[i], dlim[i], &p1[i*3]);
+    }
+    Py_DECREF(abm);
+    Py_DECREF(ap);
+    Py_DECREF(aq);
+    Py_DECREF(ae);
+    Py_DECREF(aem);
+    Py_DECREF(adlim);
+    Py_INCREF(pyp1);
+    return (PyObject *)pyp1;
+
+fail:
+    Py_XDECREF(abm);
+    Py_XDECREF(ap);
+    Py_XDECREF(aq);
+    Py_XDECREF(ae);
+    Py_XDECREF(aem);
+    Py_XDECREF(adlim);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_ld_doc,
+"\nld(bm, p[3], q[3], e[3], em, dlim) -> p1[3]\n"
+"Apply light deflection by a solar-system body, as part of\n"
+"transforming coordinate direction into natural direction.\n"
+"Given:\n"
+"    bm     mass of the gravitating body (solar masses)\n"
+"    p      direction from observer to source (unit vector)\n"
+"    q      direction from body to source (unit vector)\n"
+"    e      direction from body to observer (unit vector)\n"
+"    em     distance from body to observer (au)\n"
+"    dlim   deflection limiter\n"
+"Returned:\n"
+"    p1     observer to deflected source (unit vector)");
 
 static PyObject *
 _erfa_epb2jd(PyObject *self, PyObject *args)
@@ -791,6 +873,7 @@ PyDoc_STRVAR(_erfa_xys06a_doc,
 
 static PyMethodDef _erfa_methods[] = {
     {"ab", _erfa_ab, METH_VARARGS, _erfa_ab_doc},
+    {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},

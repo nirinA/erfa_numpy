@@ -12,6 +12,8 @@ def check_args(*args):
         except IndexError:
             raise _erfa.error('cannot compute ndarray of length 0')
 
+ASTROM = _erfa.ASTROM
+
 def ab(pnat, v, s, bm1):
     check_args(pnat, v, s, bm1)
     return _erfa.ab(pnat, v, s, bm1)
@@ -19,6 +21,10 @@ def ab(pnat, v, s, bm1):
 def apcs(date1, date2, pv, ebpv, ehp):
     check_args(date1, date2, pv, ebpv, ehp)
     return _erfa.apcs(date1, date2, pv, ebpv, ehp)
+
+def ld(bm, p, q, e, em, dlim):
+    check_args(bm, p, q, e, em, dlim)
+    return _erfa.ld(bm, p, q, e, em, dlim)
 
 def pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b):
     check_args(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
