@@ -215,6 +215,128 @@ static PyStructSequence_Desc LDBODY_type_desc = {
     3,
 };
 static PyObject *
+_erfa_cal2jd(PyObject *self, PyObject *args)
+{
+    int *iy, *im, *id;
+    double *dmj0, *dmj1;
+    int status;
+    PyObject *pyiy, *pyim, *pyid;
+    PyObject *aiy, *aim, *aid;
+    PyArrayObject *pydmj0, *pydmj1;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                                 &PyArray_Type, &pyiy,
+                                 &PyArray_Type, &pyim,
+                                 &PyArray_Type, &pyid))
+        return NULL;
+    aiy = PyArray_FROM_OTF(pyiy, NPY_INT, NPY_ARRAY_IN_ARRAY);
+    aim = PyArray_FROM_OTF(pyim, NPY_INT, NPY_ARRAY_IN_ARRAY);
+    aid = PyArray_FROM_OTF(pyid, NPY_INT, NPY_ARRAY_IN_ARRAY);
+    if (NULL == aiy || NULL == aim || NULL == aid) goto fail;
+    ndim = PyArray_NDIM(aiy);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        return NULL;
+    }
+    dims = PyArray_DIMS(aiy);
+    pydmj0 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydmj1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pydmj0 || NULL == pydmj1) {
+        Py_DECREF(pydmj0);
+        Py_DECREF(pydmj1);
+        goto fail;
+    }
+    iy = (int *)PyArray_DATA(aiy);
+    im = (int *)PyArray_DATA(aim);
+    id = (int *)PyArray_DATA(aid);
+    dmj0 = (double *)PyArray_DATA(pydmj0);
+    dmj1 = (double *)PyArray_DATA(pydmj1);
+    for (i=0;i<dims[0];i++) {
+        status = eraCal2jd(iy[i], im[i], id[i], &dmj0[i], &dmj1[i]);
+        if (status < 0){
+            if (status == -1){
+                PyErr_SetString(_erfaError, "bad year");
+                return NULL;
+            }
+            else if (status == -2){
+                PyErr_SetString(_erfaError, "bad month");
+                return NULL;
+            }
+            else if (status == -3){
+                PyErr_SetString(_erfaError, "bad day");
+                return NULL;
+            }
+        }
+    }
+    Py_DECREF(aiy);
+    Py_DECREF(aim);
+    Py_DECREF(aid);
+    Py_INCREF(pydmj0);
+    Py_INCREF(pydmj1);
+    return Py_BuildValue("OO", pydmj0, pydmj1);
+
+fail:
+    Py_XDECREF(aiy);
+    Py_XDECREF(aim);
+    Py_XDECREF(aid);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_cal2jd_doc,
+"\ncal2jd(year, month, day) -> 2400000.5, djm\n\n"
+"Gregorian Calendar to Julian Date.\n"
+"Given:\n"
+"    year, month      day in Gregorian calendar\n"
+"Returned:\n"
+"    2400000.5,djm    MJD zero-point and Modified Julian Date for 0 hrs");
+
+static PyObject *
+_erfa_epb2jd(PyObject *self, PyObject *args)
+{
+    double *epb, *jd0, *jd1;
+    PyObject *pyepb;
+    PyObject *aepb;
+    PyArrayObject *pyjd0, *pyjd1;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyepb))
+        return NULL;
+    aepb = PyArray_FROM_OTF(pyepb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aepb == NULL) {
+        Py_DECREF(aepb);
+        return NULL;
+    }
+    ndim = PyArray_NDIM(aepb);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        return NULL;
+    }            
+    dims = PyArray_DIMS(aepb);
+    pyjd0 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyjd1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyjd0 || NULL == pyjd1)  return NULL;
+    epb = (double *)PyArray_DATA(aepb);
+    jd0 = (double *)PyArray_DATA(pyjd0);
+    jd1 = (double *)PyArray_DATA(pyjd1);
+    for (i=0;i<dims[0];i++) {
+        eraEpb2jd(epb[i], &jd0[i], &jd1[i]);
+    }
+    return Py_BuildValue("OO", pyjd0, pyjd1);
+}
+
+PyDoc_STRVAR(_erfa_epb2jd_doc,
+"\nepb2jd(epb) -> 2400000.5 djm\n"
+"Given:\n"
+"    epb        Besselian Epoch,\n"
+"Returned:\n"
+"    djm        Modified Julian Date");
+
+static PyObject *
 _erfa_ab(PyObject *self, PyObject *args)
 {
     double *pnat, *v, *s, *bm1, *ppr;
@@ -229,10 +351,10 @@ _erfa_ab(PyObject *self, PyObject *args)
                                  &PyArray_Type, &pypnat, &PyArray_Type, &pyv,
                                  &PyArray_Type, &pys, &PyArray_Type, &pybm1))
         return NULL;
-    apnat = PyArray_FROM_OTF(pypnat, NPY_DOUBLE, NPY_IN_ARRAY);
-    av = PyArray_FROM_OTF(pyv, NPY_DOUBLE, NPY_IN_ARRAY);
-    as = PyArray_FROM_OTF(pys, NPY_DOUBLE, NPY_IN_ARRAY);
-    abm1 = PyArray_FROM_OTF(pybm1, NPY_DOUBLE, NPY_IN_ARRAY);
+    apnat = PyArray_FROM_OTF(pypnat, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    av = PyArray_FROM_OTF(pyv, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    as = PyArray_FROM_OTF(pys, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    abm1 = PyArray_FROM_OTF(pybm1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
     if (apnat == NULL || av == NULL || as == NULL || abm1 == NULL) {
         goto fail;
     }
@@ -242,12 +364,12 @@ _erfa_ab(PyObject *self, PyObject *args)
         dims[0] != PyArray_DIMS(as)[0] ||
         dims[0] != PyArray_DIMS(abm1)[0]) {
         PyErr_SetString(_erfaError, "arguments have not the same shape");
-        return NULL;
+        goto fail;
     }    
     pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     if (NULL == pyout) {
         Py_DECREF(pyout);
-        return NULL;
+        goto fail;
     }
     pnat = (double *)PyArray_DATA(apnat);
     v = (double *)PyArray_DATA(av);
@@ -299,12 +421,12 @@ _erfa_ld(PyObject *self, PyObject *args)
                                  &PyArray_Type, &pyq, &PyArray_Type, &pye,
                                  &PyArray_Type, &pyem, &PyArray_Type, &pydlim))
         return NULL;
-    abm = PyArray_FROM_OTF(pybm, NPY_DOUBLE, NPY_IN_ARRAY);
-    ap = PyArray_FROM_OTF(pyp, NPY_DOUBLE, NPY_IN_ARRAY);
-    aq = PyArray_FROM_OTF(pyq, NPY_DOUBLE, NPY_IN_ARRAY);
-    ae = PyArray_FROM_OTF(pye, NPY_DOUBLE, NPY_IN_ARRAY);
-    aem = PyArray_FROM_OTF(pyem, NPY_DOUBLE, NPY_IN_ARRAY);
-    adlim = PyArray_FROM_OTF(pydlim, NPY_DOUBLE, NPY_IN_ARRAY);
+    abm = PyArray_FROM_OTF(pybm, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ap = PyArray_FROM_OTF(pyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aq = PyArray_FROM_OTF(pyq, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ae = PyArray_FROM_OTF(pye, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aem = PyArray_FROM_OTF(pyem, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adlim = PyArray_FROM_OTF(pydlim, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
     if (abm == NULL || ap == NULL || aq == NULL ||
         ae == NULL || aem == NULL || adlim == NULL) {
         goto fail;
@@ -366,49 +488,6 @@ PyDoc_STRVAR(_erfa_ld_doc,
 "    p1     observer to deflected source (unit vector)");
 
 static PyObject *
-_erfa_epb2jd(PyObject *self, PyObject *args)
-{
-    double *epb, *jd0, *jd1;
-    PyObject *pyepb;
-    PyObject *aepb;
-    PyArrayObject *pyjd0, *pyjd1;
-    PyArray_Descr * dsc;
-    dsc = PyArray_DescrFromType(NPY_DOUBLE);
-    npy_intp *dims;
-    int ndim, i;
-    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyepb))
-        return NULL;
-    aepb = PyArray_FROM_OTF(pyepb, NPY_DOUBLE, NPY_IN_ARRAY);
-    if (aepb == NULL) {
-        Py_DECREF(aepb);
-        return NULL;
-    }
-    ndim = PyArray_NDIM(aepb);
-    if (!ndim) {
-        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
-        return NULL;
-    }            
-    dims = PyArray_DIMS(aepb);
-    pyjd0 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
-    pyjd1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
-    if (NULL == pyjd0 || NULL == pyjd1)  return NULL;
-    epb = (double *)PyArray_DATA(aepb);
-    jd0 = (double *)PyArray_DATA(pyjd0);
-    jd1 = (double *)PyArray_DATA(pyjd1);
-    for (i=0;i<dims[0];i++) {
-        eraEpb2jd(epb[i], &jd0[i], &jd1[i]);
-    }
-    return Py_BuildValue("OO", pyjd0, pyjd1);
-}
-
-PyDoc_STRVAR(_erfa_epb2jd_doc,
-"\nepb2jd(epb) -> 2400000.5 djm\n"
-"Given:\n"
-"    epb        Besselian Epoch,\n"
-"Returned:\n"
-"    djm        Modified Julian Date");
-
-static PyObject *
 _erfa_apcs(PyObject *self, PyObject *args)
 {
     double *date1, *date2, pv[2][3], ebpv[2][3], ehp[3];
@@ -428,8 +507,8 @@ _erfa_apcs(PyObject *self, PyObject *args)
                                  &PyArray_Type, &pyebpv,
                                  &PyArray_Type, &pyehp))      
         return NULL;
-    adate1 = PyArray_FROM_OTF(pydate1, NPY_DOUBLE, NPY_IN_ARRAY);
-    adate2 = PyArray_FROM_OTF(pydate2, NPY_DOUBLE, NPY_IN_ARRAY);
+    adate1 = PyArray_FROM_OTF(pydate1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adate2 = PyArray_FROM_OTF(pydate2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
     if (adate1 == NULL || adate2 == NULL) {
         goto fail;
     }
@@ -538,16 +617,16 @@ _erfa_pmsafe(PyObject *self, PyObject *args)
                                  &PyArray_Type, &pyep1a, &PyArray_Type, &pyep1b,
                                  &PyArray_Type, &pyep2a, &PyArray_Type, &pyep2b))
         return NULL;
-    ara1 = PyArray_FROM_OTF(pyra1, NPY_DOUBLE, NPY_IN_ARRAY);
-    adec1 = PyArray_FROM_OTF(pydec1, NPY_DOUBLE, NPY_IN_ARRAY);
-    apmr1 = PyArray_FROM_OTF(pypmr1, NPY_DOUBLE, NPY_IN_ARRAY);
-    apmd1 = PyArray_FROM_OTF(pypmd1, NPY_DOUBLE, NPY_IN_ARRAY);
-    apx1 = PyArray_FROM_OTF(pypx1, NPY_DOUBLE, NPY_IN_ARRAY);
-    arv1 = PyArray_FROM_OTF(pyrv1, NPY_DOUBLE, NPY_IN_ARRAY);
-    aep1a = PyArray_FROM_OTF(pyep1a, NPY_DOUBLE, NPY_IN_ARRAY);
-    aep1b = PyArray_FROM_OTF(pyep1b, NPY_DOUBLE, NPY_IN_ARRAY);
-    aep2a = PyArray_FROM_OTF(pyep2a, NPY_DOUBLE, NPY_IN_ARRAY);
-    aep2b = PyArray_FROM_OTF(pyep2b, NPY_DOUBLE, NPY_IN_ARRAY);
+    ara1 = PyArray_FROM_OTF(pyra1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adec1 = PyArray_FROM_OTF(pydec1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apmr1 = PyArray_FROM_OTF(pypmr1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apmd1 = PyArray_FROM_OTF(pypmd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apx1 = PyArray_FROM_OTF(pypx1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arv1 = PyArray_FROM_OTF(pyrv1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aep1a = PyArray_FROM_OTF(pyep1a, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aep1b = PyArray_FROM_OTF(pyep1b, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aep2a = PyArray_FROM_OTF(pyep2a, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aep2b = PyArray_FROM_OTF(pyep2b, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
     if (ara1 == NULL || adec1 == NULL || apmr1 == NULL || apmd1 == NULL || apx1 == NULL ||
         arv1 == NULL || aep1a == NULL || aep1b == NULL || aep2a == NULL || aep2b == NULL) {
         goto fail;
@@ -675,8 +754,8 @@ _erfa_plan94(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O!O!i", &PyArray_Type, &pyd1, &PyArray_Type, &pyd2, &np)) {
         return NULL;
     }
-    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_IN_ARRAY);
-    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_IN_ARRAY);
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
     if (ad1 == NULL || ad2 == NULL) {
         goto fail;
     }
@@ -755,10 +834,10 @@ _erfa_s00(PyObject *self, PyObject *args)
                                  &PyArray_Type, &pyx, &PyArray_Type, &pyy))
         return NULL;
 
-    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_IN_ARRAY);
-    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_IN_ARRAY);
-    ax = PyArray_FROM_OTF(pyx, NPY_DOUBLE, NPY_IN_ARRAY);
-    ay = PyArray_FROM_OTF(pyy, NPY_DOUBLE, NPY_IN_ARRAY);
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ax = PyArray_FROM_OTF(pyx, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ay = PyArray_FROM_OTF(pyy, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
     if (ad1 == NULL || ad2 == NULL || ax == NULL || ay == NULL) {
         goto fail;
     }
@@ -824,8 +903,8 @@ _erfa_xys06a(PyObject *self, PyObject *args)
                                  &PyArray_Type, &pyd1, &PyArray_Type, &pyd2))
         return NULL;
 
-    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_IN_ARRAY);
-    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_IN_ARRAY);
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
     if (ad1 == NULL || ad2 == NULL) {
         goto fail;
     }
@@ -872,9 +951,10 @@ PyDoc_STRVAR(_erfa_xys06a_doc,
 
 
 static PyMethodDef _erfa_methods[] = {
+    {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
+    {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
     {"ab", _erfa_ab, METH_VARARGS, _erfa_ab_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
-    {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
