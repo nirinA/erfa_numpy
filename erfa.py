@@ -8,7 +8,7 @@ def check_args(*args):
             raise _erfa.error('arguments are not of type of ndarray')
         try:
             if t.shape[0] != args[0].shape[0]:
-                raise _erfa.error('arguments have not the same shape')
+                raise _erfa.error('shape of arguments are not compatible')
         except IndexError:
             raise _erfa.error('cannot compute ndarray of length 0')
 
@@ -48,7 +48,7 @@ def pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b):
     return _erfa.pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
 
 ## Astronomy/Timescales
-def dat(iy, im, id, fd):
+def d_tai_utc(iy, im, id, fd):
     check_args(iy, im, id, fd)
     iy = cast_to_int32(iy)
     im = cast_to_int32(im)
@@ -56,6 +56,13 @@ def dat(iy, im, id, fd):
     return _erfa.dat(iy, im, id, fd)
 
 ## Astronomy/PrecNutPolar
+def pmat00():
+    pass
+
+def pmat76(d1, d2):
+    check_args(d1, d2)
+    return _erfa.pmat76(d1, d2)
+
 def s00(d1, d2, x, y):
     check_args(d1, d2, x, y)
     return _erfa.s00(d1, d2, x, y)

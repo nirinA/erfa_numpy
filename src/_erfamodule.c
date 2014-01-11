@@ -625,6 +625,7 @@ _erfa_apcs(PyObject *self, PyObject *args)
             h = (double)PyFloat_AsDouble(aehp);
             if (h == -1 && PyErr_Occurred()) return NULL;
             ehp[l] = h;
+            Py_DECREF(aehp);
             PyArray_ITER_NEXT(ehp_iter);
         }
         for (j=0;j<2;j++) {
@@ -643,6 +644,7 @@ _erfa_apcs(PyObject *self, PyObject *args)
                 e = (double)PyFloat_AsDouble(aebpv);
                 if (e == -1 && PyErr_Occurred()) goto fail;
                 ebpv[j][k] = e;
+                Py_DECREF(apv);Py_DECREF(aebpv);
                 PyArray_ITER_NEXT(pv_iter); 
                 PyArray_ITER_NEXT(ebpv_iter); 
             }
@@ -696,7 +698,8 @@ _erfa_pmsafe(PyObject *self, PyObject *args)
     double *ra2, *dec2, *pmr2, *pmd2, *px2, *rv2;
     PyObject *pyra1, *pydec1, *pypmr1, *pypmd1, *pypx1, *pyrv1, *pyep1a, *pyep1b, *pyep2a, *pyep2b;
     PyObject *ara1, *adec1, *apmr1, *apmd1, *apx1, *arv1, *aep1a, *aep1b, *aep2a, *aep2b;
-    PyArrayObject *pyra2, *pydec2, *pypmr2, *pypmd2, *pypx2, *pyrv2;
+    PyArrayObject *pyra2 = NULL, *pydec2 = NULL, *pypmr2 = NULL;
+    PyArrayObject *pypmd2 = NULL, *pypx2 = NULL, *pyrv2 = NULL;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
@@ -724,13 +727,13 @@ _erfa_pmsafe(PyObject *self, PyObject *args)
     }
     ndim = PyArray_NDIM(ara1);
     dims = PyArray_DIMS(ara1);
-    if (dims[0] != PyArray_DIMS(ara1)[0] || dims[0] != PyArray_DIMS(adec1)[0] ||
+    if (dims[0] != PyArray_DIMS(adec1)[0] ||
         dims[0] != PyArray_DIMS(apmr1)[0] || dims[0] != PyArray_DIMS(apmd1)[0] ||
         dims[0] != PyArray_DIMS(apx1)[0] || dims[0] != PyArray_DIMS(arv1)[0] ||
         dims[0] != PyArray_DIMS(aep1a)[0] || dims[0] != PyArray_DIMS(aep1b)[0] ||
         dims[0] != PyArray_DIMS(aep2a)[0] || dims[0] != PyArray_DIMS(aep2b)[0]) {
         PyErr_SetString(_erfaError, "arguments have not the same shape");
-        return NULL;
+        goto fail;
     }    
 
     pyra2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
@@ -740,7 +743,7 @@ _erfa_pmsafe(PyObject *self, PyObject *args)
     pypx2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     pyrv2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     if (NULL == pyra2 || NULL == pydec2 || NULL == pypmr2 ||
-        NULL == pypmd2 || NULL == pypx2 || NULL == pyrv2)  return NULL;
+        NULL == pypmd2 || NULL == pypx2 || NULL == pyrv2)  goto fail;
 
     ra1 = (double *)PyArray_DATA(ara1);
     dec1 = (double *)PyArray_DATA(adec1);
@@ -791,6 +794,12 @@ _erfa_pmsafe(PyObject *self, PyObject *args)
     Py_DECREF(aep1b);
     Py_DECREF(aep2a);
     Py_DECREF(aep2b);
+    Py_INCREF(pyra2);
+    Py_INCREF(pydec2);
+    Py_INCREF(pypmr2);
+    Py_INCREF(pypmd2);
+    Py_INCREF(pypx2);
+    Py_INCREF(pyrv2);
     return Py_BuildValue("OOOOOO", pyra2, pydec2, pypmr2, pypmd2, pypx2, pyrv2);
 
 fail:
@@ -804,6 +813,12 @@ fail:
     Py_XDECREF(aep1b);
     Py_XDECREF(aep2a);
     Py_XDECREF(aep2b);
+    Py_XDECREF(pyra2);
+    Py_XDECREF(pydec2);
+    Py_XDECREF(pypmr2);
+    Py_XDECREF(pypmd2);
+    Py_XDECREF(pypx2);
+    Py_XDECREF(pyrv2);
     return NULL;
 }
 
@@ -908,6 +923,85 @@ PyDoc_STRVAR(_erfa_plan94_doc,
 "                       5=Jupiter, 6=Saturn, 7=Uranus, 8=Neptune)\n"
 "Returned:\n"
 "    pv         planet p,v (heliocentric, J2000.0, AU,AU/d)");
+
+static PyObject *
+_erfa_pmat76(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, rmatp[3][3];
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2, *aid;
+    PyArrayObject *pyout = NULL;
+    PyObject *out_iter = NULL;
+    //char *item;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2))
+        return NULL;
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (NULL == ad1 || NULL == ad2) goto fail;
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        return NULL;
+    }
+    dims = PyArray_DIMS(ad1);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyout = (PyArrayObject *) PyArray_NewFromDescr(&PyArray_Type,
+                                                   dsc,
+                                                   3,
+                                                   dim_out,
+                                                   NULL,
+                                                   NULL,
+                                                   0,
+                                                   NULL);
+    //pyout = (PyArrayObject *)PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyout)  goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    if (out_iter == NULL) goto fail;
+
+    for (i=0;i<dims[0];i++) {
+        eraPmat76(d1[i], d2[i], rmatp);
+        int j,k;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {            
+                if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(rmatp[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rmatp");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(out_iter);
+            }
+        }
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(out_iter);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(out_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pmat76_doc,
+"\npmat76(d1, d2) -> rmatp\n\n"
+"Precession matrix from J2000.0 to a specified date, IAU 1976 model.\n"
+"Given:\n"
+"   d1,d2       TT ending date as a 2-part Julian Date\n"
+"Returned:\n"
+"   rmatp       precession matrix, J2000.0 -> d1+d2");
 
 static PyObject *
 _erfa_s00(PyObject *self, PyObject *args)
@@ -1050,6 +1144,7 @@ static PyMethodDef _erfa_methods[] = {
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
+    {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
     {NULL,		NULL}		/* sentinel */
