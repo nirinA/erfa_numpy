@@ -327,6 +327,123 @@ PyDoc_STRVAR(_erfa_epb2jd_doc,
 "    djm        Modified Julian Date");
 
 static PyObject *
+_erfa_apcs(PyObject *self, PyObject *args)
+{
+    double *date1, *date2, pv[2][3], ebpv[2][3], ehp[3];
+    PyObject *adate1, *adate2, *apv, *aebpv, *aehp;
+    PyObject *pydate1, *pydate2, *pypv, *pyebpv, *pyehp;
+    PyObject *pv_iter = NULL, *ebpv_iter = NULL, *ehp_iter = NULL;
+    PyObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, d1[] = {3}, d2[] = {2,3}; //d1[2], d2[3];
+    int ndim, i;
+    eraASTROM astrom;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!",
+                                 &PyArray_Type, &pydate1,
+                                 &PyArray_Type, &pydate2,
+                                 &PyArray_Type, &pypv,
+                                 &PyArray_Type, &pyebpv,
+                                 &PyArray_Type, &pyehp))      
+        return NULL;
+    adate1 = PyArray_FROM_OTF(pydate1, NPY_DOUBLE, NPY_IN_ARRAY);
+    adate2 = PyArray_FROM_OTF(pydate2, NPY_DOUBLE, NPY_IN_ARRAY);
+    if (adate1 == NULL || adate2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(adate1);
+    dims = PyArray_DIMS(adate1);
+/*    d1[0] = dims[0];
+    d1[1] = 3;
+    d2[0] = dims[0];
+    d2[1] = 2;
+    d2[2] = 3;*/
+    pyout = PyList_New(dims[0]);
+    if (NULL == pyout)  goto fail;
+    date1 = (double *)PyArray_DATA(adate1);
+    date2 = (double *)PyArray_DATA(adate2);
+
+    pv_iter = PyArray_IterNew((PyObject *)pypv);
+    ebpv_iter = PyArray_IterNew((PyObject *)pyebpv);
+    ehp_iter = PyArray_IterNew((PyObject *)pyehp);
+    if (pv_iter == NULL || ebpv_iter == NULL || ehp_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        int j,k,l;
+        double e, p, h;
+        for (l=0;l<3;l++) {
+            aehp = PyArray_GETITEM(pyehp, PyArray_ITER_DATA(ehp_iter));
+            Py_INCREF(aehp);
+            h = (double)PyFloat_AsDouble(aehp);
+            if (h == -1 && PyErr_Occurred()) return NULL;
+            ehp[l] = h;
+            PyArray_ITER_NEXT(ehp_iter);
+        }
+        for (j=0;j<2;j++) {
+            for (k=0;k<3;k++) {
+                apv = PyArray_GETITEM(pypv, PyArray_ITER_DATA(pv_iter));
+                aebpv = PyArray_GETITEM(pyebpv, PyArray_ITER_DATA(ebpv_iter));
+                
+                if (apv == NULL || aebpv == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(apv);Py_INCREF(aebpv);
+                p = (double)PyFloat_AsDouble(apv);
+                if (p == -1 && PyErr_Occurred()) return NULL;
+                pv[j][k] = p;
+                e = (double)PyFloat_AsDouble(aebpv);
+                if (e == -1 && PyErr_Occurred()) return NULL;
+                ebpv[j][k] = e;
+                PyArray_ITER_NEXT(pv_iter); 
+                PyArray_ITER_NEXT(ebpv_iter); 
+            }
+        }
+        eraApcs(date1[i], date2[i], pv, ebpv, ehp, &astrom);
+        if (PyList_SetItem(pyout, i, _to_py_astrom(&astrom))) {
+            PyErr_SetString(_erfaError, "cannot set astrom into list");
+            goto fail;
+        }       
+    }
+    Py_DECREF(adate1);
+    Py_DECREF(adate2);
+    Py_DECREF(pv_iter);
+    Py_DECREF(ebpv_iter);
+    Py_DECREF(ehp_iter);
+    Py_INCREF(pyout);
+    return (PyObject*)pyout;//_to_py_astrom(&astrom); //
+
+fail:
+    Py_XDECREF(adate1);
+    Py_XDECREF(adate2);
+    Py_XDECREF(pv_iter);
+    Py_XDECREF(ebpv_iter);
+    Py_XDECREF(ehp_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_apcs_doc,
+"\napcs(date1, date2, pv[2][3], ebpv[2][3], ehp[3]) -> astrom\n"
+"For an observer whose geocentric position and velocity are known,\n"
+"prepare star-independent astrometry parameters for transformations\n"
+"between ICRS and GCRS.  The Earth ephemeris is supplied by the caller.\n"
+"\n"
+"The parameters produced by this function are required in the\n"
+"parallax, light deflection and aberration parts of the astrometric\n"
+"transformation chain.\n"
+"Given:\n"
+"    date1      TDB as a 2-part...\n"
+"    date2      ...Julian Date\n"
+"    pv         observer's geocentric pos/vel (m, m/s)\n"
+"    ebpv       Earth barycentric pos/vel (au, au/day)\n"
+"    ehp        Earth heliocentric position (au)\n"
+"Returned:\n"
+"    astrom     star-independent astrometry parameters");
+
+static PyObject *
 _erfa_pmsafe(PyObject *self, PyObject *args)
 {
     double *ra1, *dec1, *pmr1, *pmd1, *px1, *rv1, *ep1a, *ep1b, *ep2a, *ep2b;
@@ -396,8 +513,8 @@ _erfa_pmsafe(PyObject *self, PyObject *args)
     pmd2 = (double *)PyArray_DATA(pypmd2);
     px2 = (double *)PyArray_DATA(pypx2);
     rv2 = (double *)PyArray_DATA(pyrv2);
-    for (i=0;i<dims[0];i++) {
 
+    for (i=0;i<dims[0];i++) {
         j = eraPmsafe(ra1[i], dec1[i], pmr1[i], pmd1[i], px1[i],
                       rv1[i], ep1a[i], ep1b[i], ep2a[i], ep2b[i],
                       &ra2[i], &dec2[i], &pmr2[i], &pmd2[i], &px2[i], &rv2[i]);
@@ -460,12 +577,12 @@ PyDoc_STRVAR(_erfa_pmsafe_doc,
 "    ep2a   ''after'' epoch, part A\n"
 "    ep2b   ''after'' epoch, part B\n"
 "Returned:\n"
-"    ra2    double      right ascension (radians), after\n"
-"    dec2   double      declination (radians), after\n"
-"    pmr2   double      RA proper motion (radians/year), after\n"
-"    pmd2   double      Dec proper motion (radians/year), after\n"
-"    px2    double      parallax (arcseconds), after\n"
-"    rv2    double      radial velocity (km/s, +ve = receding), after");
+"    ra2    right ascension (radians), after\n"
+"    dec2   declination (radians), after\n"
+"    pmr2   RA proper motion (radians/year), after\n"
+"    pmd2   Dec proper motion (radians/year), after\n"
+"    px2    parallax (arcseconds), after\n"
+"    rv2    radial velocity (km/s, +ve = receding), after");
 
 static PyObject *
 _erfa_plan94(PyObject *self, PyObject *args)
@@ -479,7 +596,7 @@ _erfa_plan94(PyObject *self, PyObject *args)
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims, dims_out[3];
     int ndim, i;
-    if (!PyArg_ParseTuple(args, "O!O!i", &pyd1, &pyd2, &np)) {
+    if (!PyArg_ParseTuple(args, "O!O!i", &PyArray_Type, &pyd1, &PyArray_Type, &pyd2, &np)) {
         return NULL;
     }
     ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_IN_ARRAY);
@@ -504,15 +621,19 @@ _erfa_plan94(PyObject *self, PyObject *args)
     }
     for (i=0;i<dims[0];i++) {
         status = eraPlan94(d1[i], d2[i], np, &cpv[i*6]);
-        if (status == -1){
+        if (status == -1) {
             PyErr_SetString(_erfaError, "illegal np,  not in range(1,8) for planet");
             return NULL;
         }
-        if (status == 1){
+        switch (status) {
+        case 1:
             PyErr_WarnEx(PyExc_Warning, "year outside range(1000:3000)", 1);
-        }
-        if (status == 2){
+            break;
+        case 2:
             PyErr_WarnEx(PyExc_Warning,  "computation failed to converge", 1);
+            break;
+        default:
+            break;
         }
     }
     Py_DECREF(ad1);
@@ -616,6 +737,7 @@ PyDoc_STRVAR(_erfa_s00_doc,
 static PyMethodDef _erfa_methods[] = {
     {"ab", _erfa_ab, METH_VARARGS, _erfa_ab_doc},
     {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
+    {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
