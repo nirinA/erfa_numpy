@@ -294,6 +294,97 @@ PyDoc_STRVAR(_erfa_cal2jd_doc,
 "    2400000.5,djm    MJD zero-point and Modified Julian Date for 0 hrs");
 
 static PyObject *
+_erfa_dat(PyObject *self, PyObject *args)
+{
+    int *iy, *im, *id, status;
+    double *fd, *deltat;
+    PyObject *pyiy, *pyim, *pyid, *pyfd;
+    PyObject *aiy, *aim, *aid, *afd;
+    PyArrayObject *pydeltat;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!",
+                                 &PyArray_Type, &pyiy,
+                                 &PyArray_Type, &pyim,
+                                 &PyArray_Type, &pyid,
+                                 &PyArray_Type, &pyfd))
+        return NULL;
+    aiy = PyArray_FROM_OTF(pyiy, NPY_INT, NPY_ARRAY_IN_ARRAY);
+    aim = PyArray_FROM_OTF(pyim, NPY_INT, NPY_ARRAY_IN_ARRAY);
+    aid = PyArray_FROM_OTF(pyid, NPY_INT, NPY_ARRAY_IN_ARRAY);
+    afd = PyArray_FROM_OTF(pyfd, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (NULL == aiy || NULL == aim || NULL == aid || NULL == afd) goto fail;
+    ndim = PyArray_NDIM(aiy);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        return NULL;
+    }
+    dims = PyArray_DIMS(aiy);
+    pydeltat = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pydeltat) {
+        Py_DECREF(pydeltat);
+        goto fail;
+    }
+    iy = (int *)PyArray_DATA(aiy);
+    im = (int *)PyArray_DATA(aim);
+    id = (int *)PyArray_DATA(aid);
+    fd = (double *)PyArray_DATA(afd);
+    deltat = (double *)PyArray_DATA(pydeltat);
+
+    for (i=0;i<dims[0];i++) {
+        status = eraDat(iy[i], im[i], id[i], fd[i], &deltat[i]);
+        if (status > 0){
+            PyErr_SetString(_erfaError, "doubious year: date before UTC:1960 January 1.0.");
+            return NULL;
+        }
+        else if (status < 0){
+            if (status == -1){
+                PyErr_SetString(_erfaError, "unaceptable date, bad year");
+                return NULL;
+            }
+            else if (status == -2){
+                PyErr_SetString(_erfaError, "unaceptable date, bad month");
+                return NULL;
+            }
+            else if (status == -3){
+                PyErr_SetString(_erfaError, "unaceptable date, bad day");
+                return NULL;
+            }      
+            else if (status == -4){
+                PyErr_SetString(_erfaError, "bad fraction day, should be < 1.");
+                return NULL;
+            }      
+        }
+    }
+    Py_DECREF(aiy);
+    Py_DECREF(aim);
+    Py_DECREF(aid);
+    Py_DECREF(afd);
+    Py_INCREF(pydeltat);
+    return (PyObject *)pydeltat;
+
+fail:
+    Py_XDECREF(aiy);
+    Py_XDECREF(aim);
+    Py_XDECREF(aid);
+    Py_XDECREF(afd);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_dat_doc,
+"\ndat(y,m,d,fd) -> deltat\n\n"
+"For a given UTC date, calculate delta(AT) = TAI-UTC.\n"
+"Given:\n"
+"    y          year\n"
+"    m          month\n"
+"    d          day\n"
+"    fd         fraction of day\n"
+"Returned:\n"
+"    deltat     TAI minus UTC, seconds");
+
+static PyObject *
 _erfa_epb2jd(PyObject *self, PyObject *args)
 {
     double *epb, *jd0, *jd1;
@@ -952,6 +1043,7 @@ PyDoc_STRVAR(_erfa_xys06a_doc,
 
 static PyMethodDef _erfa_methods[] = {
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
+    {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
     {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
     {"ab", _erfa_ab, METH_VARARGS, _erfa_ab_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},

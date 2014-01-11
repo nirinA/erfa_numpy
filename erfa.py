@@ -47,6 +47,14 @@ def pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b):
     check_args(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
     return _erfa.pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
 
+## Astronomy/Timescales
+def dat(iy, im, id, fd):
+    check_args(iy, im, id, fd)
+    iy = cast_to_int32(iy)
+    im = cast_to_int32(im)
+    id = cast_to_int32(id)
+    return _erfa.dat(iy, im, id, fd)
+
 ## Astronomy/PrecNutPolar
 def s00(d1, d2, x, y):
     check_args(d1, d2, x, y)
