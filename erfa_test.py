@@ -185,6 +185,21 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rmatp[2][1], -0.1643306746147366896e-6, places=14)
         self.assertAlmostEqual(rmatp[2][2], 0.9999999285899790119, places=12)
 
+    def test_pom00(self):
+        xp = np.array([2.55060238e-7])
+        yp = np.array([1.860359247e-6])
+        sp = np.array([-0.1367174580728891460e-10])
+        rpom = erfa.pom00(xp, yp, sp)[0]
+        self.assertAlmostEqual(rpom[0][0], 0.9999999999999674721, places=12)
+        self.assertAlmostEqual(rpom[0][1], -0.1367174580728846989e-10, places=16)
+        self.assertAlmostEqual(rpom[0][2], 0.2550602379999972345e-6, places=16)
+        self.assertAlmostEqual(rpom[1][0], 0.1414624947957029801e-10, places=16)
+        self.assertAlmostEqual(rpom[1][1], 0.9999999999982695317, places=12)
+        self.assertAlmostEqual(rpom[1][2], -0.1860359246998866389e-5, places=16)
+        self.assertAlmostEqual(rpom[2][0], -0.2550602379741215021e-6, places=16)
+        self.assertAlmostEqual(rpom[2][1], 0.1860359247002414021e-5, places=16)
+        self.assertAlmostEqual(rpom[2][2], 0.9999999999982370039, places=12)
+
     def test_s00(self):
         x = np.array([0.5791308486706011000e-3])
         y = np.array([0.4020579816732961219e-4])

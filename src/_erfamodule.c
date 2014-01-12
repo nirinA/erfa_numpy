@@ -1528,6 +1528,89 @@ PyDoc_STRVAR(_erfa_pmat76_doc,
 "   rmatp       precession matrix, J2000.0 -> d1+d2");
 
 static PyObject *
+_erfa_pom00(PyObject *self, PyObject *args)
+{    
+    double *xp, *yp, *sp, rpom[3][3];
+    PyObject *pyxp, *pyyp, *pysp;
+    PyObject *axp, *ayp, *asp;
+    PyArrayObject *pyout = NULL;
+    PyObject *out_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!", 
+                                 &PyArray_Type, &pyxp,
+                                 &PyArray_Type, &pyyp,
+                                 &PyArray_Type, &pysp))
+        return NULL;
+
+    axp = PyArray_FROM_OTF(pyxp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ayp = PyArray_FROM_OTF(pyyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    asp = PyArray_FROM_OTF(pysp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (asp == NULL || axp == NULL || ayp == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(axp);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(axp);
+    if (dims[0] != PyArray_DIMS(asp)[0] || dims[0] != PyArray_DIMS(ayp)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    xp = (double *)PyArray_DATA(axp);
+    yp = (double *)PyArray_DATA(ayp);
+    sp = (double *)PyArray_DATA(asp);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyout = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyout) goto fail;
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    if (out_iter == NULL) goto fail;
+
+    for (i=0;i<dims[0];i++) {
+        eraPom00(xp[i], yp[i], sp[i], rpom);
+        int j,k;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {            
+                if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(rpom[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rc2i");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(out_iter);
+            }
+        }
+    }
+    Py_DECREF(axp);
+    Py_DECREF(ayp);
+    Py_DECREF(asp);
+    Py_DECREF(out_iter);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(axp);
+    Py_XDECREF(ayp);
+    Py_XDECREF(asp);
+    Py_XDECREF(out_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pom00_doc,
+"\npom00(xp, yp, sp) -> rpom\n\n"
+"Form the matrix of polar motion for a given date, IAU 2000.\n"
+"Given:\n"
+"   xp,yp       coordinates of the pole (radians)\n"
+"   sp          the TIO locator s' (radians)\n"
+"Returned:\n"
+"   rpom        polar-motion matrix");
+
+static PyObject *
 _erfa_s00(PyObject *self, PyObject *args)
 {
     double *d1, *d2, *x, *y, *s;
@@ -2197,6 +2280,7 @@ static PyMethodDef _erfa_methods[] = {
     {"nut80", _erfa_nut80, METH_VARARGS, _erfa_nut80_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
     {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
+    {"pom00", _erfa_pom00, METH_VARARGS, _erfa_pom00_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
     {"xys00a", _erfa_xys00a, METH_VARARGS, _erfa_xys00a_doc},
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
