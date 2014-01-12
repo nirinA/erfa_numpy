@@ -192,7 +192,27 @@ class Validate(unittest.TestCase):
     def test_gmst82(self):
         g = erfa.gmst82(np.array([2400000.5]), np.array([53736.0]))
         self.assertAlmostEqual(g[0], 1.754174981860675096, 14)
-        
+
+## VectorMatrix/BuildRotations 
+    def test_rz(self):
+        psi = np.array([0.3456789])
+        r = np.array([
+            [[2.0,3.0,2.0],
+             [3.0,2.0,3.0],
+             [3.0,4.0,5.0]]
+            ])
+        r = erfa.rz(psi, r)[0]
+        self.assertAlmostEqual(r[0][0], 2.898197754208926769, places=12)
+        self.assertAlmostEqual(r[0][1], 3.500207892850427330, places=12)
+        self.assertAlmostEqual(r[0][2], 2.898197754208926769, places=12)
+        self.assertAlmostEqual(r[1][0], 2.144865911309686813, places=12)
+        self.assertAlmostEqual(r[1][1], 0.865184781897815993, places=12)
+        self.assertAlmostEqual(r[1][2], 2.144865911309686813, places=12)
+        self.assertAlmostEqual(r[2][0], 3.0, places=12)
+        self.assertAlmostEqual(r[2][1], 4.0, places=12)
+        self.assertAlmostEqual(r[2][2], 5.0, places=12)
+
+
 ## VectorMatrix/CopyExtendExtract
     def test_cr(self):
         a = np.array([

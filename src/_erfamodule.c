@@ -1671,6 +1671,101 @@ PyDoc_STRVAR(_erfa_rxr_doc,
 "Returned:\n"
 "   atb         a * b");
 
+static PyObject *
+_erfa_rz(PyObject *self, PyObject *args)
+{
+    double r[3][3], *psi;
+    PyObject *pypsi, *pyr;
+    PyObject *apsi, *ar = NULL;
+    PyArrayObject *pyout = NULL;
+    PyObject *r_iter = NULL, *out_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pypsi,
+                                 &PyArray_Type, &pyr))
+        return NULL;
+
+    apsi = PyArray_FROM_OTF(pypsi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (apsi == NULL) goto fail;
+    ndim = PyArray_NDIM(apsi);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(apsi);
+    if (dims[0] != PyArray_DIMS(pyr)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    psi = (double *)PyArray_DATA(apsi);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyout = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyout) goto fail;
+    r_iter = PyArray_IterNew((PyObject*)pyr);
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    if (out_iter == NULL || r_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        double vr;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {
+                ar = PyArray_GETITEM(pyr, PyArray_ITER_DATA(r_iter));
+                if (ar == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(ar);
+                vr = (double)PyFloat_AsDouble(ar);
+                if (vr == -1 && PyErr_Occurred()) goto fail;
+                r[j][k] = vr;
+                Py_DECREF(ar);
+                PyArray_ITER_NEXT(r_iter); 
+            }
+        }
+        eraRz(psi[i], r);
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {            
+                if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(r[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rmatp");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(out_iter);
+            }
+        }
+    }
+    Py_DECREF(apsi);
+    Py_DECREF(ar);
+    Py_DECREF(r_iter);
+    Py_DECREF(out_iter);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(apsi);
+    Py_XDECREF(ar);
+    Py_XDECREF(r_iter);
+    Py_XDECREF(out_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_rz_doc,
+"\nrz(psi, r) -> r\n\n"
+"Rotate an r-matrix about the z-axis.\n"
+"Given:\n"
+"   psi         angle (radians)\n"
+"Given and returned:\n"
+"   r           r-matrix, rotated");
+
 
 static PyMethodDef _erfa_methods[] = {
     {"ab", _erfa_ab, METH_VARARGS, _erfa_ab_doc},
@@ -1692,6 +1787,7 @@ static PyMethodDef _erfa_methods[] = {
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
     {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},
     {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
+    {"rz", _erfa_rz, METH_VARARGS, _erfa_rz_doc},
     {NULL,		NULL}		/* sentinel */
 };
 
