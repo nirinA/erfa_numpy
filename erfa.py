@@ -72,8 +72,9 @@ def obl80(d1, d2):
     check_args(d1, d2)
     return _erfa.obl80(d1, d2)
 
-def plan94():
-    pass
+def plan94(d1, d2, np):
+    check_args(d1, d2)
+    return _erfa.plan94(d1, d2, np)
 
 def pmat76(d1, d2):
     check_args(d1, d2)

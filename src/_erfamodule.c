@@ -1295,16 +1295,20 @@ PyDoc_STRVAR(_erfa_nut80_doc,
 static PyObject *
 _erfa_plan94(PyObject *self, PyObject *args)
 {
-    double *d1, *d2, **cpv, pv[2][3];
+    double *d1, *d2, pv[2][3];
     PyObject *pyd1, *pyd2;
     PyObject *ad1, *ad2, *pv_result;
     PyArrayObject *pyout = NULL;
+    PyObject *out_iter = NULL;
     int np, status;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims, dims_out[3];
     int ndim, i;
-    if (!PyArg_ParseTuple(args, "O!O!i", &PyArray_Type, &pyd1, &PyArray_Type, &pyd2, &np)) {
+    if (!PyArg_ParseTuple(args, "O!O!i",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2,
+                                 &np)) {
         return NULL;
     }
     ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
@@ -1327,13 +1331,14 @@ _erfa_plan94(PyObject *self, PyObject *args)
     if (NULL == pyout) {
         goto fail;
     }
-    cpv = (double **)PyArray_DATA(pyout);
-    if (NULL == cpv) {
-        Py_DECREF(cpv);
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    if (out_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
         goto fail;
     }
+
     for (i=0;i<dims[0];i++) {
-        status = eraPlan94(d1[i], d2[i], np, &cpv[i*6]);
+        status = eraPlan94(d1[i], d2[i], np, pv);
         if (status == -1) {
             PyErr_SetString(_erfaError, "illegal np,  not in range(1,8) for planet");
             goto fail;
@@ -1348,16 +1353,27 @@ _erfa_plan94(PyObject *self, PyObject *args)
         default:
             break;
         }
+        int j,k;
+        for (j=0;j<2;j++) {
+            for (k=0;k<3;k++) {            
+                if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(pv[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set pv");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(out_iter);
+            }
+        }
     }
     Py_DECREF(ad1);
     Py_DECREF(ad2);
-    Py_DECREF(cpv);
+    Py_DECREF(out_iter);
     Py_INCREF(pyout);
     return (PyObject *)pyout;
 
 fail:
     Py_XDECREF(ad1);
     Py_XDECREF(ad2);
+    Py_XDECREF(out_iter);
     Py_XDECREF(pyout);
     return NULL;
 }

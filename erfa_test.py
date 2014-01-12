@@ -152,10 +152,10 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(obl[0], 0.4090751347643816218, 14)
 ##
     def test_plan94(self):
-        self.assertRaises(_erfa.error, _erfa.plan94, np.array([2400000.5]), np.array([-320000]), 0)
-        self.assertRaises(_erfa.error, _erfa.plan94, np.array([2400000.5]), np.array([-320000]), 10)
+        self.assertRaises(_erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 0)
+        self.assertRaises(_erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 10)
 
-        pv = _erfa.plan94(np.array([2400000.5]), np.array([-320000]), 3)[0]
+        pv = erfa.plan94(np.array([2400000.5]), np.array([-320000]), 3)[0]
         self.assertAlmostEqual(pv[0][0], 0.9308038666832975759, places=11)
         self.assertAlmostEqual(pv[0][1], 0.3258319040261346000, places=11)
         self.assertAlmostEqual(pv[0][2], 0.1422794544481140560, places=11)
@@ -164,7 +164,7 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(pv[1][1], 0.1468570657704237764e-1, places=11)
         self.assertAlmostEqual(pv[1][2], 0.6406996426270981189e-2, places=11)
 
-        pv = _erfa.plan94(np.array([2400000.5]), np.array([43999.9]), 1)[0]
+        pv = erfa.plan94(np.array([2400000.5]), np.array([43999.9]), 1)[0]
         self.assertAlmostEqual(pv[0][0], 0.2945293959257430832, places=11)
         self.assertAlmostEqual(pv[0][1], -0.2452204176601049596, places=11)
         self.assertAlmostEqual(pv[0][2], -0.1615427700571978153, places=11)
