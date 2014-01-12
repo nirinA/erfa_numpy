@@ -184,6 +184,11 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(y[0], 0.4020580099454020310e-4, places=15)
         self.assertAlmostEqual(s[0], -0.1220032294164579896e-7, places=19)
 
+## Astronomy/RotationAndTime
+    def test_eqeq94(self):
+        ee = erfa.eqeq94(np.array([2400000.5]), np.array([41234.0]))
+        self.assertAlmostEqual(ee[0], 0.5357758254609256894e-4, 17)
+
 ## VectorMatrix/MatrixOps
     def test_rxr(self):
         a = np.array([
@@ -207,10 +212,10 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(atb[2][1], 10.0, places=12)
         self.assertAlmostEqual(atb[2][2], 15.0, places=12)
 
-## Astronomy/RotationAndTime
-    def test_eqeq94(self):
-        ee = erfa.eqeq94(np.array([2400000.5]), np.array([41234.0]))
-        self.assertAlmostEqual(ee[0], 0.5357758254609256894e-4, 17)
+    def test_anp(self):
+        r = erfa.anp(np.array([-0.1]))
+        self.assertAlmostEqual(r[0], 6.183185307179586477, 15)
+        
 
 support.run_unittest(Validate)
 

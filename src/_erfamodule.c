@@ -1348,10 +1348,7 @@ _erfa_s00(PyObject *self, PyObject *args)
     }    
 
     pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
-    if (NULL == pyout) {
-        Py_DECREF(pyout);
-        return NULL;
-    }
+    if (NULL == pyout) goto fail;
     d1 = (double *)PyArray_DATA(ad1);
     d2 = (double *)PyArray_DATA(ad2);
     x = (double *)PyArray_DATA(ax);
@@ -1452,6 +1449,53 @@ PyDoc_STRVAR(_erfa_xys06a_doc,
 "Returned:\n"
 "   x,y     Celestial Intermediate Pole\n"
 "   s       the CIO locator s");
+
+static PyObject *
+_erfa_anp(PyObject *self, PyObject *args)
+{
+    double *a, *out;
+    PyObject *pya;
+    PyObject *aa = NULL;
+    PyArrayObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pya))      
+        return NULL;
+    ndim = PyArray_NDIM(pya);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pya);
+    aa = PyArray_FROM_OTF(pya, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aa == NULL) goto fail;
+    
+    pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyout) goto fail;
+    a = (double *)PyArray_DATA(aa);
+    out = (double *)PyArray_DATA(pyout);
+    for (i=0;i<dims[0];i++) {
+        out[i] = eraAnp(a[i]);
+    }
+    Py_DECREF(aa);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;    
+
+fail:
+    Py_XDECREF(aa);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_anp_doc,
+"\nanp(a) -> 0 <= a < 2pi\n\n"
+"Normalize angle into the range 0 <= a < 2pi.\n"
+"Given:\n"
+"    a          angle (radians)\n"
+"Returned:\n"
+"    a          angle in range 0-2pi");
 
 static PyObject *
 _erfa_rxr(PyObject *self, PyObject *args)
@@ -1566,6 +1610,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
+    {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
     {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
     {NULL,		NULL}		/* sentinel */
 };

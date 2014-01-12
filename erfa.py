@@ -89,6 +89,10 @@ def eqeq94(d1, d2):
     return _erfa.eqeq94(d1, d2)
 
 ## VectorMatrix/MatrixOps
+def anp(a):
+    check_args(a)
+    return _erfa.anp(a)
+
 def rxr(a, b):
     check_args(a, b)
     return _erfa.rxr(a, b)
