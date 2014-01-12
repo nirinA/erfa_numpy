@@ -92,6 +92,11 @@ def gmst82(d1, d2):
     check_args(d1, d2)
     return _erfa.gmst82(d1, d2)
 
+## VectorMatrix/CopyExtendExtract
+def cr(a):
+    check_args(a)
+    return _erfa.cr(a)
+
 ## VectorMatrix/MatrixOps
 def anp(a):
     check_args(a)

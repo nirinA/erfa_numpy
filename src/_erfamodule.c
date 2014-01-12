@@ -1556,6 +1556,26 @@ PyDoc_STRVAR(_erfa_anp_doc,
 "    a          angle in range 0-2pi");
 
 static PyObject *
+_erfa_cr(PyObject *self, PyObject *args)
+{
+    PyArrayObject *r, *c;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &r)) {
+        return NULL;
+    }
+    c = (PyArrayObject *)PyArray_NewCopy(r, NPY_CORDER);
+    if (c == NULL) return NULL;
+    return (PyObject *)c;
+}
+
+PyDoc_STRVAR(_erfa_cr_doc,
+"\ncr(r) -> c\n\n"
+"Copy an r-matrix.\n"
+"Given:\n"
+"   r           r-matrix to be copied\n"
+"  Returned:\n"
+"   c           copy");
+
+static PyObject *
 _erfa_rxr(PyObject *self, PyObject *args)
 {
     double a[3][3], b[3][3], atb[3][3];
@@ -1670,6 +1690,7 @@ static PyMethodDef _erfa_methods[] = {
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
+    {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},
     {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
     {NULL,		NULL}		/* sentinel */
 };
