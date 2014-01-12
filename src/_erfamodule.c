@@ -1443,6 +1443,72 @@ PyDoc_STRVAR(_erfa_s00_doc,
 "   s       the CIO locator s in radians");
 
 static PyObject *
+_erfa_xys00a(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *x, *y, *s;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyx = NULL, *pyy = NULL, *pys = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!", 
+                                 &PyArray_Type, &pyd1, &PyArray_Type, &pyd2))
+        return NULL;
+
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+
+    pyx = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyy = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pys = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyx || NULL == pyy || NULL == pys) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    x = (double *)PyArray_DATA(pyx);
+    y = (double *)PyArray_DATA(pyy);
+    s = (double *)PyArray_DATA(pys);
+    for (i=0;i<dims[0];i++) {
+        eraXys00a(d1[i], d2[i], &x[i], &y[i], &s[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pyx);Py_INCREF(pyy);Py_INCREF(pys);
+    return Py_BuildValue("OOO", pyx, pyy, pys);
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pyx);Py_XDECREF(pyy);Py_XDECREF(pys);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_xys00a_doc,
+"\nxys00a(d1, d2) -> x, y, s\n\n"
+"For a given TT date, compute the X,Y coordinates of the Celestial\n"
+"Intermediate Pole and the CIO locator s, using the IAU 2000A\n"
+"precession-nutation model.\n"
+"Given:\n"
+"   d1,d2   TT as a 2-part Julian Date\n"
+"Returned:\n"
+"   x,y     Celestial Intermediate Pole\n"
+"   s       the CIO locator s");
+
+static PyObject *
 _erfa_xys06a(PyObject *self, PyObject *args)
 {
     double *d1, *d2, *x, *y, *s;
@@ -1973,6 +2039,7 @@ static PyMethodDef _erfa_methods[] = {
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
     {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
+    {"xys00a", _erfa_xys00a, METH_VARARGS, _erfa_xys00a_doc},
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
     {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},

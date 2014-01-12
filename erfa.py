@@ -79,6 +79,10 @@ def s00(d1, d2, x, y):
     check_args(d1, d2, x, y)
     return _erfa.s00(d1, d2, x, y)
 
+def xys00a(d1, d2):
+    check_args(d1, d2)
+    return _erfa.xys00a(d1, d2)
+
 def xys06a(d1, d2):
     check_args(d1, d2)
     return _erfa.xys06a(d1, d2)

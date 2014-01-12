@@ -176,6 +176,14 @@ class Validate(unittest.TestCase):
         s = erfa.s00(d1, d2, x, y)
         self.assertAlmostEqual(s[0], -0.1220036263270905693e-7, 18)
 
+    def test_xys00a(self):
+        d1 = np.array([2400000.5])
+        d2 = np.array([53736.0])
+        x, y, s = erfa.xys00a(d1, d2)
+        self.assertAlmostEqual(x[0], 0.5791308472168152904e-3, places=16)
+        self.assertAlmostEqual(y[0], 0.4020595661591500259e-4, places=17)
+        self.assertAlmostEqual(s[0], -0.1220040848471549623e-7, places=20)
+
     def test_xys06a(self):
         d1 = np.array([2400000.5])
         d2 = np.array([53736.0])
