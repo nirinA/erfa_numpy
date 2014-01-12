@@ -1639,7 +1639,7 @@ _erfa_s00(PyObject *self, PyObject *args)
         goto fail;
     }
     dims = PyArray_DIMS(ad1);
-    if (dims[0] != PyArray_DIMS(ad1)[0] || dims[0] != PyArray_DIMS(ad2)[0] ||
+    if (dims[0] != PyArray_DIMS(ad2)[0] ||
         dims[0] != PyArray_DIMS(ax)[0] || dims[0] != PyArray_DIMS(ay)[0]) {
         PyErr_SetString(_erfaError, "arguments have incompatible shape ");
         goto fail;
@@ -1681,6 +1681,67 @@ PyDoc_STRVAR(_erfa_s00_doc,
 "   x,y     CIP coordinates\n"
 "Returned:\n"
 "   s       the CIO locator s in radians");
+
+static PyObject *
+_erfa_sp00(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *s;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!", 
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2))
+        return NULL;
+
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+
+    pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyout) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    s = (double *)PyArray_DATA(pyout);
+    for (i=0;i<dims[0];i++) {
+        s[i] = eraSp00(d1[i], d2[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_sp00_doc,
+"\nsp00(d1, d2) -> s\n\n"
+"The TIO locator s', positioning the Terrestrial Intermediate Origin\n"
+"on the equator of the Celestial Intermediate Pole.\n"
+"Given:\n"
+"   d1,d2   TT as a 2-part Julian Date\n"
+"Returned:\n"
+"   s       the TIO locator s' in radians");
 
 static PyObject *
 _erfa_xys00a(PyObject *self, PyObject *args)
@@ -2282,6 +2343,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
     {"pom00", _erfa_pom00, METH_VARARGS, _erfa_pom00_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
+    {"sp00", _erfa_sp00, METH_VARARGS, _erfa_sp00_doc},
     {"xys00a", _erfa_xys00a, METH_VARARGS, _erfa_xys00a_doc},
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
