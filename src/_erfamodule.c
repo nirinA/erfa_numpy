@@ -222,7 +222,7 @@ _erfa_cal2jd(PyObject *self, PyObject *args)
     int status;
     PyObject *pyiy, *pyim, *pyid;
     PyObject *aiy, *aim, *aid;
-    PyArrayObject *pydmj0, *pydmj1;
+    PyArrayObject *pydmj0 = NULL, *pydmj1 = NULL;
     PyArray_Descr *dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
@@ -239,14 +239,12 @@ _erfa_cal2jd(PyObject *self, PyObject *args)
     ndim = PyArray_NDIM(aiy);
     if (!ndim) {
         PyErr_SetString(_erfaError, "argument is ndarray of length 0");
-        return NULL;
+        goto fail;
     }
     dims = PyArray_DIMS(aiy);
     pydmj0 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     pydmj1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     if (NULL == pydmj0 || NULL == pydmj1) {
-        Py_DECREF(pydmj0);
-        Py_DECREF(pydmj1);
         goto fail;
     }
     iy = (int *)PyArray_DATA(aiy);
@@ -259,15 +257,15 @@ _erfa_cal2jd(PyObject *self, PyObject *args)
         if (status < 0){
             if (status == -1){
                 PyErr_SetString(_erfaError, "bad year");
-                return NULL;
+                goto fail;
             }
             else if (status == -2){
                 PyErr_SetString(_erfaError, "bad month");
-                return NULL;
+                goto fail;
             }
             else if (status == -3){
                 PyErr_SetString(_erfaError, "bad day");
-                return NULL;
+                goto fail;
             }
         }
     }
@@ -282,6 +280,8 @@ fail:
     Py_XDECREF(aiy);
     Py_XDECREF(aim);
     Py_XDECREF(aid);
+    Py_XDECREF(pydmj0);
+    Py_XDECREF(pydmj1);
     return NULL;
 }
 
@@ -300,7 +300,7 @@ _erfa_dat(PyObject *self, PyObject *args)
     double *fd, *deltat;
     PyObject *pyiy, *pyim, *pyid, *pyfd;
     PyObject *aiy, *aim, *aid, *afd;
-    PyArrayObject *pydeltat;
+    PyArrayObject *pydeltat = NULL;
     PyArray_Descr *dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
@@ -319,7 +319,7 @@ _erfa_dat(PyObject *self, PyObject *args)
     ndim = PyArray_NDIM(aiy);
     if (!ndim) {
         PyErr_SetString(_erfaError, "argument is ndarray of length 0");
-        return NULL;
+        goto fail;
     }
     dims = PyArray_DIMS(aiy);
     pydeltat = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
@@ -337,24 +337,24 @@ _erfa_dat(PyObject *self, PyObject *args)
         status = eraDat(iy[i], im[i], id[i], fd[i], &deltat[i]);
         if (status > 0){
             PyErr_SetString(_erfaError, "doubious year: date before UTC:1960 January 1.0.");
-            return NULL;
+            goto fail;
         }
         else if (status < 0){
             if (status == -1){
                 PyErr_SetString(_erfaError, "unaceptable date, bad year");
-                return NULL;
+                goto fail;
             }
             else if (status == -2){
                 PyErr_SetString(_erfaError, "unaceptable date, bad month");
-                return NULL;
+                goto fail;
             }
             else if (status == -3){
                 PyErr_SetString(_erfaError, "unaceptable date, bad day");
-                return NULL;
+                goto fail;
             }      
             else if (status == -4){
                 PyErr_SetString(_erfaError, "bad fraction day, should be < 1.");
-                return NULL;
+                goto fail;
             }      
         }
     }
@@ -370,6 +370,7 @@ fail:
     Py_XDECREF(aim);
     Py_XDECREF(aid);
     Py_XDECREF(afd);
+    Py_XDECREF(pydeltat);
     return NULL;
 }
 
@@ -390,7 +391,7 @@ _erfa_epb2jd(PyObject *self, PyObject *args)
     double *epb, *jd0, *jd1;
     PyObject *pyepb;
     PyObject *aepb;
-    PyArrayObject *pyjd0, *pyjd1;
+    PyArrayObject *pyjd0 = NULL, *pyjd1 = NULL;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
@@ -398,26 +399,32 @@ _erfa_epb2jd(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyepb))
         return NULL;
     aepb = PyArray_FROM_OTF(pyepb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    if (aepb == NULL) {
-        Py_DECREF(aepb);
-        return NULL;
-    }
+    if (aepb == NULL) goto fail;
     ndim = PyArray_NDIM(aepb);
     if (!ndim) {
         PyErr_SetString(_erfaError, "argument is ndarray of length 0");
-        return NULL;
+        goto fail;
     }            
     dims = PyArray_DIMS(aepb);
     pyjd0 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     pyjd1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
-    if (NULL == pyjd0 || NULL == pyjd1)  return NULL;
+    if (NULL == pyjd0 || NULL == pyjd1)  goto fail;
     epb = (double *)PyArray_DATA(aepb);
     jd0 = (double *)PyArray_DATA(pyjd0);
     jd1 = (double *)PyArray_DATA(pyjd1);
     for (i=0;i<dims[0];i++) {
         eraEpb2jd(epb[i], &jd0[i], &jd1[i]);
     }
+    Py_DECREF(aepb);
+    Py_INCREF(pyjd0);
+    Py_INCREF(pyjd1);
     return Py_BuildValue("OO", pyjd0, pyjd1);
+
+fail:
+    Py_XDECREF(aepb);
+    Py_XDECREF(pyjd0);
+    Py_XDECREF(pyjd1);
+    return NULL;
 }
 
 PyDoc_STRVAR(_erfa_epb2jd_doc,
@@ -450,9 +457,12 @@ _erfa_ab(PyObject *self, PyObject *args)
         goto fail;
     }
     ndim = PyArray_NDIM(apnat);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
     dims = PyArray_DIMS(apnat);
-    if (dims[0] != PyArray_DIMS(av)[0] ||
-        dims[0] != PyArray_DIMS(as)[0] ||
+    if (dims[0] != PyArray_DIMS(as)[0] ||
         dims[0] != PyArray_DIMS(abm1)[0]) {
         PyErr_SetString(_erfaError, "arguments have not the same shape");
         goto fail;
@@ -523,12 +533,16 @@ _erfa_ld(PyObject *self, PyObject *args)
         goto fail;
     }
     ndim = PyArray_NDIM(ap);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
     dims = PyArray_DIMS(ap);
-    if (dims[0] != PyArray_DIMS(abm)[0] || dims[0] != PyArray_DIMS(ap)[0] ||
+    if (dims[0] != PyArray_DIMS(ap)[0] ||
         dims[0] != PyArray_DIMS(aq)[0] || dims[0] != PyArray_DIMS(ae)[0] ||
         dims[0] != PyArray_DIMS(aem)[0] || dims[0] != PyArray_DIMS(adlim)[0]) {
         PyErr_SetString(_erfaError, "arguments have not the same shape");
-        return NULL;
+        goto fail;
     }    
     pyp1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     if (NULL == pyp1) {
@@ -589,7 +603,7 @@ _erfa_apcs(PyObject *self, PyObject *args)
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
-    int i;
+    int ndim, i;
     eraASTROM astrom;
     if (!PyArg_ParseTuple(args, "O!O!O!O!O!",
                                  &PyArray_Type, &pydate1,
@@ -601,6 +615,11 @@ _erfa_apcs(PyObject *self, PyObject *args)
     adate1 = PyArray_FROM_OTF(pydate1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
     adate2 = PyArray_FROM_OTF(pydate2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
     if (adate1 == NULL || adate2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(adate1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
         goto fail;
     }
     dims = PyArray_DIMS(adate1);
@@ -623,7 +642,7 @@ _erfa_apcs(PyObject *self, PyObject *args)
             aehp = PyArray_GETITEM(pyehp, PyArray_ITER_DATA(ehp_iter));
             Py_INCREF(aehp);
             h = (double)PyFloat_AsDouble(aehp);
-            if (h == -1 && PyErr_Occurred()) return NULL;
+            if (h == -1 && PyErr_Occurred()) goto fail;
             ehp[l] = h;
             Py_DECREF(aehp);
             PyArray_ITER_NEXT(ehp_iter);
@@ -726,6 +745,10 @@ _erfa_pmsafe(PyObject *self, PyObject *args)
         goto fail;
     }
     ndim = PyArray_NDIM(ara1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
     dims = PyArray_DIMS(ara1);
     if (dims[0] != PyArray_DIMS(adec1)[0] ||
         dims[0] != PyArray_DIMS(apmr1)[0] || dims[0] != PyArray_DIMS(apmd1)[0] ||
@@ -769,19 +792,19 @@ _erfa_pmsafe(PyObject *self, PyObject *args)
                       &ra2[i], &dec2[i], &pmr2[i], &pmd2[i], &px2[i], &rv2[i]);
         if (j == -1) {
             PyErr_SetString(_erfaError, "system error (should not occur)");
-            return NULL;
+            goto fail;
         }
         else if (j == 1) {
             PyErr_SetString(_erfaError, "distance overridden");
-            return NULL;
+            goto fail;
         }
         else if (j == 2) {
             PyErr_SetString(_erfaError, "excessive velocity");
-            return NULL;
+            goto fail;
         }
         else if (j == 4) {
             PyErr_SetString(_erfaError, "solution didn't converge");
-            return NULL;
+            goto fail;
         }
     }
     Py_DECREF(ara1);
@@ -868,6 +891,10 @@ _erfa_obl80(PyObject *self, PyObject *args)
         goto fail;
     }
     ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
     dims = PyArray_DIMS(ad1);
     d1 = (double *)PyArray_DATA(ad1);
     d2 = (double *)PyArray_DATA(ad2);
@@ -931,6 +958,10 @@ _erfa_nut80(PyObject *self, PyObject *args)
         goto fail;
     }
     ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
     dims = PyArray_DIMS(ad1);
     d1 = (double *)PyArray_DATA(ad1);
     d2 = (double *)PyArray_DATA(ad2);
@@ -949,7 +980,6 @@ _erfa_nut80(PyObject *self, PyObject *args)
             goto fail;
         }
         PyArray_ITER_NEXT(out_iter);
-        eraNut80(d1[i], d2[i], &dpsi, &deps);
         if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(deps))) {
             PyErr_SetString(_erfaError, "unable to set deps");
             goto fail;
@@ -1000,6 +1030,10 @@ _erfa_plan94(PyObject *self, PyObject *args)
         goto fail;
     }
     ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
     dims = PyArray_DIMS(ad1);
     d1 = (double *)PyArray_DATA(ad1);
     d2 = (double *)PyArray_DATA(ad2);
@@ -1012,13 +1046,14 @@ _erfa_plan94(PyObject *self, PyObject *args)
     }
     cpv = (double **)PyArray_DATA(pyout);
     if (NULL == cpv) {
+        Py_DECREF(cpv);
         goto fail;
     }
     for (i=0;i<dims[0];i++) {
         status = eraPlan94(d1[i], d2[i], np, &cpv[i*6]);
         if (status == -1) {
             PyErr_SetString(_erfaError, "illegal np,  not in range(1,8) for planet");
-            return NULL;
+            goto fail;
         }
         switch (status) {
         case 1:
@@ -1040,7 +1075,6 @@ _erfa_plan94(PyObject *self, PyObject *args)
 fail:
     Py_XDECREF(ad1);
     Py_XDECREF(ad2);
-    Py_XDECREF(cpv);
     Py_XDECREF(pyout);
     return NULL;
 }
@@ -1063,10 +1097,9 @@ _erfa_pmat76(PyObject *self, PyObject *args)
 {
     double *d1, *d2, rmatp[3][3];
     PyObject *pyd1, *pyd2;
-    PyObject *ad1, *ad2, *aid;
+    PyObject *ad1, *ad2;
     PyArrayObject *pyout = NULL;
     PyObject *out_iter = NULL;
-    //char *item;
     PyArray_Descr *dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims, dim_out[3];
@@ -1081,7 +1114,7 @@ _erfa_pmat76(PyObject *self, PyObject *args)
     ndim = PyArray_NDIM(ad1);
     if (!ndim) {
         PyErr_SetString(_erfaError, "argument is ndarray of length 0");
-        return NULL;
+        goto fail;
     }
     dims = PyArray_DIMS(ad1);
     dim_out[0] = dims[0];
@@ -1161,11 +1194,15 @@ _erfa_s00(PyObject *self, PyObject *args)
         goto fail;
     }
     ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
     dims = PyArray_DIMS(ad1);
     if (dims[0] != PyArray_DIMS(ad1)[0] || dims[0] != PyArray_DIMS(ad2)[0] ||
         dims[0] != PyArray_DIMS(ax)[0] || dims[0] != PyArray_DIMS(ay)[0]) {
         PyErr_SetString(_erfaError, "arguments have not the same shape");
-        return NULL;
+        goto fail;
     }    
 
     pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
@@ -1228,10 +1265,14 @@ _erfa_xys06a(PyObject *self, PyObject *args)
         goto fail;
     }
     ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
     dims = PyArray_DIMS(ad1);
     if (dims[0] != PyArray_DIMS(ad1)[0] || dims[0] != PyArray_DIMS(ad2)[0]) {
         PyErr_SetString(_erfaError, "arguments have not the same shape");
-        return NULL;
+        goto fail;
     }    
 
     pyx = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);

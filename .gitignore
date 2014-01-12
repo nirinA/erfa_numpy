@@ -4,5 +4,6 @@ build
 __pycache__
 erfa_def*
 src/_erfamodule_1.c
+src/_erfamodule_2.c
 command.txt
 erfa?.py
