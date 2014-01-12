@@ -43,6 +43,7 @@ def ld(bm, p, q, e, em, dlim):
     check_args(bm, p, q, e, em, dlim)
     return _erfa.ld(bm, p, q, e, em, dlim)
 
+## Astronomy/SpaceMotion 
 def pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b):
     check_args(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
     return _erfa.pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
@@ -63,6 +64,10 @@ def c2ixys(x, y, s):
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)
+
+def nut00a(d1, d2):
+    check_args(d1, d2)
+    return _erfa.nut00a(d1, d2)
 
 def nut80(d1, d2):
     check_args(d1, d2)

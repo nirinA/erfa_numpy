@@ -80,6 +80,7 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(p1[1], -0.6086337670823762701, places=12)
         self.assertAlmostEqual(p1[2], -0.2167355431320546947, places=12)
 
+## Astronomy/SpaceMotion 
     def test_pmsafe(self):
         ra1 = np.array([1.234])
         dec1 = np.array([0.789])
@@ -142,6 +143,11 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rmatn[2][1], 0.4063237480216934159e-4, places=12)
         self.assertAlmostEqual(rmatn[2][2], 0.9999999991671660407, places=12)
 
+    def test_nut00a(self):
+        dpsi, deps = erfa.nut00a(np.array([2400000.5]), np.array([53736.0]))
+        self.assertAlmostEqual(dpsi[0], -0.9630909107115518431e-5, 13)
+        self.assertAlmostEqual(deps[0], 0.4063239174001678710e-4, 13)
+        
     def test_nut80(self):
         dpsi, deps = erfa.nut80(np.array([2400000.5]), np.array([53736.0]))
         self.assertAlmostEqual(dpsi[0], -0.9643658353226563966e-5, 13)
