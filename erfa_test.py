@@ -189,6 +189,11 @@ class Validate(unittest.TestCase):
         ee = erfa.eqeq94(np.array([2400000.5]), np.array([41234.0]))
         self.assertAlmostEqual(ee[0], 0.5357758254609256894e-4, 17)
 
+    def test_gmst82(self):
+        g = erfa.gmst82(np.array([2400000.5]), np.array([53736.0]))
+        self.assertAlmostEqual(g[0], 1.754174981860675096, 14)
+        
+
 ## VectorMatrix/MatrixOps
     def test_rxr(self):
         a = np.array([

@@ -88,6 +88,10 @@ def eqeq94(d1, d2):
     check_args(d1, d2)
     return _erfa.eqeq94(d1, d2)
 
+def gmst82(d1, d2):
+    check_args(d1, d2)
+    return _erfa.gmst82(d1, d2)
+
 ## VectorMatrix/MatrixOps
 def anp(a):
     check_args(a)
