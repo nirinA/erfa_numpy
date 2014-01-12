@@ -1011,6 +1011,63 @@ PyDoc_STRVAR(_erfa_eqeq94_doc,
 "    ee         equation of the equinoxes");
 
 static PyObject *
+_erfa_era00(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *era;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2)) {
+        return NULL;
+    }
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyout) {
+        goto fail;
+    }
+    era = (double *)PyArray_DATA(pyout);
+    for (i=0;i<dims[0];i++) {
+        era[i] = eraEra00(d1[i], d2[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pyout);
+    return NULL;    
+}
+
+PyDoc_STRVAR(_erfa_era00_doc,
+"\nera00(d1,d2) -> era\n\n"
+"Earth rotation angle (IAU 2000 model).\n"
+"Given:\n"
+"    d1,d2      UT1 as 2-part Julian Date (d1,d2)\n"
+"Returned:\n"
+"    era         Earth rotation angle (radians), range 0-2pi");
+
+static PyObject *
 _erfa_gmst82(PyObject *self, PyObject *args)
 {
     double *d1, *d2, *g;
@@ -1297,7 +1354,7 @@ _erfa_plan94(PyObject *self, PyObject *args)
 {
     double *d1, *d2, pv[2][3];
     PyObject *pyd1, *pyd2;
-    PyObject *ad1, *ad2, *pv_result;
+    PyObject *ad1, *ad2;
     PyArrayObject *pyout = NULL;
     PyObject *out_iter = NULL;
     int np, status;
@@ -2133,6 +2190,7 @@ static PyMethodDef _erfa_methods[] = {
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
     {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
     {"eqeq94", _erfa_eqeq94, METH_VARARGS, _erfa_eqeq94_doc},
+    {"era00", _erfa_era00, METH_VARARGS, _erfa_era00_doc},
     {"gmst82", _erfa_gmst82, METH_VARARGS, _erfa_gmst82_doc},
     {"numat", _erfa_numat, METH_VARARGS, _erfa_numat_doc},
     {"obl80", _erfa_obl80, METH_VARARGS, _erfa_obl80_doc},

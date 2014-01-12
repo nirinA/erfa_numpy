@@ -150,7 +150,7 @@ class Validate(unittest.TestCase):
     def test_obl80(self):
         obl = erfa.obl80(np.array([2400000.5]), np.array([54388.0]))
         self.assertAlmostEqual(obl[0], 0.4090751347643816218, 14)
-##
+        
     def test_plan94(self):
         self.assertRaises(_erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 0)
         self.assertRaises(_erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 10)
@@ -213,6 +213,10 @@ class Validate(unittest.TestCase):
     def test_eqeq94(self):
         ee = erfa.eqeq94(np.array([2400000.5]), np.array([41234.0]))
         self.assertAlmostEqual(ee[0], 0.5357758254609256894e-4, 17)
+
+    def test_era00(self):
+        era = erfa.era00(np.array([2400000.5]), np.array([54388.0]))
+        self.assertAlmostEqual(era[0], 0.4022837240028158102, 12)
 
     def test_gmst82(self):
         g = erfa.gmst82(np.array([2400000.5]), np.array([53736.0]))
