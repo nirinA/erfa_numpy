@@ -649,6 +649,90 @@ PyDoc_STRVAR(_erfa_pmsafe_doc,
 "    rv2    radial velocity (km/s, +ve = receding), after");
 
 static PyObject *
+_erfa_c2ixys(PyObject *self, PyObject *args)
+{
+    double *x, *y, *s, rc2i[3][3];
+    PyObject *pyx, *pyy, *pys;
+    PyObject *ax, *ay, *as;
+    PyArrayObject *pyout = NULL;
+    PyObject *out_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!", 
+                                 &PyArray_Type, &pyx,
+                                 &PyArray_Type, &pyy,
+                                 &PyArray_Type, &pys))
+        return NULL;
+
+    ax = PyArray_FROM_OTF(pyx, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ay = PyArray_FROM_OTF(pyy, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    as = PyArray_FROM_OTF(pys, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (as == NULL || ax == NULL || ay == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ax);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ax);
+    if (dims[0] != PyArray_DIMS(as)[0] || dims[0] != PyArray_DIMS(ay)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    x = (double *)PyArray_DATA(ax);
+    y = (double *)PyArray_DATA(ay);
+    s = (double *)PyArray_DATA(as);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyout = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyout) goto fail;
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    if (out_iter == NULL) goto fail;
+
+    for (i=0;i<dims[0];i++) {
+        eraC2ixys(x[i], y[i], s[i], rc2i);
+        int j,k;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {            
+                if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(rc2i[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rc2i");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(out_iter);
+            }
+        }
+    }
+    Py_DECREF(ax);
+    Py_DECREF(ay);
+    Py_DECREF(as);
+    Py_DECREF(out_iter);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(ax);
+    Py_XDECREF(ay);
+    Py_XDECREF(as);
+    Py_XDECREF(out_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_c2ixys_doc,
+"\nc2ixys(x, y, s) -> rc2i\n\n"
+"Form the celestial to intermediate-frame-of-date matrix\n"
+" given the CIP X,Y and the CIO locator s.\n"
+"Given:\n"
+"    x, y       Celestial Intermediate Pole\n"
+"    s          CIO locator \n"
+"Returned:\n"
+"   rc2i        celestial-to-intermediate matrix");
+
+static PyObject *
 _erfa_cal2jd(PyObject *self, PyObject *args)
 {
     int *iy, *im, *id;
@@ -2028,6 +2112,7 @@ static PyMethodDef _erfa_methods[] = {
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
+    {"c2ixys", _erfa_c2ixys, METH_VARARGS, _erfa_c2ixys_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
     {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},

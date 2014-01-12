@@ -108,6 +108,23 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(d[0], 33.0, 9)
 
 ## Astronomy/PrecNutPolar
+    def test_c2ixys(self):
+        x =  np.array([0.5791308486706011000e-3])
+        y =  np.array([0.4020579816732961219e-4])
+        s = np.array([-0.1220040848472271978e-7])
+        rc2i = erfa.c2ixys(x, y, s)[0]
+        self.assertAlmostEqual(rc2i[0][0], 0.9999998323037157138, places=12)
+        self.assertAlmostEqual(rc2i[0][1], 0.5581984869168499149e-9, places=12)
+        self.assertAlmostEqual(rc2i[0][2], -0.5791308491611282180e-3, places=12)
+
+        self.assertAlmostEqual(rc2i[1][0], -0.2384261642670440317e-7, places=12)
+        self.assertAlmostEqual(rc2i[1][1], 0.9999999991917468964, places=12)
+        self.assertAlmostEqual(rc2i[1][2], -0.4020579110169668931e-4, places=12)
+
+        self.assertAlmostEqual(rc2i[2][0], 0.5791308486706011000e-3, places=12)
+        self.assertAlmostEqual(rc2i[2][1], 0.4020579816732961219e-4, places=12)
+        self.assertAlmostEqual(rc2i[2][2], 0.9999998314954627590, places=12)
+
     def test_numat(self):
         epsa =  np.array([0.4090789763356509900])
         dpsi = np.array([-0.9630909107115582393e-5])

@@ -56,6 +56,10 @@ def d_tai_utc(iy, im, id, fd):
     return _erfa.dat(iy, im, id, fd)
 
 ## Astronomy/PrecNutPolar
+def c2ixys(x, y, s):
+    check_args(x, y, s)
+    return _erfa.c2ixys(x, y, s)
+
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)
