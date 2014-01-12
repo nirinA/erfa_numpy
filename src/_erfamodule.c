@@ -869,6 +869,88 @@ PyDoc_STRVAR(_erfa_pmsafe_doc,
 "    rv2    radial velocity (km/s, +ve = receding), after");
 
 static PyObject *
+_erfa_numat(PyObject *self, PyObject *args)
+{
+    double *epsa, *dpsi, *deps, rmatn[3][3];
+    PyObject *pyepsa, *pydpsi, *pydeps;
+    PyObject *aepsa, *adpsi, *adeps;
+    PyArrayObject *pyout = NULL;
+    PyObject *out_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                                 &PyArray_Type, &pyepsa,
+                                 &PyArray_Type, &pydpsi,
+                                 &PyArray_Type, &pydeps)) {
+        return NULL;
+    }
+    aepsa = PyArray_FROM_OTF(pyepsa, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adpsi = PyArray_FROM_OTF(pydpsi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adeps = PyArray_FROM_OTF(pydeps, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aepsa == NULL || adpsi == NULL || adeps == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aepsa);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aepsa);
+    if (dims[0] != PyArray_DIMS(adpsi)[0] || dims[0] != PyArray_DIMS(adeps)[0]) {
+        PyErr_SetString(_erfaError, "arguments have not the same shape");
+        goto fail;
+    }    
+    epsa = (double *)PyArray_DATA(aepsa);
+    dpsi = (double *)PyArray_DATA(adpsi);
+    deps = (double *)PyArray_DATA(adeps);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyout = (PyArrayObject *)PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyout)  goto fail;
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    if (out_iter == NULL) goto fail;
+
+    for (i=0;i<dims[0];i++) {
+        eraNumat(epsa[i], dpsi[i], deps[i], rmatn);
+        int j,k;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {            
+                if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(rmatn[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rmatp");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(out_iter);
+            }
+        }
+    }
+    Py_DECREF(aepsa);
+    Py_DECREF(adpsi);
+    Py_DECREF(adeps);
+    Py_DECREF(out_iter);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(aepsa);
+    Py_XDECREF(adpsi);
+    Py_XDECREF(adeps);
+    Py_XDECREF(out_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_numat_doc,
+"\nnumat(epsa, dpsi, deps) -> rmatn\n\n"
+"Form the matrix of nutation.\n"
+"Given:\n"
+"     epsa          mean obliquity of date\n"
+"     dpsi,deps     nutation\n"
+"Returned:\n"
+"     rmatn         nutation matrix");
+
+static PyObject *
 _erfa_obl80(PyObject *self, PyObject *args)
 {
     double *d1, *d2, obl;
@@ -1318,6 +1400,7 @@ static PyMethodDef _erfa_methods[] = {
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
+    {"numat", _erfa_numat, METH_VARARGS, _erfa_numat_doc},
     {"obl80", _erfa_obl80, METH_VARARGS, _erfa_obl80_doc},
     {"nut80", _erfa_nut80, METH_VARARGS, _erfa_nut80_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},

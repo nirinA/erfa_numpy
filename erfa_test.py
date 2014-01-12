@@ -108,6 +108,23 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(d[0], 33.0, 9)
 
 ## Astronomy/PrecNutPolar
+    def test_numat(self):
+        epsa =  np.array([0.4090789763356509900])
+        dpsi = np.array([-0.9630909107115582393e-5])
+        deps =  np.array([0.4063239174001678826e-4])
+        rmatn = erfa.numat(epsa, dpsi, deps)[0]
+        self.assertAlmostEqual(rmatn[0][0], 0.9999999999536227949, places=12)
+        self.assertAlmostEqual(rmatn[0][1], 0.8836239320236250577e-5, places=12)
+        self.assertAlmostEqual(rmatn[0][2], 0.3830833447458251908e-5, places=12)
+
+        self.assertAlmostEqual(rmatn[1][0], -0.8836083657016688588e-5, places=12)
+        self.assertAlmostEqual(rmatn[1][1], 0.9999999991354654959, places=12)
+        self.assertAlmostEqual(rmatn[1][2], -0.4063240865361857698e-4, places=12)
+
+        self.assertAlmostEqual(rmatn[2][0], -0.3831192481833385226e-5, places=12)
+        self.assertAlmostEqual(rmatn[2][1], 0.4063237480216934159e-4, places=12)
+        self.assertAlmostEqual(rmatn[2][2], 0.9999999991671660407, places=12)
+
     def test_nut80(self):
         dpsi, deps = erfa.nut80(np.array([2400000.5]), np.array([53736.0]))
         self.assertAlmostEqual(dpsi[0], -0.9643658353226563966e-5, 13)
@@ -166,6 +183,25 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(x[0], 0.5791308482835292617e-3, places=16)
         self.assertAlmostEqual(y[0], 0.4020580099454020310e-4, places=15)
         self.assertAlmostEqual(s[0], -0.1220032294164579896e-7, places=19)
+
+#### VectorMatrix/MatrixOps
+##    def test_rxr(self):
+##        a = ((2.0,3.0,2.0),
+##             (3.0,2.0,3.0),
+##             (3.0,4.0,5.0))
+##        b = ((1.0,2.0,2.0),
+##             (4.0,1.0,1.0),
+##             (3.0,0.0,1.0))
+##        atb = erfa.rxr(a, b)
+##        self.assertAlmostEqual(atb[0][0], 20.0, places=12)
+##        self.assertAlmostEqual(atb[0][1],  7.0, places=12)
+##        self.assertAlmostEqual(atb[0][2],  9.0, places=12)
+##        self.assertAlmostEqual(atb[1][0], 20.0, places=12)
+##        self.assertAlmostEqual(atb[1][1],  8.0, places=12)
+##        self.assertAlmostEqual(atb[1][2], 11.0, places=12)
+##        self.assertAlmostEqual(atb[2][0], 34.0, places=12)
+##        self.assertAlmostEqual(atb[2][1], 10.0, places=12)
+##        self.assertAlmostEqual(atb[2][2], 15.0, places=12)
 
 support.run_unittest(Validate)
 
