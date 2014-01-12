@@ -83,6 +83,11 @@ def xys06a(d1, d2):
     check_args(d1, d2)
     return _erfa.xys06a(d1, d2)
 
+## Astronomy/RotationAndTime
+def eqeq94(d1, d2):
+    check_args(d1, d2)
+    return _erfa.eqeq94(d1, d2)
+
 ## VectorMatrix/MatrixOps
 def rxr(a, b):
     check_args(a, b)
