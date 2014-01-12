@@ -194,6 +194,24 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(g[0], 1.754174981860675096, 14)
 
 ## VectorMatrix/BuildRotations 
+    def test_ry(self):
+        theta = np.array([0.3456789])
+        r = np.array([
+            [[2.0,3.0,2.0],
+             [3.0,2.0,3.0],
+             [3.0,4.0,5.0]]
+            ])
+        r = erfa.ry(theta, r)[0]
+        self.assertAlmostEqual(r[0][0], 0.8651847818978159930, places=12)
+        self.assertAlmostEqual(r[0][1], 1.467194920539316554, places=12)
+        self.assertAlmostEqual(r[0][2], 0.1875137911274457342, places=12)
+        self.assertAlmostEqual(r[1][0], 3, places=12)
+        self.assertAlmostEqual(r[1][1], 2, places=12)
+        self.assertAlmostEqual(r[1][2], 3, places=12)
+        self.assertAlmostEqual(r[2][0], 3.500207892850427330, places=12)
+        self.assertAlmostEqual(r[2][1], 4.779889022262298150, places=12)
+        self.assertAlmostEqual(r[2][2], 5.381899160903798712, places=12)
+
     def test_rz(self):
         psi = np.array([0.3456789])
         r = np.array([
