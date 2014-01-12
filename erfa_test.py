@@ -184,24 +184,28 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(y[0], 0.4020580099454020310e-4, places=15)
         self.assertAlmostEqual(s[0], -0.1220032294164579896e-7, places=19)
 
-#### VectorMatrix/MatrixOps
-##    def test_rxr(self):
-##        a = ((2.0,3.0,2.0),
-##             (3.0,2.0,3.0),
-##             (3.0,4.0,5.0))
-##        b = ((1.0,2.0,2.0),
-##             (4.0,1.0,1.0),
-##             (3.0,0.0,1.0))
-##        atb = erfa.rxr(a, b)
-##        self.assertAlmostEqual(atb[0][0], 20.0, places=12)
-##        self.assertAlmostEqual(atb[0][1],  7.0, places=12)
-##        self.assertAlmostEqual(atb[0][2],  9.0, places=12)
-##        self.assertAlmostEqual(atb[1][0], 20.0, places=12)
-##        self.assertAlmostEqual(atb[1][1],  8.0, places=12)
-##        self.assertAlmostEqual(atb[1][2], 11.0, places=12)
-##        self.assertAlmostEqual(atb[2][0], 34.0, places=12)
-##        self.assertAlmostEqual(atb[2][1], 10.0, places=12)
-##        self.assertAlmostEqual(atb[2][2], 15.0, places=12)
+## VectorMatrix/MatrixOps
+    def test_rxr(self):
+        a = np.array([
+            [[2.0,3.0,2.0],
+             [3.0,2.0,3.0],
+             [3.0,4.0,5.0]]
+            ])
+        b = np.array([
+            [[1.0,2.0,2.0],
+             [4.0,1.0,1.0],
+             [3.0,0.0,1.0]]
+            ])
+        atb = erfa.rxr(a, b)[0]
+        self.assertAlmostEqual(atb[0][0], 20.0, places=12)
+        self.assertAlmostEqual(atb[0][1],  7.0, places=12)
+        self.assertAlmostEqual(atb[0][2],  9.0, places=12)
+        self.assertAlmostEqual(atb[1][0], 20.0, places=12)
+        self.assertAlmostEqual(atb[1][1],  8.0, places=12)
+        self.assertAlmostEqual(atb[1][2], 11.0, places=12)
+        self.assertAlmostEqual(atb[2][0], 34.0, places=12)
+        self.assertAlmostEqual(atb[2][1], 10.0, places=12)
+        self.assertAlmostEqual(atb[2][2], 15.0, places=12)
 
 support.run_unittest(Validate)
 

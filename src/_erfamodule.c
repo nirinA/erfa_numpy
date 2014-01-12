@@ -1352,7 +1352,7 @@ _erfa_xys06a(PyObject *self, PyObject *args)
         goto fail;
     }
     dims = PyArray_DIMS(ad1);
-    if (dims[0] != PyArray_DIMS(ad1)[0] || dims[0] != PyArray_DIMS(ad2)[0]) {
+    if (dims[0] != PyArray_DIMS(ad2)[0]) {
         PyErr_SetString(_erfaError, "arguments have not the same shape");
         goto fail;
     }    
@@ -1391,6 +1391,102 @@ PyDoc_STRVAR(_erfa_xys06a_doc,
 "   x,y     Celestial Intermediate Pole\n"
 "   s       the CIO locator s");
 
+static PyObject *
+_erfa_rxr(PyObject *self, PyObject *args)
+{
+    double a[3][3], b[3][3], atb[3][3];
+    PyObject *pya, *pyb;
+    PyObject *aa = NULL, *ab = NULL;
+    PyArrayObject *pyatb = NULL;
+    PyObject *a_iter = NULL, *b_iter = NULL, *atb_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pya,
+                                 &PyArray_Type, &pyb))      
+        return NULL;
+    ndim = PyArray_NDIM(pya);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pya);
+    if (dims[0] != PyArray_DIMS(pyb)[0]) {
+        PyErr_SetString(_erfaError, "arguments have not the same shape");
+        goto fail;
+    }    
+    pyatb = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyatb) goto fail;
+    a_iter = PyArray_IterNew((PyObject *)pya);
+    b_iter = PyArray_IterNew((PyObject *)pyb);
+    atb_iter = PyArray_IterNew((PyObject *)pyatb);
+    if (a_iter == NULL || b_iter == NULL || atb_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        double va, vb;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {
+                aa = PyArray_GETITEM(pya, PyArray_ITER_DATA(a_iter));
+                ab = PyArray_GETITEM(pyb, PyArray_ITER_DATA(b_iter));
+                if (aa == NULL || ab == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(aa);Py_INCREF(ab);
+                va = (double)PyFloat_AsDouble(aa);
+                if (va == -1 && PyErr_Occurred()) goto fail;
+                a[j][k] = va;
+                vb = (double)PyFloat_AsDouble(ab);
+                if (vb == -1 && PyErr_Occurred()) goto fail;
+                b[j][k] = vb;
+                Py_DECREF(aa);Py_DECREF(ab);
+                PyArray_ITER_NEXT(a_iter); 
+                PyArray_ITER_NEXT(b_iter); 
+            }
+        }
+        eraRxr(a, b, atb);
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {            
+                if (PyArray_SETITEM(pyatb, PyArray_ITER_DATA(atb_iter), PyFloat_FromDouble(atb[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set output atb");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(atb_iter);
+            }
+        }
+    }
+    Py_DECREF(aa);
+    Py_DECREF(ab);
+    Py_DECREF(a_iter);
+    Py_DECREF(b_iter);
+    Py_DECREF(atb_iter);
+    Py_INCREF(pyatb);
+    return (PyObject *)pyatb;    
+
+fail:
+    Py_XDECREF(aa);
+    Py_XDECREF(ab);
+    Py_XDECREF(a_iter);
+    Py_XDECREF(b_iter);
+    Py_XDECREF(atb_iter);
+    Py_XDECREF(pyatb);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_rxr_doc,
+"\nrxr(a, b -> atb\n\n"
+"Multiply two r-matrices.\n"
+"Given:\n"
+"   a           first r-matrix\n"
+"   b           second r-matrix\n"
+"Returned:\n"
+"   atb         a * b");
+
 
 static PyMethodDef _erfa_methods[] = {
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
@@ -1407,6 +1503,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
+    {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
     {NULL,		NULL}		/* sentinel */
 };
 

@@ -84,4 +84,6 @@ def xys06a(d1, d2):
     return _erfa.xys06a(d1, d2)
 
 ## VectorMatrix/MatrixOps
-def rxr():pass
+def rxr(a, b):
+    check_args(a, b)
+    return _erfa.rxr(a, b)
