@@ -15,6 +15,7 @@ numpy version > 1.6
 installation
 ===
   ::
+
       python setup.py install
 
 ===
@@ -22,6 +23,7 @@ examples
 ===
 
   ::
+
       >>> import erfa
       >>> import numpy as np
       >>> pnat = np.array([(-0.76321968546737951,-0.60869453983060384,-0.21676408580639883)])
