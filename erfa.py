@@ -93,6 +93,10 @@ def gmst82(d1, d2):
     return _erfa.gmst82(d1, d2)
 
 ## VectorMatrix/BuildRotations 
+def rx(phi, r):
+    check_args(phi, r)
+    return _erfa.rx(phi, r)
+
 def ry(theta, r):
     check_args(theta, r)
     return _erfa.ry(theta, r)
