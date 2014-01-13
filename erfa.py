@@ -155,6 +155,11 @@ def gmst82(d1, d2):
     check_args(d1, d2)
     return _erfa.gmst82(d1, d2)
 
+## VectorMatrix/AngleOps
+def a2af(n, a):
+    check_args(a)
+    return _erfa.a2af(n, a)
+
 ## VectorMatrix/BuildRotations 
 def rx(phi, r):
     check_args(phi, r)

@@ -66,7 +66,6 @@ _to_py_scalar(double v)
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp dims[] = {1};
-    int j;
     pyout = (PyArrayObject *) PyArray_Zeros(1, dims, dsc, 0);
     if (NULL == pyout)  return NULL;
     cv = (double *)PyArray_DATA(pyout);
@@ -187,6 +186,34 @@ _to_py_astrom(eraASTROM *a)
     }
 #undef SET
     return v;
+}
+
+static PyObject *
+_a2af_object(char sign, int idmsf[4])
+{
+    int *a;
+    PyArrayObject *pyout;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_INT);
+    npy_intp dims[] = {4};
+    int j;
+    pyout=(PyArrayObject *) PyArray_NewFromDescr(&PyArray_Type,
+                                                 dsc,
+                                                 1,
+                                                 dims,
+                                                 NULL,
+                                                 NULL,
+                                                 0,
+                                                 NULL);
+    if (NULL == pyout) return NULL;
+    a = (int *)PyArray_DATA(pyout);
+    for(j=0;j<4;j++) a[j] = idmsf[j];
+    Py_INCREF(pyout);                     
+#if PY_VERSION_HEX >= 0x03000000
+    return Py_BuildValue("CO", sign, pyout);
+#else
+    return Py_BuildValue("cO", sign, pyout);
+#endif
 }
 
 static PyStructSequence_Field ASTROM_type_fields[] = {
@@ -2630,6 +2657,59 @@ PyDoc_STRVAR(_erfa_xys06a_doc,
 "   s       the CIO locator s");
 
 static PyObject *
+_erfa_a2af(PyObject *self, PyObject *args)
+{
+    int ndp, idmsf[4];
+    char sign;
+    double *a;
+    PyObject *pya;
+    PyObject *aa = NULL, *pyout = NULL;
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "iO!", &ndp, &PyArray_Type, &pya))      
+        return NULL;
+    ndim = PyArray_NDIM(pya);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pya);
+    aa = PyArray_FROM_OTF(pya, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aa == NULL) goto fail;
+    pyout = PyList_New(dims[0]);
+    if (NULL == pyout)  goto fail;
+    a = (double *)PyArray_DATA(aa);
+    for (i=0;i<dims[0];i++) {
+        eraA2af(ndp, a[i], &sign, idmsf);
+        if (PyList_SetItem(pyout, i, _a2af_object(sign, idmsf))) {
+            PyErr_SetString(_erfaError, "cannot set a2af into list");
+            goto fail;
+        }
+    }
+    Py_DECREF(aa);
+    Py_INCREF(pyout);
+    return (PyObject*)pyout;
+
+fail:
+    Py_XDECREF(aa);
+    Py_XDECREF(pyout);
+    return NULL;  
+}
+
+PyDoc_STRVAR(_erfa_a2af_doc,
+"\na2af(n, a) -> +/-, d, m, s, f\n\n"
+"Decompose radians into degrees, arcminutes, arcseconds, fraction.\n"
+"Given:\n"
+"   n           resolution\n"
+"   a           angle in radians\n"
+"Returned:\n"
+"   sign        '+' or '-'\n"
+"   d           degrees\n"
+"   m           arcminutes\n"
+"   s           arcseconds\n"
+"   f           fraction");
+
+static PyObject *
 _erfa_anp(PyObject *self, PyObject *args)
 {
     double *a, *out;
@@ -3210,6 +3290,7 @@ static PyMethodDef _erfa_methods[] = {
     {"xy06", _erfa_xy06, METH_VARARGS, _erfa_xy06_doc},
     {"xys00a", _erfa_xys00a, METH_VARARGS, _erfa_xys00a_doc},
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
+    {"a2af", _erfa_a2af, METH_VARARGS, _erfa_a2af_doc},
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
     {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},
     {"rxp", _erfa_rxp, METH_VARARGS, _erfa_rxp_doc},
