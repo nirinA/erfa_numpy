@@ -1031,53 +1031,127 @@ PyDoc_STRVAR(_erfa_dat_doc,
 "    deltat     TAI minus UTC, seconds");
 
 static PyObject *
-_erfa_epb2jd(PyObject *self, PyObject *args)
+_erfa_dtf2d(PyObject *self, PyObject *args)
 {
-    double *epb, *jd0, *jd1;
-    PyObject *pyepb;
-    PyObject *aepb;
-    PyArrayObject *pyjd0 = NULL, *pyjd1 = NULL;
-    PyArray_Descr * dsc;
+    int *iy, *im, *id, *ihr, *imn, status;
+    double *sec, *d1, *d2;
+    char *scale;
+    PyObject *pyiy, *pyim, *pyid, *pyihr, *pyimn, *pysec;
+    PyObject *aiy, *aim, *aid, *aihr, *aimn, *asec;
+    PyArrayObject *pyd1 = NULL, *pyd2 = NULL;
+    PyArray_Descr *dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
     int ndim, i;
-    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyepb))
+    if (!PyArg_ParseTuple(args, "sO!O!O!O!O!O!",
+                                 &scale,
+                                 &PyArray_Type, &pyiy,
+                                 &PyArray_Type, &pyim,
+                                 &PyArray_Type, &pyid,
+                                 &PyArray_Type, &pyihr,
+                                 &PyArray_Type, &pyimn,
+                                 &PyArray_Type, &pysec))
         return NULL;
-    aepb = PyArray_FROM_OTF(pyepb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    if (aepb == NULL) goto fail;
-    ndim = PyArray_NDIM(aepb);
+    aiy = PyArray_FROM_OTF(pyiy, NPY_INT32, NPY_ARRAY_IN_ARRAY);
+    aim = PyArray_FROM_OTF(pyim, NPY_INT32, NPY_ARRAY_IN_ARRAY);
+    aid = PyArray_FROM_OTF(pyid, NPY_INT32, NPY_ARRAY_IN_ARRAY);
+    aihr = PyArray_FROM_OTF(pyihr, NPY_INT32, NPY_ARRAY_IN_ARRAY);
+    aimn = PyArray_FROM_OTF(pyimn, NPY_INT32, NPY_ARRAY_IN_ARRAY);
+    asec = PyArray_FROM_OTF(pysec, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (NULL == aiy || NULL == aim || NULL == aid ||
+        NULL == aihr || NULL == aim || NULL == asec) goto fail;
+    ndim = PyArray_NDIM(aiy);
     if (!ndim) {
         PyErr_SetString(_erfaError, "argument is ndarray of length 0");
         goto fail;
-    }            
-    dims = PyArray_DIMS(aepb);
-    pyjd0 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
-    pyjd1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
-    if (NULL == pyjd0 || NULL == pyjd1)  goto fail;
-    epb = (double *)PyArray_DATA(aepb);
-    jd0 = (double *)PyArray_DATA(pyjd0);
-    jd1 = (double *)PyArray_DATA(pyjd1);
-    for (i=0;i<dims[0];i++) {
-        eraEpb2jd(epb[i], &jd0[i], &jd1[i]);
     }
-    Py_DECREF(aepb);
-    Py_INCREF(pyjd0);
-    Py_INCREF(pyjd1);
-    return Py_BuildValue("OO", pyjd0, pyjd1);
+    dims = PyArray_DIMS(aiy);
+    pyd1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyd2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyd1 || NULL == pyd2) {
+        goto fail;
+    }
+    iy = (int *)PyArray_DATA(aiy);
+    im = (int *)PyArray_DATA(aim);
+    id = (int *)PyArray_DATA(aid);
+    ihr = (int *)PyArray_DATA(aihr);
+    imn = (int *)PyArray_DATA(aimn);
+    sec = (double *)PyArray_DATA(asec);
+    d1 = (double *)PyArray_DATA(pyd1);
+    d2 = (double *)PyArray_DATA(pyd2);
+
+    for (i=0;i<dims[0];i++) {
+        status = eraDtf2d(scale, iy[i], im[i], id[i], ihr[i], imn[i], sec[i], &d1[i], &d2[i]);
+        if (status == 3) {
+            PyErr_SetString(_erfaError, "both of next two");
+            goto fail;
+        }
+        else if (status == 2) {
+            PyErr_SetString(_erfaError, "time is after end of day");
+            goto fail;
+        }
+        else if (status == 1) {
+            PyErr_SetString(_erfaError, "dubious year");
+            goto fail;
+        }
+        else if (status == -1) {
+            PyErr_SetString(_erfaError, "bad year");
+            goto fail;
+        }
+        else if (status == -2) {
+            PyErr_SetString(_erfaError, "bad month");
+            goto fail;
+        }
+        else if (status == -3) {
+            PyErr_SetString(_erfaError, "bad day");
+            goto fail;
+        }
+        else if (status == -4) {
+            PyErr_SetString(_erfaError, "bad hour");
+            goto fail;
+        }
+        else if (status == -5) {
+            PyErr_SetString(_erfaError, "bad minute");
+            goto fail;
+        }
+        else if (status == -6) {
+            PyErr_SetString(_erfaError, "bad second (<0)");
+            goto fail;
+        }
+    }
+    Py_DECREF(aiy);
+    Py_DECREF(aim);
+    Py_DECREF(aid);
+    Py_DECREF(aihr);
+    Py_DECREF(aimn);
+    Py_DECREF(asec);
+    Py_INCREF(pyd1);
+    Py_INCREF(pyd2);
+    return Py_BuildValue("OO", pyd1, pyd2);
 
 fail:
-    Py_XDECREF(aepb);
-    Py_XDECREF(pyjd0);
-    Py_XDECREF(pyjd1);
+    Py_XDECREF(aiy);
+    Py_XDECREF(aim);
+    Py_XDECREF(aid);
+    Py_XDECREF(aihr);
+    Py_XDECREF(aimn);
+    Py_XDECREF(asec);
+    Py_XDECREF(pyd1);
+    Py_XDECREF(pyd2);
     return NULL;
 }
 
-PyDoc_STRVAR(_erfa_epb2jd_doc,
-"\nepb2jd(epb) -> 2400000.5 djm\n"
+PyDoc_STRVAR(_erfa_dtf2d_doc,
+"\ndtf2d(scale, iy, im, id, ihr, imn, sec) -> d1, d2\n\n"
+"Encode date and time fields into 2-part Julian Date (or in the case\n"
+"of UTC a quasi-JD form that includes special provision for leap seconds).\n"
 "Given:\n"
-"    epb        Besselian Epoch,\n"
+"    y,m,d   year, month, day in Gregorian calendar\n"
+"    hr,mn   hour, minute\n"
+"    sec     seconds\n"
+"    scale   optional time scale ID, default ''UTC''\n"
 "Returned:\n"
-"    djm        Modified Julian Date");
+"   d1,d2     2-part Julian Date");
 
 static PyObject *
 _erfa_ee00(PyObject *self, PyObject *args)
@@ -1152,6 +1226,55 @@ PyDoc_STRVAR(_erfa_ee00_doc,
 "    dpsi       nutation in longitude\n"
 "Returned:\n"
 "    ee         equation of the equinoxes");
+
+static PyObject *
+_erfa_epb2jd(PyObject *self, PyObject *args)
+{
+    double *epb, *jd0, *jd1;
+    PyObject *pyepb;
+    PyObject *aepb;
+    PyArrayObject *pyjd0 = NULL, *pyjd1 = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyepb))
+        return NULL;
+    aepb = PyArray_FROM_OTF(pyepb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aepb == NULL) goto fail;
+    ndim = PyArray_NDIM(aepb);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }            
+    dims = PyArray_DIMS(aepb);
+    pyjd0 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyjd1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyjd0 || NULL == pyjd1)  goto fail;
+    epb = (double *)PyArray_DATA(aepb);
+    jd0 = (double *)PyArray_DATA(pyjd0);
+    jd1 = (double *)PyArray_DATA(pyjd1);
+    for (i=0;i<dims[0];i++) {
+        eraEpb2jd(epb[i], &jd0[i], &jd1[i]);
+    }
+    Py_DECREF(aepb);
+    Py_INCREF(pyjd0);
+    Py_INCREF(pyjd1);
+    return Py_BuildValue("OO", pyjd0, pyjd1);
+
+fail:
+    Py_XDECREF(aepb);
+    Py_XDECREF(pyjd0);
+    Py_XDECREF(pyjd1);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_epb2jd_doc,
+"\nepb2jd(epb) -> 2400000.5 djm\n"
+"Given:\n"
+"    epb        Besselian Epoch,\n"
+"Returned:\n"
+"    djm        Modified Julian Date");
 
 static PyObject *
 _erfa_eqeq94(PyObject *self, PyObject *args)
@@ -3066,8 +3189,9 @@ static PyMethodDef _erfa_methods[] = {
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
-    {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
+    {"dtf2d", _erfa_dtf2d, METH_VARARGS, _erfa_dtf2d_doc},
     {"ee00", _erfa_ee00, METH_VARARGS, _erfa_ee00_doc},
+    {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
     {"eqeq94", _erfa_eqeq94, METH_VARARGS, _erfa_eqeq94_doc},
     {"era00", _erfa_era00, METH_VARARGS, _erfa_era00_doc},
     {"gmst00", _erfa_gmst00, METH_VARARGS, _erfa_gmst00_doc},

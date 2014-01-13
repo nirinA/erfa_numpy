@@ -122,6 +122,28 @@ class Validate(unittest.TestCase):
         self.assertEqual(hmsf[0][2], 60)
         self.assertEqual(hmsf[0][3], 13599)
 
+    def test_dtf_jd(self):
+        scale = 'UTC'
+        y = np.array([1994])
+        m = np.array([6])
+        d = np.array([30])
+        h = np.array([23])
+        mn = np.array([59])
+        sec = np.array([60.13599])
+        jd1, jd2 = erfa.dtf_jd(scale, y, m, d, h, mn, sec)
+        self.assertAlmostEqual(jd1[0]+jd2[0], 2449534.49999, 6)
+
+    def test_dtf2d(self):
+        scale = 'UTC'
+        y = np.array([1994], dtype='int32')
+        m = np.array([6], dtype='int32')
+        d = np.array([30], dtype='int32')
+        h = np.array([23], dtype='int32')
+        mn = np.array([59], dtype='int32')
+        sec = np.array([60.13599])
+        jd1, jd2 = _erfa.dtf2d(scale, y, m, d, h, mn, sec)
+        self.assertAlmostEqual(jd1[0]+jd2[0], 2449534.49999, 6)
+
 ## Astronomy/PrecNutPolar
     def test_c2ixys(self):
         x =  np.array([0.5791308486706011000e-3])

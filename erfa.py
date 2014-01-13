@@ -62,6 +62,17 @@ def jd_dtf(scale, ndp, d1, d2):
     check_args(d1, d2)
     return _erfa.d2dtf(scale, ndp, d1, d2)
 
+def dtf_jd(scale, iy, im, id, ihr, imn, sec):   
+    if scale.lower() not in ('tai', 'tcb', 'tcg', 'tdb', 'tt', 'ut1', 'utc'):
+        raise _erfa.error('unknown time scale: %s'%scale)
+    check_args(iy, im, id, ihr, imn, sec)
+    iy = cast_to_int32(iy)
+    im = cast_to_int32(im)
+    id = cast_to_int32(id)
+    ihr = cast_to_int32(ihr)
+    imn = cast_to_int32(imn)
+    return _erfa.dtf2d(scale, iy, im, id, ihr, imn, sec)
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)
