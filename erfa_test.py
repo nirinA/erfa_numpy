@@ -377,6 +377,15 @@ class Validate(unittest.TestCase):
         self.assertEqual(r[1][2], 30)
         self.assertEqual(r[1][3], 9706)
 
+    def test_a2tf(self):
+        a = np.array([-3.01234])
+        r = erfa.a2tf(4, a)[0]
+        self.assertEqual(r[0], '-')
+        self.assertEqual(r[1][0], 11)
+        self.assertEqual(r[1][1], 30)
+        self.assertEqual(r[1][2], 22)
+        self.assertEqual(r[1][3], 6484)
+
 ## VectorMatrix/BuildRotations 
     def test_rx(self):
         phi = np.array([0.3456789])

@@ -160,6 +160,10 @@ def a2af(n, a):
     check_args(a)
     return _erfa.a2af(n, a)
 
+def a2tf(n, a):
+    check_args(a)
+    return _erfa.a2tf(n, a)
+
 ## VectorMatrix/BuildRotations 
 def rx(phi, r):
     check_args(phi, r)
