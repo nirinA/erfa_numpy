@@ -59,6 +59,23 @@ void free_Carrayptr(double **v){
 }
 
 static PyObject *
+_to_py_scalar(double v)
+{
+    double *cv;
+    PyArrayObject *pyout;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp dims[] = {1};
+    int j;
+    pyout = (PyArrayObject *) PyArray_Zeros(1, dims, dsc, 0);
+    if (NULL == pyout)  return NULL;
+    cv = (double *)PyArray_DATA(pyout);
+    cv[0] = v;
+    Py_INCREF(pyout); 
+    return PyArray_Return(pyout);                     
+}
+
+static PyObject *
 _to_py_vector(double v[3])
 {
     double *cv;
@@ -1218,7 +1235,7 @@ _erfa_nut00a(PyObject *self, PyObject *args)
     PyObject *out_iter = NULL;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
-    npy_intp *dims, dims_out[2];
+    npy_intp *dims, dim_out[2];
     int ndim, i;
     if (!PyArg_ParseTuple(args, "O!O!",
                                  &PyArray_Type, &pyd1,
@@ -1238,9 +1255,9 @@ _erfa_nut00a(PyObject *self, PyObject *args)
     dims = PyArray_DIMS(ad1);
     d1 = (double *)PyArray_DATA(ad1);
     d2 = (double *)PyArray_DATA(ad2);
-    dims_out[0] = 2;
-    dims_out[1] = dims[0];
-    pyout = (PyArrayObject *) PyArray_Zeros(2, dims_out, dsc, 0);
+    dim_out[0] = 2;
+    dim_out[1] = dims[0];
+    pyout = (PyArrayObject *) PyArray_Zeros(2, dim_out, dsc, 0);
     if (NULL == pyout) {
         goto fail;
     }
@@ -1292,7 +1309,7 @@ _erfa_nut80(PyObject *self, PyObject *args)
     PyObject *out_iter = NULL;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
-    npy_intp *dims, dims_out[2];
+    npy_intp *dims, dim_out[2];
     int ndim, i;
     if (!PyArg_ParseTuple(args, "O!O!",
                                  &PyArray_Type, &pyd1,
@@ -1312,9 +1329,9 @@ _erfa_nut80(PyObject *self, PyObject *args)
     dims = PyArray_DIMS(ad1);
     d1 = (double *)PyArray_DATA(ad1);
     d2 = (double *)PyArray_DATA(ad2);
-    dims_out[0] = 2;
-    dims_out[1] = dims[0];
-    pyout = (PyArrayObject *) PyArray_Zeros(2, dims_out, dsc, 0);
+    dim_out[0] = 2;
+    dim_out[1] = dims[0];
+    pyout = (PyArrayObject *) PyArray_Zeros(2, dim_out, dsc, 0);
     if (NULL == pyout) {
         goto fail;
     }
@@ -1366,7 +1383,7 @@ _erfa_obl80(PyObject *self, PyObject *args)
     PyObject *out_iter = NULL;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
-    npy_intp *dims, dims_out[1];
+    npy_intp *dims, dim_out[1];
     int ndim, i;
     if (!PyArg_ParseTuple(args, "O!O!",
                                  &PyArray_Type, &pyd1,
@@ -1386,8 +1403,8 @@ _erfa_obl80(PyObject *self, PyObject *args)
     dims = PyArray_DIMS(ad1);
     d1 = (double *)PyArray_DATA(ad1);
     d2 = (double *)PyArray_DATA(ad2);
-    dims_out[0] = dims[0];
-    pyout = (PyArrayObject *) PyArray_Zeros(1, dims_out, dsc, 0);
+    dim_out[0] = dims[0];
+    pyout = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
     if (NULL == pyout) {
         goto fail;
     }
@@ -1434,7 +1451,7 @@ _erfa_plan94(PyObject *self, PyObject *args)
     int np, status;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
-    npy_intp *dims, dims_out[3];
+    npy_intp *dims, dim_out[3];
     int ndim, i;
     if (!PyArg_ParseTuple(args, "O!O!i",
                                  &PyArray_Type, &pyd1,
@@ -1455,10 +1472,10 @@ _erfa_plan94(PyObject *self, PyObject *args)
     dims = PyArray_DIMS(ad1);
     d1 = (double *)PyArray_DATA(ad1);
     d2 = (double *)PyArray_DATA(ad2);
-    dims_out[0] = dims[0];
-    dims_out[1] = 2;
-    dims_out[2] = 3;
-    pyout = (PyArrayObject *) PyArray_Zeros(3, dims_out, dsc, 0);
+    dim_out[0] = dims[0];
+    dim_out[1] = 2;
+    dim_out[2] = 3;
+    pyout = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
     if (NULL == pyout) {
         goto fail;
     }
@@ -1600,6 +1617,155 @@ PyDoc_STRVAR(_erfa_pmat76_doc,
 "   d1,d2       TT ending date as a 2-part Julian Date\n"
 "Returned:\n"
 "   rmatp       precession matrix, J2000.0 -> d1+d2");
+
+static PyObject *
+_erfa_pn00(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *dpsi, *deps;
+    double epsa, rb[3][3],rp[3][3],rbp[3][3],rn[3][3],rbpn[3][3];
+    PyObject *pyd1, *pyd2, *pydpsi, *pydeps;
+    PyObject *ad1, *ad2, *adpsi, *adeps;
+    PyArrayObject *pyepsa = NULL, *pyrb = NULL, *pyrp = NULL, *pyrbp = NULL, *pyrn = NULL, *pyrbpn = NULL;
+    PyObject *epsa_iter = NULL, *rb_iter = NULL, *rp_iter = NULL, *rbp_iter = NULL, *rn_iter = NULL, *rbpn_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3], dim_epsa[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2,
+                                 &PyArray_Type, &pydpsi,
+                                 &PyArray_Type, &pydeps)) {
+        return NULL;
+    }
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adpsi = PyArray_FROM_OTF(pydpsi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adeps = PyArray_FROM_OTF(pydeps, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL || adpsi == NULL || adeps == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    dpsi = (double *)PyArray_DATA(adpsi);
+    deps = (double *)PyArray_DATA(adeps);
+    dim_epsa[0] = dims[0];
+    pyepsa = (PyArrayObject *) PyArray_Zeros(1, dim_epsa, dsc, 0);
+    if (NULL == pyepsa) {
+        goto fail;
+    }
+    epsa_iter = PyArray_IterNew((PyObject*)pyepsa);
+    if (epsa_iter == NULL) goto fail;
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyrb = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    pyrp = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    pyrbp = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    pyrn = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    pyrbpn = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyrb || NULL == pyrp ||
+        NULL == pyrbp || NULL == pyrn ||
+        NULL == pyrbpn) {
+        goto fail;
+    }
+    rb_iter = PyArray_IterNew((PyObject*)pyrb);
+    if (rb_iter == NULL) goto fail;
+    rp_iter = PyArray_IterNew((PyObject*)pyrp);
+    if (rp_iter == NULL) goto fail;
+    rbp_iter = PyArray_IterNew((PyObject*)pyrbp);
+    if (rbp_iter == NULL) goto fail;
+    rn_iter = PyArray_IterNew((PyObject*)pyrn);
+    if (rn_iter == NULL) goto fail;
+    rbpn_iter = PyArray_IterNew((PyObject*)pyrbpn);
+    if (rbpn_iter == NULL) goto fail;
+
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        eraPn00(d1[i], d2[i], dpsi[i], deps[i],
+                &epsa, rb, rp, rbp, rn, rbpn);
+        if (PyArray_SETITEM(pyepsa, PyArray_ITER_DATA(epsa_iter), PyFloat_FromDouble(epsa))) {
+            PyErr_SetString(_erfaError, "unable to set epsa");
+            goto fail;
+        }
+        PyArray_ITER_NEXT(epsa_iter);
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {                    
+                if (PyArray_SETITEM(pyrb, PyArray_ITER_DATA(rb_iter), PyFloat_FromDouble(rb[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rb");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rb_iter);
+                if (PyArray_SETITEM(pyrp, PyArray_ITER_DATA(rp_iter), PyFloat_FromDouble(rp[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rp");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rp_iter);
+                if (PyArray_SETITEM(pyrbp, PyArray_ITER_DATA(rbp_iter), PyFloat_FromDouble(rbp[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rbp");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rbp_iter);
+                if (PyArray_SETITEM(pyrn, PyArray_ITER_DATA(rn_iter), PyFloat_FromDouble(rn[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rn");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rn_iter);
+                if (PyArray_SETITEM(pyrbpn, PyArray_ITER_DATA(rbpn_iter), PyFloat_FromDouble(rbpn[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rbpn");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rbpn_iter);
+            }
+        }
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(adpsi);
+    Py_DECREF(adeps);
+    Py_DECREF(epsa_iter);
+    Py_DECREF(rb_iter);
+    Py_DECREF(rp_iter);
+    Py_DECREF(rbp_iter);
+    Py_DECREF(rn_iter);
+    Py_DECREF(rbpn_iter);
+    return Py_BuildValue("OOOOOO", pyepsa, pyrb, pyrp, pyrbp, pyrn, pyrbpn);
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(adpsi);
+    Py_XDECREF(adeps);
+    Py_XDECREF(epsa_iter);
+    Py_XDECREF(rb_iter);
+    Py_XDECREF(rp_iter);
+    Py_XDECREF(rbp_iter);
+    Py_XDECREF(rn_iter);
+    Py_XDECREF(rbpn_iter);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pn00_doc,
+"\npn00(d1,d2,dpsi,deps) -> epsa,rb,rp,rbp,rn,rbpn\n\n"
+"Precession-nutation, IAU 2000 model:  a multi-purpose function,\n"
+"supporting classical (equinox-based) use directly and CIO-based\n"
+"use indirectly.\n"
+"Given:\n"
+"   d1,d2       TT as a 2-part Julian Date\n"
+"   dpsi,deps   nutation\n"
+"Returned:\n"
+"   epsa        mean obliquity\n"
+"   rb          frame bias matrix\n"
+"   rp          precession matrix\n"
+"   rbp         bias-precession matrix\n"
+"   rn          nutation matrix\n"
+"   rbpn        GCRS-to-true matrix");
 
 static PyObject *
 _erfa_pom00(PyObject *self, PyObject *args)
@@ -2416,6 +2582,7 @@ static PyMethodDef _erfa_methods[] = {
     {"obl80", _erfa_obl80, METH_VARARGS, _erfa_obl80_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
     {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
+    {"pn00", _erfa_pn00, METH_VARARGS, _erfa_pn00_doc},
     {"pom00", _erfa_pom00, METH_VARARGS, _erfa_pom00_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
     {"sp00", _erfa_sp00, METH_VARARGS, _erfa_sp00_doc},

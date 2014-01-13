@@ -85,6 +85,10 @@ def pmat76(d1, d2):
     check_args(d1, d2)
     return _erfa.pmat76(d1, d2)
 
+def pn00(d1,d2,dpsi,deps):
+    check_args(d1,d2,dpsi,deps)
+    return _erfa.pn00(d1,d2,dpsi,deps)
+
 def pom00(xp, yp, sp):
     check_args(xp, yp, sp)
     return _erfa.pom00(xp, yp, sp)
