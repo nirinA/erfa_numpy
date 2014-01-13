@@ -56,6 +56,12 @@ def d_tai_utc(iy, im, id, fd):
     id = cast_to_int32(id)
     return _erfa.dat(iy, im, id, fd)
 
+def jd_dtf(scale, ndp, d1, d2):
+    if scale.lower() not in ('tai', 'tcb', 'tcg', 'tdb', 'tt', 'ut1', 'utc'):
+        raise _erfa.error('unknown time scale: %s'%scale)
+    check_args(d1, d2)
+    return _erfa.d2dtf(scale, ndp, d1, d2)
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)

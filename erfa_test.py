@@ -108,6 +108,20 @@ class Validate(unittest.TestCase):
         d = erfa.d_tai_utc(np.array([2008]), np.array([1]), np.array([17]), np.array([0.0]))
         self.assertAlmostEqual(d[0], 33.0, 9)
 
+    def test_jd_dtf(self):
+        scale = 'UTC'
+        d1 = np.array([2400000.5])
+        d2 = np.array([49533.99999])
+        ndp = 5
+        y, m, d, hmsf = erfa.jd_dtf(scale, ndp, d1, d2)
+        self.assertEqual(y[0], 1994)
+        self.assertEqual(m[0], 6)
+        self.assertEqual(d[0], 30)
+        self.assertEqual(hmsf[0][0], 23)
+        self.assertEqual(hmsf[0][1], 59)
+        self.assertEqual(hmsf[0][2], 60)
+        self.assertEqual(hmsf[0][3], 13599)
+
 ## Astronomy/PrecNutPolar
     def test_c2ixys(self):
         x =  np.array([0.5791308486706011000e-3])

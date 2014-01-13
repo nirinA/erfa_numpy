@@ -829,6 +829,116 @@ PyDoc_STRVAR(_erfa_cal2jd_doc,
 "    2400000.5,djm    MJD zero-point and Modified Julian Date for 0 hrs");
 
 static PyObject *
+_erfa_d2dtf(PyObject *self, PyObject *args)
+{
+    double *d1, *d2;
+    char *scale = "UTC";
+    int n, status;
+    int iy, im, id, ihmsf[4];
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyiy = NULL, *pyim = NULL, *pyid = NULL, *pyihmsf = NULL;
+    PyObject *iy_iter = NULL, *im_iter = NULL, *id_iter = NULL, *ihmsf_iter = NULL;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_LONG);
+    npy_intp *dims, dim_out[2];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "siO!O!",
+                                 &scale, &n,
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2))
+        return NULL;
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyiy = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyim = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyid = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    dim_out[0] = dims[0];
+    dim_out[1] = 4;
+    pyihmsf = (PyArrayObject *) PyArray_Zeros(2, dim_out, dsc, 0);
+    if (NULL == pyiy || NULL == pyim || NULL == pyid || NULL == pyihmsf) goto fail;
+    iy_iter = PyArray_IterNew((PyObject*)pyiy);
+    im_iter = PyArray_IterNew((PyObject*)pyim);
+    id_iter = PyArray_IterNew((PyObject*)pyid);
+    ihmsf_iter = PyArray_IterNew((PyObject*)pyihmsf);
+    if (iy_iter == NULL || im_iter == NULL || id_iter == NULL || ihmsf_iter == NULL) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    
+    for (i=0;i<dims[0];i++) {
+        status = eraD2dtf(scale, n, d1[i], d2[i], &iy, &im, &id, ihmsf);
+        if (status > 0){
+            PyErr_SetString(_erfaError, "doubious year: date predates UTC or too far in the future");
+            goto fail;
+        }
+        if (status < 0){
+            PyErr_SetString(_erfaError, "unaceptable date");
+            goto fail;
+        }
+        int k;
+        if (PyArray_SETITEM(pyiy, PyArray_ITER_DATA(iy_iter), PyLong_FromLong((long)iy))) {
+            PyErr_SetString(_erfaError, "unable to set iy");
+            goto fail;
+        }
+        PyArray_ITER_NEXT(iy_iter);
+        if (PyArray_SETITEM(pyim, PyArray_ITER_DATA(im_iter), PyLong_FromLong((long)im))) {
+            PyErr_SetString(_erfaError, "unable to set im");
+            goto fail;
+        }
+        PyArray_ITER_NEXT(im_iter);
+        if (PyArray_SETITEM(pyid, PyArray_ITER_DATA(id_iter), PyLong_FromLong((long)id))) {
+            PyErr_SetString(_erfaError, "unable to set id");
+            goto fail;
+        }
+        PyArray_ITER_NEXT(id_iter);
+        for (k=0;k<4;k++) {
+            if (PyArray_SETITEM(pyihmsf, PyArray_ITER_DATA(ihmsf_iter), PyLong_FromLong((long)ihmsf[k]))) {
+                PyErr_SetString(_erfaError, "unable to set ihmsf");
+                goto fail;
+            }
+            PyArray_ITER_NEXT(ihmsf_iter);
+        }
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(iy_iter); Py_DECREF(im_iter); Py_DECREF(id_iter); Py_DECREF(ihmsf_iter);
+    Py_INCREF(pyiy); Py_INCREF(pyim); Py_INCREF(pyid); Py_INCREF(pyihmsf);
+    return Py_BuildValue("OOOO", pyiy, pyim, pyid, pyihmsf);
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(iy_iter); Py_XDECREF(im_iter); Py_XDECREF(id_iter); Py_XDECREF(ihmsf_iter);
+    Py_XDECREF(pyiy); Py_XDECREF(pyim); Py_XDECREF(pyid); Py_XDECREF(pyihmsf);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_d2dtf_doc,
+"\nd2dtf(scale, n, d1, d2) -> year, month, day, hours, minutes, seconds, fraction\n\n"
+"Format for output a 2-part Julian Date (or in the case of UTC a\n"
+"quasi-JD form that includes special provision for leap seconds).\n"
+"Given:\n"
+"    scale      time scale ID, default to ''UTC''\n"
+"    ndp        resolution\n"
+"    d1,d2      time as a 2-part Julian Date\n"
+"Returned:\n"
+"   iy,im,id    year, month, day in Gregorian calendar\n"
+"   ihmsf       hours, minutes, seconds, fraction\n");
+
+static PyObject *
 _erfa_dat(PyObject *self, PyObject *args)
 {
     int *iy, *im, *id, status;
@@ -2954,6 +3064,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"c2ixys", _erfa_c2ixys, METH_VARARGS, _erfa_c2ixys_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
+    {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
     {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
     {"ee00", _erfa_ee00, METH_VARARGS, _erfa_ee00_doc},
