@@ -122,6 +122,10 @@ def era00(d1, d2):
     check_args(d1, d2)
     return _erfa.era00(d1, d2)
 
+def gmst00(uta, utb, tta, ttb):   
+    check_args(uta, utb, tta, ttb)
+    return _erfa.gmst00(uta, utb, tta, ttb)
+
 def gmst82(d1, d2):
     check_args(d1, d2)
     return _erfa.gmst82(d1, d2)

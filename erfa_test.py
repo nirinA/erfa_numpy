@@ -303,6 +303,14 @@ class Validate(unittest.TestCase):
         era = erfa.era00(np.array([2400000.5]), np.array([54388.0]))
         self.assertAlmostEqual(era[0], 0.4022837240028158102, 12)
 
+    def test_gmst00(self):
+        uta = np.array([2400000.5])
+        utb = np.array([53736.0])
+        tta = np.array([2400000.5])
+        ttb = np.array([53736.0])
+        g = erfa.gmst00(uta, utb, tta, ttb)[0]
+        self.assertAlmostEqual(g, 1.754174972210740592, 14)
+        
     def test_gmst82(self):
         g = erfa.gmst82(np.array([2400000.5]), np.array([53736.0]))
         self.assertAlmostEqual(g[0], 1.754174981860675096, 14)
