@@ -2245,6 +2245,108 @@ PyDoc_STRVAR(_erfa_cr_doc,
 "   c           copy");
 
 static PyObject *
+_erfa_rxp(PyObject *self, PyObject *args)
+{
+    double r[3][3], p[3], rp[3];
+    PyObject *pyr, *pyp;
+    PyObject *ar = NULL, *ap = NULL;
+    PyArrayObject *pyrp = NULL;
+    PyObject *r_iter = NULL, *p_iter = NULL, *rp_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[2];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyr,
+                                 &PyArray_Type, &pyp))      
+        return NULL;
+    ndim = PyArray_NDIM(pyr);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pyr);
+    if (dims[0] != PyArray_DIMS(pyp)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    pyrp = (PyArrayObject *) PyArray_Zeros(2, dim_out, dsc, 0);
+    if (NULL == pyrp) goto fail;
+    r_iter = PyArray_IterNew((PyObject *)pyr);
+    p_iter = PyArray_IterNew((PyObject *)pyp);
+    rp_iter = PyArray_IterNew((PyObject *)pyrp);
+    if (r_iter == NULL || p_iter == NULL || rp_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        double vr, vp;
+        for (j=0;j<3;j++) {
+            ap = PyArray_GETITEM(pyp, PyArray_ITER_DATA(p_iter));
+            if (ap == NULL) {
+                PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                goto fail;
+            }
+            Py_INCREF(ap);
+            vp = (double)PyFloat_AsDouble(ap);
+            if (vp == -1 && PyErr_Occurred()) goto fail;
+            p[j] = vp;
+            Py_DECREF(ap);
+            PyArray_ITER_NEXT(p_iter);
+            for (k=0;k<3;k++) {
+                ar = PyArray_GETITEM(pyr, PyArray_ITER_DATA(r_iter));
+                if (ar == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(ar);
+                vr = (double)PyFloat_AsDouble(ar);
+                if (vr == -1 && PyErr_Occurred()) goto fail;
+                r[j][k] = vr;
+                Py_DECREF(ar);                
+                PyArray_ITER_NEXT(r_iter); 
+            }
+        }
+        eraRxp(r, p, rp);
+        for (j=0;j<3;j++) {
+            if (PyArray_SETITEM(pyrp, PyArray_ITER_DATA(rp_iter), PyFloat_FromDouble(rp[j]))) {
+                PyErr_SetString(_erfaError, "unable to set output rp");
+                goto fail;
+            }
+            PyArray_ITER_NEXT(rp_iter);
+        }
+    }
+    Py_DECREF(ar);
+    Py_DECREF(ap);
+    Py_DECREF(r_iter);
+    Py_DECREF(p_iter);
+    Py_DECREF(rp_iter);
+    Py_INCREF(pyrp);
+    return (PyObject *)pyrp;    
+
+fail:
+    Py_XDECREF(ar);
+    Py_XDECREF(ap);
+    Py_XDECREF(r_iter);
+    Py_XDECREF(p_iter);
+    Py_XDECREF(rp_iter);
+    Py_XDECREF(pyrp);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_rxp_doc,
+"\nrxp(r, p) -> rp\n\n"
+"Multiply a p-vector by an r-matrix.\n"
+"Given:\n"
+"   r           r-matrix\n"
+"   p           p-vector\n"
+"Returned:\n"
+"   rp          r * p");
+
+static PyObject *
 _erfa_rxr(PyObject *self, PyObject *args)
 {
     double a[3][3], b[3][3], atb[3][3];
@@ -2653,6 +2755,7 @@ static PyMethodDef _erfa_methods[] = {
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
     {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},
+    {"rxp", _erfa_rxp, METH_VARARGS, _erfa_rxp_doc},
     {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
     {"rx", _erfa_rx, METH_VARARGS, _erfa_rx_doc},
     {"ry", _erfa_ry, METH_VARARGS, _erfa_ry_doc},

@@ -326,6 +326,20 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(r[2][1], 3.085711545336372503, places=12)
         self.assertAlmostEqual(r[2][2], 3.687721683977873065, places=12)
 
+    def test_rxp(self):
+        r = np.array([
+            ((2.0,3.0,2.0),
+             (3.0,2.0,3.0),
+             (3.0,4.0,5.0))
+            ])
+        p = np.array([
+            (0.2,1.5,0.1)
+            ])
+        rp = erfa.rxp(r, p)[0]
+        self.assertAlmostEqual(rp[0], 5.1, places=12)
+        self.assertAlmostEqual(rp[1], 3.9, places=12)
+        self.assertAlmostEqual(rp[2], 7.1, places=12)
+
     def test_ry(self):
         theta = np.array([0.3456789])
         r = np.array([
