@@ -295,6 +295,14 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(s[0], -0.1220032294164579896e-7, places=19)
 
 ## Astronomy/RotationAndTime
+    def test_ee00(self):
+        d1 = np.array([2400000.5])
+        d2 = np.array([53736.0])
+        epsa = np.array([0.4090789763356509900])
+        dpsi = np.array([-0.9630909107115582393e-5])
+        ee = erfa.ee00(d1, d2, epsa, dpsi)[0]
+        self.assertAlmostEqual(ee, -0.8834193235367965479e-5, 18)
+
     def test_eqeq94(self):
         ee = erfa.eqeq94(np.array([2400000.5]), np.array([41234.0]))
         self.assertAlmostEqual(ee[0], 0.5357758254609256894e-4, 17)

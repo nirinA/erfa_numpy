@@ -114,6 +114,10 @@ def xys06a(d1, d2):
     return _erfa.xys06a(d1, d2)
 
 ## Astronomy/RotationAndTime
+def ee00(d1, d2, epsa, dpsi):
+    check_args(d1, d2, epsa, dpsi)
+    return _erfa.ee00(d1, d2, epsa, dpsi)
+
 def eqeq94(d1, d2):
     check_args(d1, d2)
     return _erfa.eqeq94(d1, d2)
@@ -160,3 +164,7 @@ def anp(a):
 def rxr(a, b):
     check_args(a, b)
     return _erfa.rxr(a, b)
+
+__all__ = ['anp', 'rxr']
+for a in __all__:
+    setattr(eval(a), '__doc__',  getattr(_erfa, a).__doc__)

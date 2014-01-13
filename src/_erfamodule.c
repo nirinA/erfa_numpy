@@ -970,6 +970,80 @@ PyDoc_STRVAR(_erfa_epb2jd_doc,
 "    djm        Modified Julian Date");
 
 static PyObject *
+_erfa_ee00(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *epsa, *dpsi, *ee;
+    PyObject *pyd1, *pyd2, *pyepsa, *pydpsi;
+    PyObject *ad1, *ad2, *aepsa, *adpsi;
+    PyArrayObject *pyee = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!", 
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2,
+                                 &PyArray_Type, &pyepsa,
+                                 &PyArray_Type, &pydpsi))
+        return NULL;
+
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aepsa = PyArray_FROM_OTF(pyepsa, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adpsi = PyArray_FROM_OTF(pydpsi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL || aepsa == NULL || adpsi == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0] ||
+        dims[0] != PyArray_DIMS(aepsa)[0] ||
+        dims[0] != PyArray_DIMS(adpsi)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyee = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyee) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    epsa = (double *)PyArray_DATA(aepsa);
+    dpsi = (double *)PyArray_DATA(adpsi);
+    ee = (double *)PyArray_DATA(pyee);
+    for (i=0;i<dims[0];i++) {
+        ee[i] = eraEe00(d1[i], d2[i], epsa[i], dpsi[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(aepsa);
+    Py_DECREF(adpsi);
+    Py_INCREF(pyee);
+    return (PyObject *)pyee;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(aepsa);
+    Py_XDECREF(adpsi);
+    Py_XDECREF(pyee);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_ee00_doc,
+"\nee00(d1,d2,epsa,dpsi) -> ee\n\n"
+"The equation of the equinoxes compatible with IAU 2000 resolutions,\n"
+"given the nutation in longitude and the mean obliquity.\n"
+"Given:\n"
+"    d1,d2      TT as 2-part Julian Date\n"
+"    epsa       mean obliquity\n"
+"    dpsi       nutation in longitude\n"
+"Returned:\n"
+"    ee         equation of the equinoxes");
+
+static PyObject *
 _erfa_eqeq94(PyObject *self, PyObject *args)
 {
     double *d1, *d2, *ee;
@@ -2810,6 +2884,7 @@ static PyMethodDef _erfa_methods[] = {
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
     {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
+    {"ee00", _erfa_ee00, METH_VARARGS, _erfa_ee00_doc},
     {"eqeq94", _erfa_eqeq94, METH_VARARGS, _erfa_eqeq94_doc},
     {"era00", _erfa_era00, METH_VARARGS, _erfa_era00_doc},
     {"gmst00", _erfa_gmst00, METH_VARARGS, _erfa_gmst00_doc},
