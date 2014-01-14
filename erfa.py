@@ -111,6 +111,12 @@ def tcbtdb(tcb1, tcb2):
 
 tcb_tdb = tcbtdb
 
+def tcgtt(tcb1, tcb2):
+    check_args(tcb1, tcb2)
+    return _erfa.tcgtt(tcb1, tcb2)
+
+tcg_tt = tcgtt
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)

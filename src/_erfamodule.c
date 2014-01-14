@@ -2765,6 +2765,74 @@ PyDoc_STRVAR(_erfa_tcbtdb_doc,
 "   tdb1,tdb2   TDB as a 2-part Julian Date");
 
 static PyObject *
+_erfa_tcgtt(PyObject *self, PyObject *args)
+{
+    double *tcg1, *tcg2, *tt1, *tt2;
+    int status;
+    PyObject *pytcg1, *pytcg2;
+    PyObject *atcg1, *atcg2;
+    PyArrayObject *pytt1 = NULL, *pytt2 = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pytcg1,
+                                 &PyArray_Type, &pytcg2))
+        return NULL;
+
+    atcg1 = PyArray_FROM_OTF(pytcg1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    atcg2 = PyArray_FROM_OTF(pytcg2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (atcg1 == NULL || atcg2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(atcg1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(atcg1);
+    if (dims[0] != PyArray_DIMS(atcg2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+
+    pytt1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pytt2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pytt1 || NULL == pytt2) goto fail;
+    tcg1 = (double *)PyArray_DATA(atcg1);
+    tcg2 = (double *)PyArray_DATA(atcg2);
+    tt1 = (double *)PyArray_DATA(pytt1);
+    tt2 = (double *)PyArray_DATA(pytt2);
+    for (i=0;i<dims[0];i++) {
+        status = eraTcgtt(tcg1[i], tcg2[i], &tt1[i], &tt2[i]);
+        if (status) {
+            PyErr_SetString(_erfaError, "internal error...");
+            return NULL;
+        }
+    }
+    Py_DECREF(atcg1);
+    Py_DECREF(atcg2);
+    Py_INCREF(pytt1); Py_INCREF(pytt2);
+    return Py_BuildValue("OO", pytt1, pytt2);
+
+fail:
+    Py_XDECREF(atcg1);
+    Py_XDECREF(atcg2);
+    Py_XDECREF(pytt1); Py_XDECREF(pytt2);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_tcgtt_doc,
+"\ntcgtt(tcg1, tcg2) -> tt1, tt2\n\n"
+"Time scale transformation:  Geocentric Coordinate Time, TCG, to\n"
+"Terrestrial Time, TT.\n"
+"Given:\n"
+"   tcg1,tcg2   TCG as a 2-part Julian Date\n"
+"Returned:\n"
+"   tt1,tt2   TT as a 2-part Julian Date");
+
+static PyObject *
 _erfa_xy06(PyObject *self, PyObject *args)
 {
     double *d1, *d2, *x, *y;
@@ -3647,6 +3715,7 @@ static PyMethodDef _erfa_methods[] = {
     {"sp00", _erfa_sp00, METH_VARARGS, _erfa_sp00_doc},
     {"taitt", _erfa_taitt, METH_VARARGS, _erfa_taitt_doc},
     {"tcbtdb", _erfa_tcbtdb, METH_VARARGS, _erfa_tcbtdb_doc},
+    {"tcgtt", _erfa_tcgtt, METH_VARARGS, _erfa_tcgtt_doc},
     {"xy06", _erfa_xy06, METH_VARARGS, _erfa_xy06_doc},
     {"xys00a", _erfa_xys00a, METH_VARARGS, _erfa_xys00a_doc},
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
