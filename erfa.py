@@ -172,6 +172,12 @@ def ut1tai(ut11, ut12, dta):
 
 ut1_tai = ut1tai
 
+def ut1utc(ut11, ut12, dut1):
+    check_args(ut11, ut12, dut1)
+    return _erfa.ut1utc(ut11, ut12, dut1)
+
+ut1_utc = ut1utc
+
 def ut1tt(ut11, ut12, dt):
     check_args(ut11, ut12, dt)
     return _erfa.ut1tt(ut11, ut12, dt)
