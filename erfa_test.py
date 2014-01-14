@@ -206,6 +206,13 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(t1[0], 2453750.5, places=6)
         self.assertAlmostEqual(t2[0], 0.8924900312508587113, places=12)
 
+    def test_tt_tdb(self):
+        t1, t2 = erfa.tt_tdb(np.array([2453750.5]),
+                             np.array([0.892855139]),
+                             np.array([-0.000201]))
+        self.assertAlmostEqual(t1[0], 2453750.5, places=6)
+        self.assertAlmostEqual(t2[0], 0.8928551366736111111, places=12)
+
     def test_tt_ut1(self):
         t1, t2 = erfa.tt_ut1(np.array([2453750.5]),
                              np.array([0.892855139]),

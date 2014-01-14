@@ -154,6 +154,12 @@ def tttcg(tt1, tt2):
 
 tt_tcg = tttcg
 
+def tttdb(tt1, tt2, dtr):
+    check_args(tt1, tt2, dtr)
+    return _erfa.tttdb(tt1, tt2, dtr)
+
+tt_tdb = tttdb
+
 def ttut1(tt1, tt2, dt):
     check_args(tt1, tt2, dt)
     return _erfa.ttut1(tt1, tt2, dt)
