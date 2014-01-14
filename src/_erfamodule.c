@@ -2697,6 +2697,74 @@ PyDoc_STRVAR(_erfa_taitt_doc,
 "   tt1,tt2     TT as a 2-part Julian Date");
 
 static PyObject *
+_erfa_tcbtdb(PyObject *self, PyObject *args)
+{
+    double *tcb1, *tcb2, *tdb1, *tdb2;
+    int status;
+    PyObject *pytcb1, *pytcb2;
+    PyObject *atcb1, *atcb2;
+    PyArrayObject *pytdb1 = NULL, *pytdb2 = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!", 
+                                 &PyArray_Type, &pytcb1,
+                                 &PyArray_Type, &pytcb2))
+        return NULL;
+
+    atcb1 = PyArray_FROM_OTF(pytcb1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    atcb2 = PyArray_FROM_OTF(pytcb2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (atcb1 == NULL || atcb2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(atcb1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(atcb1);
+    if (dims[0] != PyArray_DIMS(atcb2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+
+    pytdb1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pytdb2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pytdb1 || NULL == pytdb2) goto fail;
+    tcb1 = (double *)PyArray_DATA(atcb1);
+    tcb2 = (double *)PyArray_DATA(atcb2);
+    tdb1 = (double *)PyArray_DATA(pytdb1);
+    tdb2 = (double *)PyArray_DATA(pytdb2);
+    for (i=0;i<dims[0];i++) {
+        status = eraTcbtdb(tcb1[i], tcb2[i], &tdb1[i], &tdb2[i]);
+        if (status) {
+            PyErr_SetString(_erfaError, "internal error...");
+            return NULL;
+        }
+    }
+    Py_DECREF(atcb1);
+    Py_DECREF(atcb2);
+    Py_INCREF(pytdb1); Py_INCREF(pytdb2);
+    return Py_BuildValue("OO", pytdb1, pytdb2);
+
+fail:
+    Py_XDECREF(atcb1);
+    Py_XDECREF(atcb2);
+    Py_XDECREF(pytdb1); Py_XDECREF(pytdb2);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_tcbtdb_doc,
+"\ntcbtdb(tcb1, tcb2) -> tdb1, tdb2\n\n"
+"Time scale transformation:  Barycentric Coordinate Time, TCB, to\n"
+"Barycentric Dynamical Time, TDB.\n"
+"Given:\n"
+"   tcb1,tcb2   TCB as a 2-part Julian Date\n"
+"Returned:\n"
+"   tdb1,tdb2   TDB as a 2-part Julian Date");
+
+static PyObject *
 _erfa_xy06(PyObject *self, PyObject *args)
 {
     double *d1, *d2, *x, *y;
@@ -3578,6 +3646,7 @@ static PyMethodDef _erfa_methods[] = {
     {"s06", _erfa_s06, METH_VARARGS, _erfa_s06_doc},
     {"sp00", _erfa_sp00, METH_VARARGS, _erfa_sp00_doc},
     {"taitt", _erfa_taitt, METH_VARARGS, _erfa_taitt_doc},
+    {"tcbtdb", _erfa_tcbtdb, METH_VARARGS, _erfa_tcbtdb_doc},
     {"xy06", _erfa_xy06, METH_VARARGS, _erfa_xy06_doc},
     {"xys00a", _erfa_xys00a, METH_VARARGS, _erfa_xys00a_doc},
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},

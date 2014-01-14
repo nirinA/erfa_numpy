@@ -105,6 +105,12 @@ def taitt(tai1, tai2):
 
 tai_tt = taitt
 
+def tcbtdb(tcb1, tcb2):
+    check_args(tcb1, tcb2)
+    return _erfa.tcbtdb(tcb1, tcb2)
+
+tcb_tdb = tcbtdb
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)
