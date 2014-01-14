@@ -69,6 +69,14 @@ def pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b):
     return _erfa.pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
 
 ## Astronomy/Timescales
+def d2dtf(scale, ndp, d1, d2):
+    if scale.lower() not in ('tai', 'tcb', 'tcg', 'tdb', 'tt', 'ut1', 'utc'):
+        raise _erfa.error('unknown time scale: %s'%scale)
+    check_args(d1, d2)
+    return _erfa.d2dtf(scale, ndp, d1, d2)
+
+jd_dtf = d2dtf
+
 def dat(iy, im, id, fd):
     check_args(iy, im, id, fd)
     iy = cast_to_int32(iy)
@@ -78,14 +86,11 @@ def dat(iy, im, id, fd):
 
 d_tai_utc = dat
 
+def dtdb(d1, d2, ut1, elon, u, v):
+    check_args(d1, d2, ut1, elon, u, v)
+    return _erfa.dtdb(d1, d2, ut1, elon, u, v)
 
-def d2dtf(scale, ndp, d1, d2):
-    if scale.lower() not in ('tai', 'tcb', 'tcg', 'tdb', 'tt', 'ut1', 'utc'):
-        raise _erfa.error('unknown time scale: %s'%scale)
-    check_args(d1, d2)
-    return _erfa.d2dtf(scale, ndp, d1, d2)
-
-jd_dtf = d2dtf
+d_tdb_tt = dtdb
 
 def dtf2d(scale, iy, im, id, ihr, imn, sec):   
     if scale.lower() not in ('tai', 'tcb', 'tcg', 'tdb', 'tt', 'ut1', 'utc'):

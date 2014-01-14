@@ -1058,6 +1058,94 @@ PyDoc_STRVAR(_erfa_dat_doc,
 "    deltat     TAI minus UTC, seconds");
 
 static PyObject *
+_erfa_dtdb(PyObject *self, PyObject *args)
+{
+    double *tdbtt, *d1, *d2, *ut1, *elon, *u, *v;
+    PyObject *pyd1, *pyd2, *pyut1, *pyelon, *pyu, *pyv;
+    PyObject *ad1, *ad2, *aut1, *aelon, *au, *av;
+    PyArrayObject *pytdbtt = NULL;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2,
+                                 &PyArray_Type, &pyut1,
+                                 &PyArray_Type, &pyelon,
+                                 &PyArray_Type, &pyu,
+                                 &PyArray_Type, &pyv))
+        return NULL;
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aut1 = PyArray_FROM_OTF(pyut1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aelon = PyArray_FROM_OTF(pyelon, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    au = PyArray_FROM_OTF(pyu, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    av = PyArray_FROM_OTF(pyv, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL || aut1 == NULL ||
+        aelon == NULL || au == NULL || av == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0] ||
+        dims[0] != PyArray_DIMS(aut1)[0] ||
+        dims[0] != PyArray_DIMS(aelon)[0] ||
+        dims[0] != PyArray_DIMS(au)[0] ||
+        dims[0] != PyArray_DIMS(av)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pytdbtt = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pytdbtt) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    ut1 = (double *)PyArray_DATA(aut1);
+    elon = (double *)PyArray_DATA(aelon);
+    u = (double *)PyArray_DATA(au);
+    v = (double *)PyArray_DATA(av);
+    tdbtt = (double *)PyArray_DATA(pytdbtt);
+    for (i=0;i<dims[0];i++) {
+        tdbtt[i] = eraDtdb(d1[i], d2[i], ut1[i], elon[i], u[i], v[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(aut1);
+    Py_DECREF(aelon);
+    Py_DECREF(au);
+    Py_DECREF(av);
+    Py_INCREF(pytdbtt);
+    return (PyObject *)pytdbtt;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(aut1);
+    Py_XDECREF(aelon);
+    Py_XDECREF(au);
+    Py_XDECREF(av);
+    Py_XDECREF(pytdbtt);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_dtdb_doc,
+"\ndtdb(d1, d2, ut1, elon, u, v) -> TDB-TT\n\n"
+"An approximation to TDB-TT, the difference between barycentric\n"
+"dynamical time and terrestrial time, for an observer on the Earth.\n"
+"Given:\n"
+"    d1,d2      TDB date as 2-part Julian Date\n"
+"    ut1        UT1 universal time as fraction of one day\n"
+"    elong      longitude (east positive, radians)\n"
+"    u          distance from Earth spin axis (km)\n"
+"    v          distance north of equatorial plane (km)\n"
+"Returned:\n"
+"    tdbtt      TDB-TT (seconds)");
+
+static PyObject *
 _erfa_dtf2d(PyObject *self, PyObject *args)
 {
     int *iy, *im, *id, *ihr, *imn, status;
@@ -4654,6 +4742,7 @@ static PyMethodDef _erfa_methods[] = {
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
+    {"dtdb", _erfa_dtdb, METH_VARARGS, _erfa_dtdb_doc},
     {"dtf2d", _erfa_dtf2d, METH_VARARGS, _erfa_dtf2d_doc},
     {"ee00", _erfa_ee00, METH_VARARGS, _erfa_ee00_doc},
     {"epb", _erfa_epb, METH_VARARGS, _erfa_epb_doc},

@@ -21,6 +21,16 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(dmj0[0], 2400000.5, 9)
         self.assertAlmostEqual(dmj[0], 52791.0, 9)
 
+    def test_d_tdb_tt(self):
+        d1 = np.array([2448939.5])
+        d2 = np.array([0.123])
+        ut1 = np.array([0.76543])
+        elon = np.array([5.0123])
+        u = np.array([5525.242])
+        v = np.array([3190.0])
+        d = erfa.d_tdb_tt(d1, d2, ut1, elon, u, v)
+        self.assertAlmostEqual(d[0], -0.1280368005936998991e-2, 17)
+
     def test_besselian_epoch_jd(self):
         dj0, dj1 = erfa.besselian_epoch_jd(np.array([1957.3]))
         self.assertAlmostEqual(dj0[0], 2400000.5, 9)
