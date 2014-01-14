@@ -190,6 +190,12 @@ def utctai(utc1, utc2):
 
 utc_tai = utctai
 
+def utcut1(utc1, utc2, dut1):
+    check_args(utc1, utc2, dut1)
+    return _erfa.utcut1(utc1, utc2, dut1)
+
+utc_ut1 = utcut1
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)

@@ -246,6 +246,13 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(u1[0], 2453750.5, places=6)
         self.assertAlmostEqual(u2[0], 0.8924826384444444444, places=13)
         
+    def test_utc_ut1(self):
+        u1, u2 = erfa.utc_ut1(np.array([2453750.5]),
+                              np.array([0.892100694]),
+                              np.array([0.3341]))
+        self.assertAlmostEqual(u1[0], 2453750.5, places=6)
+        self.assertAlmostEqual(u2[0], 0.8921045608981481481, places=13)
+
 ## Astronomy/PrecNutPolar
     def test_c2ixys(self):
         x =  np.array([0.5791308486706011000e-3])
