@@ -3340,6 +3340,81 @@ PyDoc_STRVAR(_erfa_ut1tai_doc,
 "   tai1,tai2   TAI as a 2-part Julian Date");
 
 static PyObject *
+_erfa_ut1tt(PyObject *self, PyObject *args)
+{
+    double *tt1, *tt2, *dt, *ut11, *ut12;
+    int status;
+    PyObject *pyut11, *pyut12, *pydt;
+    PyObject *aut11, *aut12, *adt;
+    PyArrayObject *pytt1 = NULL, *pytt2 = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!", 
+                                 &PyArray_Type, &pyut11,
+                                 &PyArray_Type, &pyut12,
+                                 &PyArray_Type, &pydt))
+        return NULL;
+
+    aut11 = PyArray_FROM_OTF(pyut11, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aut12 = PyArray_FROM_OTF(pyut12, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adt = PyArray_FROM_OTF(pydt, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aut11 == NULL || aut12 == NULL || adt == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aut11);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aut11);
+    if (dims[0] != PyArray_DIMS(aut12)[0] ||
+        dims[0] != PyArray_DIMS(adt)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+
+    pytt1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pytt2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pytt1 || NULL == pytt2) goto fail;
+    ut11 = (double *)PyArray_DATA(aut11);
+    ut12 = (double *)PyArray_DATA(aut12);
+    dt = (double *)PyArray_DATA(adt);
+    tt1 = (double *)PyArray_DATA(pytt1);
+    tt2 = (double *)PyArray_DATA(pytt2);
+    for (i=0;i<dims[0];i++) {
+        status = eraUt1tt(ut11[i], ut12[i], dt[i], &tt1[i], &tt2[i]);
+        if (status) {
+            PyErr_SetString(_erfaError, "internal error ...");
+            goto fail;
+        }
+    }
+    Py_DECREF(aut11);
+    Py_DECREF(aut12);
+    Py_DECREF(adt);
+    Py_INCREF(pytt1); Py_INCREF(pytt2);
+    return Py_BuildValue("OO", pytt1, pytt2);
+
+fail:
+    Py_XDECREF(aut11);
+    Py_XDECREF(aut12);
+    Py_XDECREF(adt);
+    Py_XDECREF(pytt1); Py_XDECREF(pytt2);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_ut1tt_doc,
+"\nut1tt(ut11, ut12, dt) -> tt1, tt2\n\n"
+"Time scale transformation: Universal Time, UT1, to\n"
+"Terrestrial Time, TT.\n"
+"Given:\n"
+"   ut11,ut12   UT1 as a 2-part Julian Date\n"
+"   dt          TT-UT1 in seconds, dt is classical Delta T\n"
+"Returned:\n"
+"   tt1,tt2     TT as a 2-part Julian Date");
+
+static PyObject *
 _erfa_utctai(PyObject *self, PyObject *args)
 {
     double *utc1, *utc2, *tai1, *tai2;
@@ -4298,6 +4373,7 @@ static PyMethodDef _erfa_methods[] = {
     {"tttcg", _erfa_tttcg, METH_VARARGS, _erfa_tttcg_doc},
     {"ttut1", _erfa_ttut1, METH_VARARGS, _erfa_ttut1_doc},
     {"ut1tai", _erfa_ut1tai, METH_VARARGS, _erfa_ut1tai_doc},
+    {"ut1tt", _erfa_ut1tt, METH_VARARGS, _erfa_ut1tt_doc},
     {"utctai", _erfa_utctai, METH_VARARGS, _erfa_utctai_doc},
     {"xy06", _erfa_xy06, METH_VARARGS, _erfa_xy06_doc},
     {"xys00a", _erfa_xys00a, METH_VARARGS, _erfa_xys00a_doc},
