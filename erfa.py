@@ -136,6 +136,12 @@ def tdbtcb(tdb1, tdb2):
 
 tdb_tcb = tdbtcb
 
+def tdbtt(tdb1, tdb2, dtr):
+    check_args(tdb1, tdb2, dtr)
+    return _erfa.tdbtt(tdb1, tdb2, dtr)
+
+tdb_tt = tdbtt
+
 def tttai(tt1, tt2):
     check_args(tt1, tt2)
     return _erfa.tttai(tt1, tt2)
