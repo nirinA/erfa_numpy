@@ -34,6 +34,11 @@ class Validate(unittest.TestCase):
         j = erfa.jd_julian_epoch(np.array([2451545]), np.array([-7392.5]))
         self.assertAlmostEqual(j[0], 1979.760438056125941, 12)
 
+    def test_julian_epoch_jd(self):
+        dj0, dj1 = erfa.julian_epoch_jd(np.array([1996.8]))
+        self.assertAlmostEqual(dj0[0], 2400000.5, 9)
+        self.assertAlmostEqual(dj1[0], 50375.7, 9)
+
 ## astrometry tools
     def test_ab(self):
         pnat = np.array([[-0.76321968546737951,-0.60869453983060384,-0.21676408580639883]])

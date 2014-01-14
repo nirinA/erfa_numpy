@@ -1355,7 +1355,7 @@ fail:
 }
 
 PyDoc_STRVAR(_erfa_epb2jd_doc,
-"\nepb2jd(epb) -> 2400000.5 djm\n"
+"\nepb2jd(epb) -> 2400000.5, djm\n"
 "Given:\n"
 "    epb        Besselian Epoch,\n"
 "Returned:\n"
@@ -1418,6 +1418,56 @@ PyDoc_STRVAR(_erfa_epj_doc,
 "    d1,d2      2-part Julian Date\n"
 "Returned:\n"
 "    b          Julian Epoch");
+
+static PyObject *
+_erfa_epj2jd(PyObject *self, PyObject *args)
+{
+    double *epj, *jd0, *jd1;
+    PyObject *pyepj;
+    PyObject *aepj;
+    PyArrayObject *pyjd0 = NULL, *pyjd1 = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyepj))
+        return NULL;
+    aepj = PyArray_FROM_OTF(pyepj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aepj == NULL) goto fail;
+    ndim = PyArray_NDIM(aepj);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }            
+    dims = PyArray_DIMS(aepj);
+    pyjd0 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyjd1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyjd0 || NULL == pyjd1)  goto fail;
+    epj = (double *)PyArray_DATA(aepj);
+    jd0 = (double *)PyArray_DATA(pyjd0);
+    jd1 = (double *)PyArray_DATA(pyjd1);
+    for (i=0;i<dims[0];i++) {
+        eraEpj2jd(epj[i], &jd0[i], &jd1[i]);
+    }
+    Py_DECREF(aepj);
+    Py_INCREF(pyjd0);
+    Py_INCREF(pyjd1);
+    return Py_BuildValue("OO", pyjd0, pyjd1);
+
+fail:
+    Py_XDECREF(aepj);
+    Py_XDECREF(pyjd0);
+    Py_XDECREF(pyjd1);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_epj2jd_doc,
+"\nepj2jd(epj) -> 2400000.5, djm\n\n"
+"Julian Epoch to Julian Date\n"
+"Given:\n"
+"    epj        Julian Epoch\n"
+"Returned:\n"
+"    djm        Modified Julian Date");
 
 static PyObject *
 _erfa_eqeq94(PyObject *self, PyObject *args)
@@ -3443,6 +3493,7 @@ static PyMethodDef _erfa_methods[] = {
     {"epb", _erfa_epb, METH_VARARGS, _erfa_epb_doc},
     {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
     {"epj", _erfa_epj, METH_VARARGS, _erfa_epj_doc},
+    {"epj2jd", _erfa_epj2jd, METH_VARARGS, _erfa_epj2jd_doc},
     {"eqeq94", _erfa_eqeq94, METH_VARARGS, _erfa_eqeq94_doc},
     {"era00", _erfa_era00, METH_VARARGS, _erfa_era00_doc},
     {"gmst00", _erfa_gmst00, METH_VARARGS, _erfa_gmst00_doc},

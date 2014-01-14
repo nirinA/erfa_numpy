@@ -44,6 +44,12 @@ def epj(d1, d2):
 
 jd_julian_epoch = epj
 
+def epj2jd(epj):
+    check_args(epj)
+    return _erfa.epj2jd(epj)
+
+julian_epoch_jd = epj2jd
+
 ## Astronomy/Astrometry 
 def ab(pnat, v, s, bm1):
     check_args(pnat, v, s, bm1)
