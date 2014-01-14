@@ -4183,6 +4183,98 @@ PyDoc_STRVAR(_erfa_a2tf_doc,
 "   f           fraction");
 
 static PyObject *
+_erfa_af2a(PyObject *self, PyObject *args)
+{
+    int ideg, iamin;
+    double asec, rad;
+    char sign;
+    PyObject *pyin, *aideg, *aiamin, *aasec;
+    PyObject *in_iter = NULL, *out_iter = NULL;
+    PyArrayObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyin))
+        return NULL;
+    ndim = PyArray_NDIM(pyin);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pyin);
+    dim_out[0] = dims[0];
+    pyout = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pyout) goto fail;
+    in_iter = PyArray_IterNew((PyObject*)pyin);
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    if (in_iter == NULL || out_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        aideg = PyArray_GETITEM(pyin, PyArray_ITER_DATA(in_iter));
+        if (aideg == NULL) {
+            PyErr_SetString(_erfaError, "cannot retrieve data from args");
+            goto fail;
+        }
+        Py_INCREF(aideg);
+        PyArray_ITER_NEXT(in_iter);
+        aiamin = PyArray_GETITEM(pyin, PyArray_ITER_DATA(in_iter));
+        if (aiamin == NULL) {
+            PyErr_SetString(_erfaError, "cannot retrieve data from args");
+            goto fail;
+        }
+        Py_INCREF(aiamin);
+        PyArray_ITER_NEXT(in_iter);
+        aasec = PyArray_GETITEM(pyin, PyArray_ITER_DATA(in_iter));
+        if (aasec == NULL) {
+            PyErr_SetString(_erfaError, "cannot retrieve data from args");
+            goto fail;
+        }
+        Py_INCREF(aasec);
+        PyArray_ITER_NEXT(in_iter);
+        ideg = (int)PyLong_AsLong(aideg);
+        if (ideg == -1 && PyErr_Occurred()) goto fail;
+        iamin = (int)PyLong_AsLong(aiamin);
+        if (iamin == -1 && PyErr_Occurred()) goto fail;
+        asec = (double)PyFloat_AsDouble(aasec);
+        if (asec == -1 && PyErr_Occurred()) goto fail;
+        if (ideg < 0) sign = '-'; else sign = '+';
+        eraAf2a(sign, ideg, iamin, asec, &rad);
+        if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(rad))) {
+            PyErr_SetString(_erfaError, "unable to set output rad");
+            goto fail;
+        }
+        PyArray_ITER_NEXT(out_iter);
+        Py_DECREF(aideg);
+        Py_DECREF(aiamin);
+        Py_DECREF(aasec);
+    }
+    Py_DECREF(in_iter);
+    Py_DECREF(out_iter);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;    
+
+fail:
+    Py_XDECREF(in_iter);
+    Py_XDECREF(out_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_af2a_doc,
+"\naf2a(d, m, s) -> r\n"
+"Convert degrees, arcminutes, arcseconds to radians.\n"
+"Given:\n"
+"/*    sign       '-' = negative, otherwise positive*/\n"
+"    d          degrees\n"
+"    m          arcminutes\n"
+"    s          arcseconds\n"
+"Returned:\n"
+"    r          angle in radians");
+
+static PyObject *
 _erfa_anp(PyObject *self, PyObject *args)
 {
     double *a, *out;
@@ -4785,6 +4877,7 @@ static PyMethodDef _erfa_methods[] = {
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},
     {"a2af", _erfa_a2af, METH_VARARGS, _erfa_a2af_doc},
     {"a2tf", _erfa_a2tf, METH_VARARGS, _erfa_a2tf_doc},
+    {"af2a", _erfa_af2a, METH_VARARGS, _erfa_af2a_doc},
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
     {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},
     {"rxp", _erfa_rxp, METH_VARARGS, _erfa_rxp_doc},

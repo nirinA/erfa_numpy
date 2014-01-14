@@ -505,6 +505,12 @@ class Validate(unittest.TestCase):
         self.assertEqual(r[1][2], 22)
         self.assertEqual(r[1][3], 6484)
 
+    def test_af2a(self):
+        a = np.array([[-45, 13, 27.2], [45, 13, 27.2]])
+        r = erfa.af2a(a)
+        self.assertAlmostEqual(r[0], -0.7893115794313644842, 15)
+        self.assertAlmostEqual(r[1], 0.7893115794313644842, 15)
+
 ## VectorMatrix/BuildRotations 
     def test_rx(self):
         phi = np.array([0.3456789])
