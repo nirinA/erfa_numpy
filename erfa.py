@@ -123,6 +123,12 @@ def tdbtcb(tdb1, tdb2):
 
 tdb_tcb = tdbtcb
 
+def tttai(tt1, tt2):
+    check_args(tt1, tt2)
+    return _erfa.tttai(tt1, tt2)
+
+tt_tai = tttai
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)
