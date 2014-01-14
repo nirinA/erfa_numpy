@@ -106,6 +106,12 @@ def taitt(tai1, tai2):
 
 tai_tt = taitt
 
+def taiut1(tai1, tai2, dta):
+    check_args(tai1, tai2, dta)
+    return _erfa.taiut1(tai1, tai2, dta)
+
+tai_ut1 = taiut1
+
 def taiutc(tai1, tai2):
     check_args(tai1, tai2)
     return _erfa.taiutc(tai1, tai2)
