@@ -3037,6 +3037,74 @@ PyDoc_STRVAR(_erfa_tttcg_doc,
 "   tcg1,tcg2   TCG as a 2-part Julian Date");
 
 static PyObject *
+_erfa_utctai(PyObject *self, PyObject *args)
+{
+    double *utc1, *utc2, *tai1, *tai2;
+    int status;
+    PyObject *pyutc1, *pyutc2;
+    PyObject *autc1, *autc2;
+    PyArrayObject *pytai1 = NULL, *pytai2 = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyutc1,
+                                 &PyArray_Type, &pyutc2))
+        return NULL;
+
+    autc1 = PyArray_FROM_OTF(pyutc1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    autc2 = PyArray_FROM_OTF(pyutc2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (autc1 == NULL || autc2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(autc1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(autc1);
+    if (dims[0] != PyArray_DIMS(autc2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+
+    pytai1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pytai2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pytai1 || NULL == pytai2) goto fail;
+    utc1 = (double *)PyArray_DATA(autc1);
+    utc2 = (double *)PyArray_DATA(autc2);
+    tai1 = (double *)PyArray_DATA(pytai1);
+    tai2 = (double *)PyArray_DATA(pytai2);
+    for (i=0;i<dims[0];i++) {
+        status = eraUtctai(utc1[i], utc2[i], &tai1[i], &tai2[i]);
+        if (status) {
+            PyErr_SetString(_erfaError, "should NOT occur...");
+            goto fail;
+        }
+    }
+    Py_DECREF(autc1);
+    Py_DECREF(autc2);
+    Py_INCREF(pytai1); Py_INCREF(pytai2);
+    return Py_BuildValue("OO", pytai1, pytai2);
+
+fail:
+    Py_XDECREF(autc1);
+    Py_XDECREF(autc2);
+    Py_XDECREF(pytai1); Py_XDECREF(pytai2);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_utctai_doc,
+"\nutctai(utc1, utc2) -> tai1, tai2\n\n"
+"Time scale transformation: Coordinated Universal Time, UTC, to\n"
+"International Atomic Time, TAI.\n"
+"Given:\n"
+"   utc1,uc12   UTC as a 2-part Julian Date\n"
+"Returned:\n"
+"   tai1,tai2   TAI as a 2-part Julian Date");
+
+static PyObject *
 _erfa_xy06(PyObject *self, PyObject *args)
 {
     double *d1, *d2, *x, *y;
@@ -3923,6 +3991,7 @@ static PyMethodDef _erfa_methods[] = {
     {"tdbtcb", _erfa_tdbtcb, METH_VARARGS, _erfa_tdbtcb_doc},
     {"tttai", _erfa_tttai, METH_VARARGS, _erfa_tttai_doc},
     {"tttcg", _erfa_tttcg, METH_VARARGS, _erfa_tttcg_doc},
+    {"utctai", _erfa_utctai, METH_VARARGS, _erfa_utctai_doc},
     {"xy06", _erfa_xy06, METH_VARARGS, _erfa_xy06_doc},
     {"xys00a", _erfa_xys00a, METH_VARARGS, _erfa_xys00a_doc},
     {"xys06a", _erfa_xys06a, METH_VARARGS, _erfa_xys06a_doc},

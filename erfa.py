@@ -135,6 +135,12 @@ def tttcg(tt1, tt2):
 
 tt_tcg = tttcg
 
+def utctai(utc1, utc2):
+    check_args(utc1, utc2)
+    return _erfa.utctai(utc1, utc2)
+
+utc_tai = utctai
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)
