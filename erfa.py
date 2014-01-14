@@ -78,6 +78,7 @@ def dat(iy, im, id, fd):
 
 d_tai_utc = dat
 
+
 def d2dtf(scale, ndp, d1, d2):
     if scale.lower() not in ('tai', 'tcb', 'tcg', 'tdb', 'tt', 'ut1', 'utc'):
         raise _erfa.error('unknown time scale: %s'%scale)
@@ -104,6 +105,12 @@ def taitt(tai1, tai2):
     return _erfa.taitt(tai1, tai2)
 
 tai_tt = taitt
+
+def taiutc(tai1, tai2):
+    check_args(tai1, tai2)
+    return _erfa.taiutc(tai1, tai2)
+
+tai_utc = taiutc
 
 def tcbtdb(tcb1, tcb2):
     check_args(tcb1, tcb2)
