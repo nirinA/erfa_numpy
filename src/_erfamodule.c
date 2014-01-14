@@ -1255,6 +1255,64 @@ PyDoc_STRVAR(_erfa_ee00_doc,
 "    ee         equation of the equinoxes");
 
 static PyObject *
+_erfa_epb(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *b;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyb = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!", 
+                                 &PyArray_Type, &pyd1, &PyArray_Type, &pyd2))
+        return NULL;
+
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyb = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyb) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    b = (double *)PyArray_DATA(pyb);
+    for (i=0;i<dims[0];i++) {
+        b[i] = eraEpb(d1[i], d2[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pyb);
+    return (PyObject *)pyb;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pyb);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_epb_doc,
+"\nepb(d1, d2) -> b\n\n"
+"Julian Date to Besselian Epoch\n"
+"Given:\n"
+"    d1,d2      2-part Julian Date\n"
+"Returned:\n"
+"    b          Besselian Epoch.");
+
+static PyObject *
 _erfa_epb2jd(PyObject *self, PyObject *args)
 {
     double *epb, *jd0, *jd1;
@@ -3324,6 +3382,7 @@ static PyMethodDef _erfa_methods[] = {
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
     {"dtf2d", _erfa_dtf2d, METH_VARARGS, _erfa_dtf2d_doc},
     {"ee00", _erfa_ee00, METH_VARARGS, _erfa_ee00_doc},
+    {"epb", _erfa_epb, METH_VARARGS, _erfa_epb_doc},
     {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
     {"eqeq94", _erfa_eqeq94, METH_VARARGS, _erfa_eqeq94_doc},
     {"era00", _erfa_era00, METH_VARARGS, _erfa_era00_doc},
