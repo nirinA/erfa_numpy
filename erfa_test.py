@@ -27,10 +27,12 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(dj1[0], 35948.1915101513, 9)
 
     def test_jd_besselian_epoch(self):
-        
         b = erfa.jd_besselian_epoch(np.array([2415019.8135]), np.array([30103.18648]))
         self.assertAlmostEqual(b[0], 1982.418424159278580, 12)
 
+    def test_jd_julian_epoch(self):
+        j = erfa.jd_julian_epoch(np.array([2451545]), np.array([-7392.5]))
+        self.assertAlmostEqual(j[0], 1979.760438056125941, 12)
 
 ## astrometry tools
     def test_ab(self):
