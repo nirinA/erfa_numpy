@@ -199,6 +199,11 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(t1[0], 2453750.5, places=6)
         self.assertAlmostEqual(t2[0], 0.8924900312508587113, places=12)
 
+    def test_ut1_tai(self):
+        a1, a2 = erfa.ut1_tai(np.array([2453750.5]), np.array([0.892104561]), np.array([-32.6659]))
+        self.assertAlmostEqual(a1[0], 2453750.5, places=6)
+        self.assertAlmostEqual(a2[0], 0.8924826385462962963, places=12)
+        
     def test_utc_tai(self):
         u1, u2 = erfa.utc_tai(np.array([2453750.5]), np.array([0.892100694]))
         self.assertAlmostEqual(u1[0], 2453750.5, places=6)

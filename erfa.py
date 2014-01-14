@@ -148,6 +148,12 @@ def tttcg(tt1, tt2):
 
 tt_tcg = tttcg
 
+def ut1tai(ut11, ut12, dta):
+    check_args(ut11, ut12, dta)
+    return _erfa.ut1tai(ut11, ut12, dta)
+
+ut1_tai = ut1tai
+
 def utctai(utc1, utc2):
     check_args(utc1, utc2)
     return _erfa.utctai(utc1, utc2)
