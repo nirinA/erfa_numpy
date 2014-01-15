@@ -308,6 +308,14 @@ def gst00b(uta, utb):
     check_args(uta, utb)
     return _erfa.gst00b(uta, utb)
 
+def gst06a(uta, utb, tta, ttb):
+    check_args(uta, utb, tta, ttb)
+    return _erfa.gst06a(uta, utb, tta, ttb)
+
+def gst94(uta, utb):
+    check_args(uta, utb)
+    return _erfa.gst94(uta, utb)
+
 ## VectorMatrix/AngleOps
 def a2af(n, a):
     check_args(a)
