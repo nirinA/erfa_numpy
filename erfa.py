@@ -61,7 +61,11 @@ julian_epoch_jd = epj2jd
 def jd2cal(d1, d2):
     check_args(d1, d2)
     return _erfa.jd2cal(d1, d2)
-    
+
+def jdcalf(ndp, d1, d2):
+    check_args(d1, d2)
+    return _erfa.jdcalf(ndp, d1, d2)
+
 ## Astronomy/Astrometry 
 def ab(pnat, v, s, bm1):
     check_args(pnat, v, s, bm1)

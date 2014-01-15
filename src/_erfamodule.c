@@ -2283,7 +2283,7 @@ _erfa_jd2cal(PyObject *self, PyObject *args)
         status = eraJd2cal(d1[i], d2[i], &iy[i], &im[i], &id[i], &fd[i]);
         if (status) {
             PyErr_SetString(_erfaError, "unacceptable date");
-            return NULL;
+            goto fail;
         }
     }
     Py_DECREF(ad1);
@@ -2308,6 +2308,94 @@ PyDoc_STRVAR(_erfa_jd2cal_doc,
 "     im    month\n"
 "     id    day\n"
 "     fd    fraction of day");
+
+static PyObject *
+_erfa_jdcalf(PyObject *self, PyObject *args)
+{
+    double *d1, *d2;
+    PyObject *pyd1, *pyd2;
+    int ndp, status, iymdf[4];
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyiymdf = NULL;
+    PyObject *out_iter = NULL;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_LONG);
+    npy_intp *dims, dim_out[2];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "iO!O!",
+                                 &ndp,
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2))
+        return NULL;
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    dim_out[0] = dims[0];
+    dim_out[1] = 4;
+    pyiymdf = (PyArrayObject *) PyArray_Zeros(2, dim_out, dsc, 0);
+    if (NULL == pyiymdf) goto fail;
+    out_iter = PyArray_IterNew((PyObject*)pyiymdf);
+    if (out_iter == NULL) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    
+    for (i=0;i<dims[0];i++) {
+        status = eraJdcalf(ndp, d1[i], d2[i], iymdf);
+        if (status == -1) {
+            PyErr_SetString(_erfaError, "date out of range");
+            goto fail;
+        }
+        if (status == 1) {
+            PyErr_SetString(_erfaError, "n not in 0-9 (interpreted as 0)");
+            goto fail;
+        }
+        int k;
+        for (k=0;k<4;k++) {
+            if (PyArray_SETITEM(pyiymdf, PyArray_ITER_DATA(out_iter), PyLong_FromLong((long)iymdf[k]))) {
+                PyErr_SetString(_erfaError, "unable to set iymdf");
+                goto fail;
+            }
+            PyArray_ITER_NEXT(out_iter);
+        }
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(out_iter);
+    Py_INCREF(pyiymdf);
+    return (PyObject *)pyiymdf;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(out_iter);
+    Py_XDECREF(pyiymdf);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_jdcalf_doc,
+"\njdcalf(ndp, d1, d2) -> y, m, d, fd\n\n"
+"Julian Date to Gregorian Calendar, expressed in a form convenient\n"
+"for formatting messages:  rounded to a specified precision.\n"
+"Given:\n"
+"     ndp       number of decimal places of days in fraction\n"
+"     d1,d2     2-part Julian Date\n"
+"Returned:\n"
+"     y         year\n"
+"     m         month\n"
+"     d         day\n"
+"     fd        fraction of day");
 
 static PyObject *
 _erfa_numat(PyObject *self, PyObject *args)
@@ -5450,6 +5538,7 @@ static PyMethodDef _erfa_methods[] = {
     {"gst06a", _erfa_gst06a, METH_VARARGS, _erfa_gst06a_doc},
     {"gst94", _erfa_gst94, METH_VARARGS, _erfa_gst94_doc},
     {"jd2cal", _erfa_jd2cal, METH_VARARGS, _erfa_jd2cal_doc},
+    {"jdcalf", _erfa_jdcalf, METH_VARARGS, _erfa_jdcalf_doc},
     {"numat", _erfa_numat, METH_VARARGS, _erfa_numat_doc},
     {"nut00a", _erfa_nut00a, METH_VARARGS, _erfa_nut00a_doc},
     {"nut80", _erfa_nut80, METH_VARARGS, _erfa_nut80_doc},

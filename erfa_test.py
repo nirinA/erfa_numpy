@@ -56,6 +56,13 @@ class Validate(unittest.TestCase):
         self.assertEqual(d[0], 10)
         self.assertAlmostEqual(fd[0], 0.9999, 7)
         
+    def test_jdcalf(self):
+        y, m, d, fd = erfa.jdcalf(4, np.array([2400000.5]), np.array([50123.9999]))[0]
+        self.assertEqual(y, 1996)
+        self.assertEqual(m, 2)
+        self.assertEqual(d, 10)
+        self.assertEqual(fd, 9999)
+
 ## astrometry tools
     def test_ab(self):
         pnat = np.array([[-0.76321968546737951,-0.60869453983060384,-0.21676408580639883]])
