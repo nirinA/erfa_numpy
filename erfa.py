@@ -254,6 +254,10 @@ def falp03(t):
     check_args(t)
     return _erfa.falp03(t)
 
+def fama03(t):
+    check_args(t)
+    return _erfa.fama03(t)
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)
