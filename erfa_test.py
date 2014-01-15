@@ -527,6 +527,20 @@ class Validate(unittest.TestCase):
     def test_gst00b(self):
         g = erfa.gst00b(np.array([2400000.5]), np.array([53736.0]))[0]
         self.assertAlmostEqual(g, 1.754166136510680589, 14)
+
+    def test_gst06(self):
+        uta = np.array([2400000.5])
+        utb = np.array([53736.0])
+        tta = np.array([2400000.5])
+        ttb = np.array([53736.0])
+        rnpb = np.array([
+            ((0.9999989440476103608,-0.1332881761240011518e-2,-0.5790767434730085097e-3),
+             (0.1332858254308954453e-2,0.9999991109044505944,-0.4097782710401555759e-4),
+             (0.5791308472168153320e-3,0.4020595661593994396e-4,0.9999998314954572365))
+            ])
+        g = erfa.gst06(uta, utb, tta, ttb, rnpb)[0]
+        self.assertAlmostEqual(g, 1.754166138018167568, 14)
+
         
     def test_gst06a(self):
         uta = np.array([2400000.5])

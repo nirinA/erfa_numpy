@@ -2009,6 +2009,102 @@ PyDoc_STRVAR(_erfa_gst00b_doc,
 "    g          Greenwich apparent sidereal time (radians)");
 
 static PyObject *
+_erfa_gst06(PyObject *self, PyObject *args)
+{
+    double *uta, *utb, *tta, *ttb, *g, rnpb[3][3];
+    PyObject *pyuta, *pyutb, *pytta, *pyttb, *pyrnpb;
+    PyObject *in_iter = NULL;
+    PyObject *auta, *autb, *atta, *attb, *arnpb;
+    PyArrayObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!", 
+                                 &PyArray_Type, &pyuta,
+                                 &PyArray_Type, &pyutb,
+                                 &PyArray_Type, &pytta,
+                                 &PyArray_Type, &pyttb,
+                                 &PyArray_Type, &pyrnpb))
+        return NULL;
+
+    auta = PyArray_FROM_OTF(pyuta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    autb = PyArray_FROM_OTF(pyutb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    atta = PyArray_FROM_OTF(pytta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    attb = PyArray_FROM_OTF(pyttb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (auta == NULL || autb == NULL || atta == NULL || attb == NULL) {
+        goto fail;
+    }
+    in_iter = PyArray_IterNew((PyObject*)pyrnpb);
+    if (in_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    ndim = PyArray_NDIM(auta);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(auta);
+    if (dims[0] != PyArray_DIMS(autb)[0] ||
+        dims[0] != PyArray_DIMS(atta)[0] ||
+        dims[0] != PyArray_DIMS(attb)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyout = (PyArrayObject *) PyArray_Zeros(1, dims, dsc, 0);
+    if (NULL == pyout) goto fail;
+    uta = (double *)PyArray_DATA(auta);
+    utb = (double *)PyArray_DATA(autb);
+    tta = (double *)PyArray_DATA(atta);
+    ttb = (double *)PyArray_DATA(attb);
+    g = (double *)PyArray_DATA(pyout);
+    for (i=0;i<dims[0];i++) {
+        int j, k;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {
+                arnpb = PyArray_GETITEM(pyrnpb, PyArray_ITER_DATA(in_iter));
+                if (arnpb == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(arnpb);
+                PyArray_ITER_NEXT(in_iter);
+                rnpb[j][k] = (double)PyFloat_AsDouble(arnpb);
+                Py_DECREF(arnpb);
+            }
+        }
+        g[i] = eraGst06(uta[i], utb[i], tta[i], ttb[i], rnpb);
+    }
+    Py_DECREF(auta);
+    Py_DECREF(autb);
+    Py_DECREF(atta);
+    Py_DECREF(attb);
+    Py_DECREF(in_iter);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(auta);
+    Py_XDECREF(autb);
+    Py_XDECREF(atta);
+    Py_XDECREF(attb);
+    Py_XDECREF(in_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_gst06_doc,
+"\ngst06(uta, utb, tta, ttb, rnpb[3][3]) -> gast\n\n"
+"Greenwich apparent sidereal time, IAU 2006, given the NPB matrix.\n"
+"Given:\n"
+"    uta,utb    UT1 as a 2-part Julian Date\n"
+"    tta,ttb    TT as a 2-part Julian Date\n"
+"    rnpb       nutation x precession x bias matrix\n"
+"Returned:\n"
+"    g          Greenwich apparent sidereal time");
+
+static PyObject *
 _erfa_gst06a(PyObject *self, PyObject *args)
 {
     double *uta, *utb, *tta, *ttb, *g;
@@ -5277,6 +5373,7 @@ static PyMethodDef _erfa_methods[] = {
     {"gmst82", _erfa_gmst82, METH_VARARGS, _erfa_gmst82_doc},
     {"gst00a", _erfa_gst00a, METH_VARARGS, _erfa_gst00a_doc},
     {"gst00b", _erfa_gst00b, METH_VARARGS, _erfa_gst00b_doc},
+    {"gst06", _erfa_gst06, METH_VARARGS, _erfa_gst06_doc},
     {"gst06a", _erfa_gst06a, METH_VARARGS, _erfa_gst06a_doc},
     {"gst94", _erfa_gst94, METH_VARARGS, _erfa_gst94_doc},
     {"numat", _erfa_numat, METH_VARARGS, _erfa_numat_doc},

@@ -308,6 +308,10 @@ def gst00b(uta, utb):
     check_args(uta, utb)
     return _erfa.gst00b(uta, utb)
 
+def gst06(uta, utb, tta, ttb, rnpb):
+    check_args(uta, utb, tta, ttb, rnpb)
+    return _erfa.gst06(uta, utb, tta, ttb, rnpb)
+
 def gst06a(uta, utb, tta, ttb):
     check_args(uta, utb, tta, ttb)
     return _erfa.gst06a(uta, utb, tta, ttb)
