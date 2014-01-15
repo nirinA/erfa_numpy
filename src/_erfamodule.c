@@ -1746,6 +1746,79 @@ PyDoc_STRVAR(_erfa_gmst00_doc,
 "    g          Greenwich mean sidereal time (radians)");
 
 static PyObject *
+_erfa_gmst06(PyObject *self, PyObject *args)
+{
+    double *uta, *utb, *tta, *ttb, *g;
+    PyObject *pyuta, *pyutb, *pytta, *pyttb;
+    PyObject *auta, *autb, *atta, *attb;
+    PyArrayObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!", 
+                                 &PyArray_Type, &pyuta,
+                                 &PyArray_Type, &pyutb,
+                                 &PyArray_Type, &pytta,
+                                 &PyArray_Type, &pyttb))
+        return NULL;
+
+    auta = PyArray_FROM_OTF(pyuta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    autb = PyArray_FROM_OTF(pyutb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    atta = PyArray_FROM_OTF(pytta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    attb = PyArray_FROM_OTF(pyttb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (auta == NULL || autb == NULL || atta == NULL || attb == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(auta);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(auta);
+    if (dims[0] != PyArray_DIMS(autb)[0] ||
+        dims[0] != PyArray_DIMS(atta)[0] ||
+        dims[0] != PyArray_DIMS(attb)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyout = (PyArrayObject *) PyArray_Zeros(1, dims, dsc, 0);
+    if (NULL == pyout) goto fail;
+    uta = (double *)PyArray_DATA(auta);
+    utb = (double *)PyArray_DATA(autb);
+    tta = (double *)PyArray_DATA(atta);
+    ttb = (double *)PyArray_DATA(attb);
+    g = (double *)PyArray_DATA(pyout);
+    for (i=0;i<dims[0];i++) {
+        g[i] = eraGmst06(uta[i], utb[i], tta[i], ttb[i]);
+    }
+    Py_DECREF(auta);
+    Py_DECREF(autb);
+    Py_DECREF(atta);
+    Py_DECREF(attb);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(auta);
+    Py_XDECREF(autb);
+    Py_XDECREF(atta);
+    Py_XDECREF(attb);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_gmst06_doc,
+"\ngmst06(uta, utb, tta, ttb) -> gmst\n\n"
+"Greenwich mean sidereal time\n"
+"(model consistent with IAU 2006resolutions).\n"
+"Given:\n"
+"    uta,utb    UT1 as a 2-part Julian Date\n"
+"    tta,ttb    TT as a 2-part Julian Date\n"
+"Returned:\n"
+"    g          Greenwich mean sidereal time (radians)");
+
+static PyObject *
 _erfa_gmst82(PyObject *self, PyObject *args)
 {
     double *d1, *d2, *g;
@@ -4936,6 +5009,7 @@ static PyMethodDef _erfa_methods[] = {
     {"eqeq94", _erfa_eqeq94, METH_VARARGS, _erfa_eqeq94_doc},
     {"era00", _erfa_era00, METH_VARARGS, _erfa_era00_doc},
     {"gmst00", _erfa_gmst00, METH_VARARGS, _erfa_gmst00_doc},
+    {"gmst06", _erfa_gmst06, METH_VARARGS, _erfa_gmst06_doc},
     {"gmst82", _erfa_gmst82, METH_VARARGS, _erfa_gmst82_doc},
     {"numat", _erfa_numat, METH_VARARGS, _erfa_numat_doc},
     {"nut00a", _erfa_nut00a, METH_VARARGS, _erfa_nut00a_doc},
