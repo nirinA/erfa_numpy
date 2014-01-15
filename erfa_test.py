@@ -6,7 +6,7 @@ except ImportError:
 import math
 import numpy as np
 import erfa
-import _erfa
+##import _erfa
 
 class Validate(unittest.TestCase):
     '''
@@ -124,6 +124,28 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(px2[0], 0.9999997295356765185e-2, places=12)
         self.assertAlmostEqual(rv2[0], 10.38468380113917014, places=10)
 
+## Astronomy/GeodeticGeocentric
+    def test_gd2gc(self):
+        e = np.array([3.1])
+        p = np.array([-0.5])
+        h = np.array([2500.0])
+        
+        self.assertRaises(erfa.error, erfa.gd2gc, 0, e, p, h)
+        xyz = erfa.gd2gc(1,e,p,h)[0]
+        self.assertAlmostEqual(xyz[0], -5599000.5577049947, places=7)
+        self.assertAlmostEqual(xyz[1], 233011.67223479203, places=7)
+        self.assertAlmostEqual(xyz[2], -3040909.4706983363, places=7)
+        xyz = erfa.gd2gc(2,e,p,h)[0]
+        self.assertAlmostEqual(xyz[0], -5599000.5577260984, places=7)
+        self.assertAlmostEqual(xyz[1], 233011.6722356703, places=7)
+        self.assertAlmostEqual(xyz[2], -3040909.4706095476, places=7)
+        xyz = erfa.gd2gc(3,e,p,h)[0]
+        self.assertAlmostEqual(xyz[0], -5598998.7626301490, places=7)
+        self.assertAlmostEqual(xyz[1], 233011.5975297822, places=7)
+        self.assertAlmostEqual(xyz[2], -3040908.6861467111, places=7)        
+        self.assertRaises(erfa.error, erfa.gd2gc, 4, e, p, h)
+
+
 ## Astronomy/Timescales
     def test_d_tai_utc(self):
         d = erfa.d_tai_utc(np.array([2003]), np.array([6]), np.array([1]), np.array([0.0]))
@@ -164,7 +186,7 @@ class Validate(unittest.TestCase):
         h = np.array([23], dtype='int32')
         mn = np.array([59], dtype='int32')
         sec = np.array([60.13599])
-        jd1, jd2 = _erfa.dtf2d(scale, y, m, d, h, mn, sec)
+        jd1, jd2 = erfa.dtf2d(scale, y, m, d, h, mn, sec)
         self.assertAlmostEqual(jd1[0]+jd2[0], 2449534.49999, 6)
 
     def test_tai_tt(self):
@@ -313,8 +335,8 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(obl[0], 0.4090751347643816218, 14)
         
     def test_plan94(self):
-        self.assertRaises(_erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 0)
-        self.assertRaises(_erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 10)
+        self.assertRaises(erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 0)
+        self.assertRaises(erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 10)
 
         pv = erfa.plan94(np.array([2400000.5]), np.array([-320000]), 3)[0]
         self.assertAlmostEqual(pv[0][0], 0.9308038666832975759, places=11)

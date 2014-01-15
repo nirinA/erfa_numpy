@@ -1,6 +1,17 @@
+'''ERFA wrapper
+note:
+    af2a has different form of arguments
+'''
 import math
 import numpy as np
 import _erfa
+from _erfa import AULT , CMPS , D2PI , DAS2R , DAU ,\
+     DAYSEC , DC , DD2R , DJ00 , DJC , DJM , DJM0 ,\
+     DJM00 , DJM77 , DJY , DMAS2R , DPI , DR2AS ,\
+     DR2D , DS2R , DTY , ELB , ELG , GRS80 , SRS , \
+     TDB0 , TTMTAI , TURNAS , WGS72 , WGS84, \
+     ASTROM, LDBODY, \
+     error
 
 def check_args(*args):
     for t in args:
@@ -14,9 +25,6 @@ def check_args(*args):
 
 def cast_to_int32(i):
     return np.array([n for n in i], dtype='int32')
-
-## ASTROM and LDBODY struct
-ASTROM = _erfa.ASTROM
 
 ## Astronomy/Calendars
 def cal2jd(iy, im, id):
@@ -67,6 +75,11 @@ def ld(bm, p, q, e, em, dlim):
 def pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b):
     check_args(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
     return _erfa.pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
+
+## Astronomy/GeodeticGeocentric
+def gd2gc(n, elong, phi, height):
+    check_args(elong, phi, height)
+    return _erfa.gd2gc(n, elong, phi, height)
 
 ## Astronomy/Timescales
 def d2dtf(scale, ndp, d1, d2):

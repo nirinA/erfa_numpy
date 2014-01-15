@@ -2152,15 +2152,11 @@ _erfa_plan94(PyObject *self, PyObject *args)
             PyErr_SetString(_erfaError, "illegal np,  not in range(1,8) for planet");
             goto fail;
         }
-        switch (status) {
-        case 1:
+        if (status == 1) {
             PyErr_WarnEx(PyExc_Warning, "year outside range(1000:3000)", 1);
-            break;
-        case 2:
+        }
+        if (status == 2) {
             PyErr_WarnEx(PyExc_Warning,  "computation failed to converge", 1);
-            break;
-        default:
-            break;
         }
         int j,k;
         for (j=0;j<2;j++) {
@@ -4185,7 +4181,7 @@ PyDoc_STRVAR(_erfa_a2tf_doc,
 static PyObject *
 _erfa_af2a(PyObject *self, PyObject *args)
 {
-    int ideg, iamin;
+    int ideg, iamin, status;
     double asec, rad;
     char sign;
     PyObject *pyin, *aideg, *aiamin, *aasec;
@@ -4241,7 +4237,16 @@ _erfa_af2a(PyObject *self, PyObject *args)
         asec = (double)PyFloat_AsDouble(aasec);
         if (asec == -1 && PyErr_Occurred()) goto fail;
         if (ideg < 0) sign = '-'; else sign = '+';
-        eraAf2a(sign, ideg, iamin, asec, &rad);
+        status = eraAf2a(sign, ideg, iamin, asec, &rad);
+        if (status == 1) {
+            PyErr_WarnEx(PyExc_Warning, "ideg outside range 0-359", 1);
+        }
+        if (status == 2) {
+            PyErr_WarnEx(PyExc_Warning, "iamin outside range 0-59", 1);
+        }
+        if (status == 3) {
+            PyErr_WarnEx(PyExc_Warning, "asec outside range 0-59.999...", 1);
+        }
         if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(rad))) {
             PyErr_SetString(_erfaError, "unable to set output rad");
             goto fail;
@@ -4340,6 +4345,93 @@ PyDoc_STRVAR(_erfa_cr_doc,
 "   r           r-matrix to be copied\n"
 "  Returned:\n"
 "   c           copy");
+
+static PyObject *
+_erfa_gd2gc(PyObject *self, PyObject *args)
+{
+    double *elong, *phi, *height, xyz[3];
+    int n, status;
+    PyObject *pyelong, *pyphi, *pyheight;
+    PyObject *aelong = NULL, *aphi = NULL, *aheight = NULL;
+    PyArrayObject *pyout = NULL;
+    PyObject *out_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[2];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "iO!O!O!",
+                                 &n,
+                                 &PyArray_Type, &pyelong,
+                                 &PyArray_Type, &pyphi,
+                                 &PyArray_Type, &pyheight))      
+        return NULL;
+    ndim = PyArray_NDIM(pyelong);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pyelong);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    aelong = PyArray_FROM_OTF(pyelong, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphi = PyArray_FROM_OTF(pyphi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aheight = PyArray_FROM_OTF(pyheight, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aelong == NULL || aphi == NULL || aheight == NULL) goto fail;
+    pyout = (PyArrayObject *) PyArray_Zeros(2, dim_out, dsc, 0);
+    if (NULL == pyout) goto fail;
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    if (out_iter == NULL) goto fail;
+    elong = (double *)PyArray_DATA(aelong);
+    phi = (double *)PyArray_DATA(aphi);
+    height = (double *)PyArray_DATA(aheight);
+    for (i=0;i<dims[0];i++) {
+        status = eraGd2gc(n, elong[i], phi[i], height[i], xyz);
+        if (status == -1) {
+            PyErr_SetString(_erfaError, "illegal identifier; n should be 1,2 or 3");
+            goto fail;
+        }
+        else if (status == -2) {
+            PyErr_SetString(_erfaError, "illegal case");
+            goto fail;
+        }
+        else {
+            int j;
+            for (j=0;j<3;j++) {
+                if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(xyz[j]))) {
+                    PyErr_SetString(_erfaError, "unable to set xyz");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(out_iter);
+            }
+        }
+    }
+    Py_DECREF(aelong);
+    Py_DECREF(aphi);
+    Py_DECREF(aheight);
+    Py_DECREF(out_iter);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(aelong);
+    Py_XDECREF(aphi);
+    Py_XDECREF(aheight);
+    Py_XDECREF(out_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_gd2gc_doc,
+"\ngd2gc(n, elong, phi, height) -> xyz\n\n"
+"Transform geodetic coordinates to geocentric\n"
+" using the specified reference ellipsoid.\n"
+"Given:\n"
+"    n          ellipsoid identifier\n"
+"    elong      longitude (radians, east +ve)\n"
+"    phi        latitude (geodetic, radians)\n"
+"    height     height above ellipsoid (geodetic in meters)\n"
+"  Returned:\n"
+"    xyz        geocentric vector in meters");
 
 static PyObject *
 _erfa_rxp(PyObject *self, PyObject *args)
@@ -4880,6 +4972,7 @@ static PyMethodDef _erfa_methods[] = {
     {"af2a", _erfa_af2a, METH_VARARGS, _erfa_af2a_doc},
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
     {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},
+    {"gd2gc", _erfa_gd2gc, METH_VARARGS, _erfa_gd2gc_doc},
     {"rxp", _erfa_rxp, METH_VARARGS, _erfa_rxp_doc},
     {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
     {"rx", _erfa_rx, METH_VARARGS, _erfa_rx_doc},
