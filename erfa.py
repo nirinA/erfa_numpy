@@ -282,6 +282,10 @@ def faur03(t):
     check_args(t)
     return _erfa.faur03(t)
 
+def fave03(t):
+    check_args(t)
+    return _erfa.fave03(t)
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)
