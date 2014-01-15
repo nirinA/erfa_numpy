@@ -262,6 +262,10 @@ def fame03(t):
     check_args(t)
     return _erfa.fame03(t)
 
+def fane03(t):
+    check_args(t)
+    return _erfa.fane03(t)
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)
