@@ -1775,6 +1775,57 @@ PyDoc_STRVAR(_erfa_fae03_doc,
 "    e          mean longitude of Earth, radians.");
 
 static PyObject *
+_erfa_faf03(PyObject *self, PyObject *args)
+{
+    double *t, *d;
+    PyObject *pyt;
+    PyObject *at;
+    PyArrayObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", 
+                                 &PyArray_Type, &pyt))
+        return NULL;
+
+    at = PyArray_FROM_OTF(pyt, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (at == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(at);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(at);
+    pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyout) goto fail;
+    t = (double *)PyArray_DATA(at);
+    d = (double *)PyArray_DATA(pyout);
+    for (i=0;i<dims[0];i++) {
+        d[i] = eraFaf03(t[i]);
+    }
+    Py_DECREF(at);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(at);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_faf03_doc,
+"\nfaf03(t) -> f\n\n"
+"Fundamental argument, IERS Conventions (2003):\n"
+"mean longitude of the Moon minus mean longitude of the ascending node.\n"
+"Given:\n"
+"    t          TDB as Julian centuries since J2000.0\n"
+"Returned:\n"
+"    f          mean longitude of the Moon minus mean longitude of the ascending node, radians.");
+
+static PyObject *
 _erfa_gmst00(PyObject *self, PyObject *args)
 {
     double *uta, *utb, *tta, *ttb, *g;
@@ -5633,6 +5684,7 @@ static PyMethodDef _erfa_methods[] = {
     {"era00", _erfa_era00, METH_VARARGS, _erfa_era00_doc},
     {"fad03", _erfa_fad03, METH_VARARGS, _erfa_fad03_doc},
     {"fae03", _erfa_fae03, METH_VARARGS, _erfa_fae03_doc},
+    {"faf03", _erfa_faf03, METH_VARARGS, _erfa_faf03_doc},
     {"gmst00", _erfa_gmst00, METH_VARARGS, _erfa_gmst00_doc},
     {"gmst06", _erfa_gmst06, METH_VARARGS, _erfa_gmst06_doc},
     {"gmst82", _erfa_gmst82, METH_VARARGS, _erfa_gmst82_doc},

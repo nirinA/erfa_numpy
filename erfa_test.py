@@ -331,6 +331,10 @@ class Validate(unittest.TestCase):
         d = erfa.fae03(np.array([0.80]))[0]
         self.assertAlmostEqual(d, 1.744713738913081846, 12)
 
+    def test_faf03(self):
+        f = erfa.faf03(np.array([0.80]))[0]
+        self.assertAlmostEqual(f, 0.2597711366745499518, 11) # failed at 12
+        
 ## Astronomy/PrecNutPolar
     def test_c2ixys(self):
         x =  np.array([0.5791308486706011000e-3])
