@@ -270,6 +270,10 @@ def faom03(t):
     check_args(t)
     return _erfa.faom03(t)
 
+def fapa03(t):
+    check_args(t)
+    return _erfa.fapa03(t)
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)
