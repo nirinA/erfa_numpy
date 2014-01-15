@@ -11,6 +11,7 @@ from _erfa import AULT , CMPS , D2PI , DAS2R , DAU ,\
      DR2D , DS2R , DTY , ELB , ELG , GRS80 , SRS , \
      TDB0 , TTMTAI , TURNAS , WGS72 , WGS84, \
      ASTROM, LDBODY, \
+     bi00, \
      error
 
 def check_args(*args):

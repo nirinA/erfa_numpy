@@ -693,6 +693,26 @@ PyDoc_STRVAR(_erfa_pmsafe_doc,
 "    rv2    radial velocity (km/s, +ve = receding), after");
 
 static PyObject *
+_erfa_bi00(PyObject *self)
+{
+    double dpsibi, depsbi, dra;
+    eraBi00(&dpsibi, &depsbi, &dra);
+    if (!PyErr_Occurred()) {
+        return Py_BuildValue("ddd", dpsibi, depsbi, dra);
+    }
+    else {
+        return NULL;
+    }
+}
+
+PyDoc_STRVAR(_erfa_bi00_doc,
+"\nbi00() -> dpsibi,depsbi,dra\n"
+"Frame bias components of IAU 2000 precession-nutation models (part of MHB2000 with additions).\n"
+"Returned:\n"
+"    dpsibi,depsbi    obliquity and correction\n"
+"    dra              the ICRS RA of the J2000.0 mean equinox");
+
+static PyObject *
 _erfa_c2ixys(PyObject *self, PyObject *args)
 {
     double *x, *y, *s, rc2i[3][3];
@@ -6324,6 +6344,7 @@ static PyMethodDef _erfa_methods[] = {
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
+    {"bi00", (PyCFunction)_erfa_bi00, METH_NOARGS, _erfa_bi00_doc},
     {"c2ixys", _erfa_c2ixys, METH_VARARGS, _erfa_c2ixys_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
