@@ -811,6 +811,104 @@ PyDoc_STRVAR(_erfa_bp00_doc,
 "    rbp        bias-precession matrix");
 
 static PyObject *
+_erfa_bp06(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, rb[3][3], rp[3][3], rbp[3][3];
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyrb = NULL, *pyrp = NULL, *pyrbp = NULL;
+    PyObject *rb_iter = NULL, *rp_iter = NULL, *rbp_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2)) {
+        return NULL;
+    }
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyrb = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    pyrp = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    pyrbp = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyrb || NULL == pyrp || NULL == pyrbp) {
+        goto fail;
+    }
+    rb_iter = PyArray_IterNew((PyObject*)pyrb);
+    if (rb_iter == NULL) goto fail;
+    rp_iter = PyArray_IterNew((PyObject*)pyrp);
+    if (rp_iter == NULL) goto fail;
+    rbp_iter = PyArray_IterNew((PyObject*)pyrbp);
+    if (rbp_iter == NULL) goto fail;
+
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        eraBp06(d1[i], d2[i], rb, rp, rbp);
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {                    
+                if (PyArray_SETITEM(pyrb, PyArray_ITER_DATA(rb_iter), PyFloat_FromDouble(rb[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rb");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rb_iter);
+                if (PyArray_SETITEM(pyrp, PyArray_ITER_DATA(rp_iter), PyFloat_FromDouble(rp[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rp");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rp_iter);
+                if (PyArray_SETITEM(pyrbp, PyArray_ITER_DATA(rbp_iter), PyFloat_FromDouble(rbp[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rbp");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rbp_iter);
+            }
+        }
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(rb_iter);
+    Py_DECREF(rp_iter);
+    Py_DECREF(rbp_iter);
+    Py_INCREF(pyrb);
+    Py_INCREF(pyrp);
+    Py_INCREF(pyrbp);
+    return Py_BuildValue("OOO", pyrb, pyrp, pyrbp);
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(rb_iter);
+    Py_XDECREF(rp_iter);
+    Py_XDECREF(rbp_iter);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_bp06_doc,
+"\nbp06(d1, d2) -> rb, rp, rbp\n\n"
+"Frame bias and precession, IAU 2006.\n"
+"Given:\n"
+"    d1, d2     TT as 2-part Julian Date\n"
+"Returned:\n"
+"    rb         frame bias matrix\n"
+"    p          precession matrix)\n"
+"    rbp        bias-precession matrix");
+
+static PyObject *
 _erfa_c2ixys(PyObject *self, PyObject *args)
 {
     double *x, *y, *s, rc2i[3][3];
@@ -6450,6 +6548,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"bi00", (PyCFunction)_erfa_bi00, METH_NOARGS, _erfa_bi00_doc},
     {"bp00", _erfa_bp00, METH_VARARGS, _erfa_bp00_doc},
+    {"bp06", _erfa_bp06, METH_VARARGS, _erfa_bp06_doc},
     {"c2ixys", _erfa_c2ixys, METH_VARARGS, _erfa_c2ixys_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
