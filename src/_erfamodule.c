@@ -1928,6 +1928,57 @@ PyDoc_STRVAR(_erfa_fal03_doc,
 "    l          mean anomaly of the Moon, in radians.");
 
 static PyObject *
+_erfa_falp03(PyObject *self, PyObject *args)
+{
+    double *t, *d;
+    PyObject *pyt;
+    PyObject *at;
+    PyArrayObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", 
+                                 &PyArray_Type, &pyt))
+        return NULL;
+
+    at = PyArray_FROM_OTF(pyt, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (at == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(at);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(at);
+    pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyout) goto fail;
+    t = (double *)PyArray_DATA(at);
+    d = (double *)PyArray_DATA(pyout);
+    for (i=0;i<dims[0];i++) {
+        d[i] = eraFalp03(t[i]);
+    }
+    Py_DECREF(at);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(at);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_falp03_doc,
+"\nfal03(t) -> lp\n"
+"Fundamental argument, IERS Conventions (2003):\n"
+"mean anomaly of the Sun.\n"
+"Given:\n"
+"    t          TDB as Julian centuries since J2000.0\n"
+"Returned\n"
+"    lp         mean anomaly of the Sun, in radians.");
+
+static PyObject *
 _erfa_gmst00(PyObject *self, PyObject *args)
 {
     double *uta, *utb, *tta, *ttb, *g;
@@ -5789,6 +5840,7 @@ static PyMethodDef _erfa_methods[] = {
     {"faf03", _erfa_faf03, METH_VARARGS, _erfa_faf03_doc},
     {"faju03", _erfa_faju03, METH_VARARGS, _erfa_faju03_doc},
     {"fal03", _erfa_fal03, METH_VARARGS, _erfa_fal03_doc},
+    {"falp03", _erfa_falp03, METH_VARARGS, _erfa_falp03_doc},
     {"gmst00", _erfa_gmst00, METH_VARARGS, _erfa_gmst00_doc},
     {"gmst06", _erfa_gmst06, METH_VARARGS, _erfa_gmst06_doc},
     {"gmst82", _erfa_gmst82, METH_VARARGS, _erfa_gmst82_doc},
