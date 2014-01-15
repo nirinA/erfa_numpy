@@ -2237,6 +2237,79 @@ PyDoc_STRVAR(_erfa_gst94_doc,
 "    g          Greenwich mean sidereal time (radians)");
 
 static PyObject *
+_erfa_jd2cal(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *fd;
+    int *iy, *im, *id, status;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyiy = NULL, *pyim = NULL, *pyid = NULL, *pyfd = NULL;
+    PyArray_Descr *dsc, *idsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    idsc = PyArray_DescrFromType(NPY_INT32);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!", 
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2))
+        return NULL;
+
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyiy = (PyArrayObject *) PyArray_Zeros(ndim, dims, idsc, 0);
+    pyim = (PyArrayObject *) PyArray_Zeros(ndim, dims, idsc, 0);
+    pyid = (PyArrayObject *) PyArray_Zeros(ndim, dims, idsc, 0);
+    pyfd= (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    iy = (int *)PyArray_DATA(pyiy);
+    im = (int *)PyArray_DATA(pyim);
+    id = (int *)PyArray_DATA(pyid);
+    fd = (double *)PyArray_DATA(pyfd);
+    for (i=0;i<dims[0];i++) {
+        status = eraJd2cal(d1[i], d2[i], &iy[i], &im[i], &id[i], &fd[i]);
+        if (status) {
+            PyErr_SetString(_erfaError, "unacceptable date");
+            return NULL;
+        }
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pyiy);Py_INCREF(pyim);Py_INCREF(pyid);Py_INCREF(pyfd);
+    return Py_BuildValue("OOOO", pyiy, pyim, pyid, pyfd);
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pyiy);Py_XDECREF(pyim);Py_XDECREF(pyid);Py_XDECREF(pyfd);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_jd2cal_doc,
+"\njd2cal(dj1, dj2) -> year, month, day, fraction of day\n\n"
+"Julian Date to Gregorian year, month, day, and fraction of a day.\n"
+"Given:\n"
+"     dj1,dj2   2-part Julian Date\n"
+"Returned:\n"
+"     iy    year\n"
+"     im    month\n"
+"     id    day\n"
+"     fd    fraction of day");
+
+static PyObject *
 _erfa_numat(PyObject *self, PyObject *args)
 {
     double *epsa, *dpsi, *deps, rmatn[3][3];
@@ -5376,6 +5449,7 @@ static PyMethodDef _erfa_methods[] = {
     {"gst06", _erfa_gst06, METH_VARARGS, _erfa_gst06_doc},
     {"gst06a", _erfa_gst06a, METH_VARARGS, _erfa_gst06a_doc},
     {"gst94", _erfa_gst94, METH_VARARGS, _erfa_gst94_doc},
+    {"jd2cal", _erfa_jd2cal, METH_VARARGS, _erfa_jd2cal_doc},
     {"numat", _erfa_numat, METH_VARARGS, _erfa_numat_doc},
     {"nut00a", _erfa_nut00a, METH_VARARGS, _erfa_nut00a_doc},
     {"nut80", _erfa_nut80, METH_VARARGS, _erfa_nut80_doc},

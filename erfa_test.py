@@ -49,6 +49,13 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(dj0[0], 2400000.5, 9)
         self.assertAlmostEqual(dj1[0], 50375.7, 9)
 
+    def test_jd2cal(self):
+        y, m, d, fd = erfa.jd2cal(np.array([2400000.5]), np.array([50123.9999]))
+        self.assertEqual(y[0], 1996)
+        self.assertEqual(m[0], 2)
+        self.assertEqual(d[0], 10)
+        self.assertAlmostEqual(fd[0], 0.9999, 7)
+        
 ## astrometry tools
     def test_ab(self):
         pnat = np.array([[-0.76321968546737951,-0.60869453983060384,-0.21676408580639883]])
@@ -540,7 +547,6 @@ class Validate(unittest.TestCase):
             ])
         g = erfa.gst06(uta, utb, tta, ttb, rnpb)[0]
         self.assertAlmostEqual(g, 1.754166138018167568, 14)
-
         
     def test_gst06a(self):
         uta = np.array([2400000.5])

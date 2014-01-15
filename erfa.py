@@ -34,17 +34,17 @@ def cal2jd(iy, im, id):
     id = cast_to_int32(id)
     return _erfa.cal2jd(iy, im, id)
         
-def epb2jd(epd):
-    check_args(epd)
-    return _erfa.epb2jd(epd)
-
-besselian_epoch_jd = epb2jd
-
 def epb(jd1, jd2):
     check_args(jd1, jd2)
     return _erfa.epb(jd1, jd2)
 
 jd_besselian_epoch = epb
+
+def epb2jd(epd):
+    check_args(epd)
+    return _erfa.epb2jd(epd)
+
+besselian_epoch_jd = epb2jd
 
 def epj(d1, d2):
     check_args(d1, d2)
@@ -58,6 +58,10 @@ def epj2jd(epj):
 
 julian_epoch_jd = epj2jd
 
+def jd2cal(d1, d2):
+    check_args(d1, d2)
+    return _erfa.jd2cal(d1, d2)
+    
 ## Astronomy/Astrometry 
 def ab(pnat, v, s, bm1):
     check_args(pnat, v, s, bm1)
