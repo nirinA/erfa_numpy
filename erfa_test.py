@@ -398,6 +398,42 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(l, 3.424900460533758000, 12)
 
 ## Astronomy/PrecNutPolar
+    def test_bi00(self):
+        dp, de, dr = erfa.bi00()
+        self.assertAlmostEqual(dp, -0.2025309152835086613e-6, places=15)
+        self.assertAlmostEqual(de, -0.3306041454222147847e-7, places=15)
+        self.assertAlmostEqual(dr, -0.7078279744199225506e-7, places=15)
+
+    def test_bp00(self):
+        rb, rp,rbp = erfa.bp00(np.array([2400000.5]), np.array([50123.9999]))
+        self.assertAlmostEqual(rb[0][0][0], 0.9999999999999942498, places=12)
+        self.assertAlmostEqual(rb[0][0][1], -0.7078279744199196626e-7, places=16)
+        self.assertAlmostEqual(rb[0][0][2], 0.8056217146976134152e-7, places=16)
+        self.assertAlmostEqual(rb[0][1][0], 0.7078279477857337206e-7, places=16)
+        self.assertAlmostEqual(rb[0][1][1], 0.9999999999999969484, places=12)
+        self.assertAlmostEqual(rb[0][1][2], 0.3306041454222136517e-7, places=16)
+        self.assertAlmostEqual(rb[0][2][0], -0.8056217380986972157e-7, places=16)
+        self.assertAlmostEqual(rb[0][2][1], -0.3306040883980552500e-7, places=16)
+        self.assertAlmostEqual(rb[0][2][2], 0.9999999999999962084, places=12)
+        self.assertAlmostEqual(rp[0][0][0], 0.9999995504864048241, places=12)
+        self.assertAlmostEqual(rp[0][0][1], 0.8696113836207084411e-3, places=14)
+        self.assertAlmostEqual(rp[0][0][2], 0.3778928813389333402e-3, places=14)
+        self.assertAlmostEqual(rp[0][1][0], -0.8696113818227265968e-3, places=14)
+        self.assertAlmostEqual(rp[0][1][1], 0.9999996218879365258, places=12)
+        self.assertAlmostEqual(rp[0][1][2], -0.1690679263009242066e-6, places=14)
+        self.assertAlmostEqual(rp[0][2][0], -0.3778928854764695214e-3, places=14)
+        self.assertAlmostEqual(rp[0][2][1], -0.1595521004195286491e-6, places=14)
+        self.assertAlmostEqual(rp[0][2][2], 0.9999999285984682756, places=12)
+        self.assertAlmostEqual(rbp[0][0][0], 0.9999995505175087260, places=12)
+        self.assertAlmostEqual(rbp[0][0][1], 0.8695405883617884705e-3, places=14)
+        self.assertAlmostEqual(rbp[0][0][2], 0.3779734722239007105e-3, places=14)
+        self.assertAlmostEqual(rbp[0][1][0], -0.8695405990410863719e-3, places=14)
+        self.assertAlmostEqual(rbp[0][1][1], 0.9999996219494925900, places=12)
+        self.assertAlmostEqual(rbp[0][1][2], -0.1360775820404982209e-6, places=14)
+        self.assertAlmostEqual(rbp[0][2][0], -0.3779734476558184991e-3, places=14)
+        self.assertAlmostEqual(rbp[0][2][1], -0.1925857585832024058e-6, places=14)
+        self.assertAlmostEqual(rbp[0][2][2], 0.9999999285680153377, places=12)
+
     def test_c2ixys(self):
         x =  np.array([0.5791308486706011000e-3])
         y =  np.array([0.4020579816732961219e-4])
