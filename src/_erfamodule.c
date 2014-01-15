@@ -1950,6 +1950,65 @@ PyDoc_STRVAR(_erfa_gst00a_doc,
 "    g          Greenwich apparent sidereal time (radians)");
 
 static PyObject *
+_erfa_gst00b(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *g;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!", 
+                                 &PyArray_Type, &pyd1, &PyArray_Type, &pyd2))
+        return NULL;
+
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyout) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    g = (double *)PyArray_DATA(pyout);
+    for (i=0;i<dims[0];i++) {
+        g[i] = eraGst00b(d1[i], d2[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_gst00b_doc,
+"\ngst00b(uta, utb) -> gast\n\n"
+"Greenwich apparent sidereal time (model consistent with IAU 2000\n"
+"resolutions but using the truncated nutation model IAU 2000B).\n"
+"Given:\n"
+"    uta,utb    UT1 as a 2-part Julian Date\n"
+"Returned:\n"
+"    g          Greenwich apparent sidereal time (radians)");
+
+static PyObject *
 _erfa_numat(PyObject *self, PyObject *args)
 {
     double *epsa, *dpsi, *deps, rmatn[3][3];
@@ -5085,6 +5144,7 @@ static PyMethodDef _erfa_methods[] = {
     {"gmst06", _erfa_gmst06, METH_VARARGS, _erfa_gmst06_doc},
     {"gmst82", _erfa_gmst82, METH_VARARGS, _erfa_gmst82_doc},
     {"gst00a", _erfa_gst00a, METH_VARARGS, _erfa_gst00a_doc},
+    {"gst00b", _erfa_gst00b, METH_VARARGS, _erfa_gst00b_doc},
     {"numat", _erfa_numat, METH_VARARGS, _erfa_numat_doc},
     {"nut00a", _erfa_nut00a, METH_VARARGS, _erfa_nut00a_doc},
     {"nut80", _erfa_nut80, METH_VARARGS, _erfa_nut80_doc},

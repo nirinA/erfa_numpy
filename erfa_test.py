@@ -513,8 +513,8 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(g, 1.754174971870091203, 14)
         
     def test_gmst82(self):
-        g = erfa.gmst82(np.array([2400000.5]), np.array([53736.0]))
-        self.assertAlmostEqual(g[0], 1.754174981860675096, 14)
+        g = erfa.gmst82(np.array([2400000.5]), np.array([53736.0]))[0]
+        self.assertAlmostEqual(g, 1.754174981860675096, 14)
 
     def test_gst00a(self):
         uta = np.array([2400000.5])
@@ -523,6 +523,10 @@ class Validate(unittest.TestCase):
         ttb = np.array([53736.0])
         g = erfa.gst00a(uta, utb, tta, ttb)[0]
         self.assertAlmostEqual(g, 1.754166138018281369, 14)
+
+    def test_gst00b(self):
+        g = erfa.gst00b(np.array([2400000.5]), np.array([53736.0]))[0]
+        self.assertAlmostEqual(g, 1.754166136510680589, 14)
         
 ## VectorMatrix/AngleOps
     def test_a2af(self):
