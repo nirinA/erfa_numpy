@@ -225,6 +225,10 @@ def utcut1(utc1, utc2, dut1):
 utc_ut1 = utcut1
 
 ## Astronomy/Ephemerides
+def epv00(d1,d2):
+    check_args(d1,d2)
+    return _erfa.epv00(d1,d2)
+
 def plan94(d1, d2, np):
     check_args(d1, d2)
     return _erfa.plan94(d1, d2, np)

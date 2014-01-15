@@ -300,6 +300,24 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(u2[0], 0.8921045608981481481, places=13)
 
 ## Astronomy/Ephemerides
+    def test_epv00(self):
+        pvh, pvb = erfa.epv00(np.array([2400000.5]), np.array([53411.52501161]))
+        self.assertAlmostEqual(pvh[0][0][0], -0.7757238809297706813, places=14)
+        self.assertAlmostEqual(pvh[0][0][1], 0.5598052241363340596, places=13) #fail at 14
+        self.assertAlmostEqual(pvh[0][0][2], 0.2426998466481686993, places=14)
+
+        self.assertAlmostEqual(pvh[0][1][0], -0.1091891824147313846e-1, places=15)
+        self.assertAlmostEqual(pvh[0][1][1], -0.1247187268440845008e-1, places=15)
+        self.assertAlmostEqual(pvh[0][1][2], -0.5407569418065039061e-2, places=15)
+        
+        self.assertAlmostEqual(pvb[0][0][0], -0.7714104440491111971, places=14)
+        self.assertAlmostEqual(pvb[0][0][1], 0.5598412061824171323, places=13)  #fail at 14
+        self.assertAlmostEqual(pvb[0][0][2], 0.2425996277722452400, places=14)
+
+        self.assertAlmostEqual(pvb[0][1][0], -0.1091874268116823295e-1, places=15)
+        self.assertAlmostEqual(pvb[0][1][1], -0.1246525461732861538e-1, places=15)
+        self.assertAlmostEqual(pvb[0][1][2], -0.5404773180966231279e-2, places=15)
+
     def test_plan94(self):
         self.assertRaises(erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 0)
         self.assertRaises(erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 10)
