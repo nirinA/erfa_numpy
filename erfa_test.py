@@ -299,6 +299,34 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(u1[0], 2453750.5, places=6)
         self.assertAlmostEqual(u2[0], 0.8921045608981481481, places=13)
 
+## Astronomy/Ephemerides
+    def test_plan94(self):
+        self.assertRaises(erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 0)
+        self.assertRaises(erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 10)
+
+        pv = erfa.plan94(np.array([2400000.5]), np.array([-320000]), 3)[0]
+        self.assertAlmostEqual(pv[0][0], 0.9308038666832975759, places=11)
+        self.assertAlmostEqual(pv[0][1], 0.3258319040261346000, places=11)
+        self.assertAlmostEqual(pv[0][2], 0.1422794544481140560, places=11)
+
+        self.assertAlmostEqual(pv[1][0], -0.6429458958255170006e-2, places=11)
+        self.assertAlmostEqual(pv[1][1], 0.1468570657704237764e-1, places=11)
+        self.assertAlmostEqual(pv[1][2], 0.6406996426270981189e-2, places=11)
+
+        pv = erfa.plan94(np.array([2400000.5]), np.array([43999.9]), 1)[0]
+        self.assertAlmostEqual(pv[0][0], 0.2945293959257430832, places=11)
+        self.assertAlmostEqual(pv[0][1], -0.2452204176601049596, places=11)
+        self.assertAlmostEqual(pv[0][2], -0.1615427700571978153, places=11)
+
+        self.assertAlmostEqual(pv[1][0], 0.1413867871404614441e-1, places=11)
+        self.assertAlmostEqual(pv[1][1], 0.1946548301104706582e-1, places=11)
+        self.assertAlmostEqual(pv[1][2], 0.8929809783898904786e-2, places=11)
+
+## Astronomy/FundamentalArgs
+    def test_fad03(self):
+        d = erfa.fad03(np.array([0.80]))[0]
+        self.assertAlmostEqual(d, 1.946709205396925672, 12)
+
 ## Astronomy/PrecNutPolar
     def test_c2ixys(self):
         x =  np.array([0.5791308486706011000e-3])
@@ -348,28 +376,6 @@ class Validate(unittest.TestCase):
         obl = erfa.obl80(np.array([2400000.5]), np.array([54388.0]))
         self.assertAlmostEqual(obl[0], 0.4090751347643816218, 14)
         
-    def test_plan94(self):
-        self.assertRaises(erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 0)
-        self.assertRaises(erfa.error, erfa.plan94, np.array([2400000.5]), np.array([-320000]), 10)
-
-        pv = erfa.plan94(np.array([2400000.5]), np.array([-320000]), 3)[0]
-        self.assertAlmostEqual(pv[0][0], 0.9308038666832975759, places=11)
-        self.assertAlmostEqual(pv[0][1], 0.3258319040261346000, places=11)
-        self.assertAlmostEqual(pv[0][2], 0.1422794544481140560, places=11)
-
-        self.assertAlmostEqual(pv[1][0], -0.6429458958255170006e-2, places=11)
-        self.assertAlmostEqual(pv[1][1], 0.1468570657704237764e-1, places=11)
-        self.assertAlmostEqual(pv[1][2], 0.6406996426270981189e-2, places=11)
-
-        pv = erfa.plan94(np.array([2400000.5]), np.array([43999.9]), 1)[0]
-        self.assertAlmostEqual(pv[0][0], 0.2945293959257430832, places=11)
-        self.assertAlmostEqual(pv[0][1], -0.2452204176601049596, places=11)
-        self.assertAlmostEqual(pv[0][2], -0.1615427700571978153, places=11)
-
-        self.assertAlmostEqual(pv[1][0], 0.1413867871404614441e-1, places=11)
-        self.assertAlmostEqual(pv[1][1], 0.1946548301104706582e-1, places=11)
-        self.assertAlmostEqual(pv[1][2], 0.8929809783898904786e-2, places=11)
-
     def test_pmat76(self):
         rmatp = erfa.pmat76(np.array([2400000.5]), np.array([50123.9999]))[0]
         self.assertAlmostEqual(rmatp[0][0], 0.9999995504328350733, places=12)

@@ -91,7 +91,8 @@ def gd2gc(n, elong, phi, height):
 
 ## Astronomy/Timescales
 def d2dtf(scale, ndp, d1, d2):
-    if scale.lower() not in ('tai', 'tcb', 'tcg', 'tdb', 'tt', 'ut1', 'utc'):
+    scale = scale.upper()
+    if scale not in ('TAI', 'TCB', 'TCG', 'TDB', 'TT', 'UT1', 'UTC'):
         raise _erfa.error('unknown time scale: %s'%scale)
     check_args(d1, d2)
     return _erfa.d2dtf(scale, ndp, d1, d2)
@@ -114,7 +115,8 @@ def dtdb(d1, d2, ut1, elon, u, v):
 d_tdb_tt = dtdb
 
 def dtf2d(scale, iy, im, id, ihr, imn, sec):   
-    if scale.lower() not in ('tai', 'tcb', 'tcg', 'tdb', 'tt', 'ut1', 'utc'):
+    scale = scale.upper()
+    if scale not in ('TAI', 'TCB', 'TCG', 'TDB', 'TT', 'UT1', 'UTC'):
         raise _erfa.error('unknown time scale: %s'%scale)
     check_args(iy, im, id, ihr, imn, sec)
     iy = cast_to_int32(iy)
@@ -222,6 +224,16 @@ def utcut1(utc1, utc2, dut1):
 
 utc_ut1 = utcut1
 
+## Astronomy/Ephemerides
+def plan94(d1, d2, np):
+    check_args(d1, d2)
+    return _erfa.plan94(d1, d2, np)
+
+## Astronomy/FundamentalArgs
+def fad03(t):
+    check_args(t)
+    return _erfa.fad03(t)
+
 ## Astronomy/PrecNutPolar
 def c2ixys(x, y, s):
     check_args(x, y, s)
@@ -242,10 +254,6 @@ def nut80(d1, d2):
 def obl80(d1, d2):
     check_args(d1, d2)
     return _erfa.obl80(d1, d2)
-
-def plan94(d1, d2, np):
-    check_args(d1, d2)
-    return _erfa.plan94(d1, d2, np)
 
 def pmat76(d1, d2):
     check_args(d1, d2)
