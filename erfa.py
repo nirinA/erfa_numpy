@@ -300,6 +300,10 @@ def gmst82(d1, d2):
     check_args(d1, d2)
     return _erfa.gmst82(d1, d2)
 
+def gst00a(uta, utb, tta, ttb):
+    check_args(uta, utb, tta, ttb)
+    return _erfa.gst00a(uta, utb, tta, ttb)
+
 ## VectorMatrix/AngleOps
 def a2af(n, a):
     check_args(a)
