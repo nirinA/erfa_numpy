@@ -909,6 +909,80 @@ PyDoc_STRVAR(_erfa_bp06_doc,
 "    rbp        bias-precession matrix");
 
 static PyObject *
+_erfa_bpn2xy(PyObject *self, PyObject *args)
+{
+    double x, y, *ax, *ay, rbpn[3][3];
+    PyObject *pyrbpn;
+    PyArrayObject *pyx = NULL, *pyy = NULL;
+    PyObject *arbpn = NULL;
+    PyObject *rbpn_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyrbpn))      
+        return NULL;
+    ndim = PyArray_NDIM(pyrbpn);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pyrbpn);
+    dim_out[0] = dims[0];
+    pyx = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pyy = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pyx || NULL == pyy) goto fail;
+    ax = (double *)PyArray_DATA(pyx);
+    ay = (double *)PyArray_DATA(pyy);
+    rbpn_iter = PyArray_IterNew((PyObject *)pyrbpn);
+    if (rbpn_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        double vrbpn;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {
+                arbpn = PyArray_GETITEM(pyrbpn, PyArray_ITER_DATA(rbpn_iter));
+                if (arbpn == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(arbpn);
+                vrbpn = (double)PyFloat_AsDouble(arbpn);
+                if (vrbpn == -1 && PyErr_Occurred()) goto fail;
+                rbpn[j][k] = vrbpn;
+                Py_DECREF(arbpn);                
+                PyArray_ITER_NEXT(rbpn_iter); 
+            }
+        }
+        eraBpn2xy(rbpn, &x, &y);
+        ax[i] = x;
+        ay[i] = y;
+    }
+    Py_DECREF(rbpn_iter);
+    Py_INCREF(pyx);
+    Py_INCREF(pyy);
+    return Py_BuildValue("OO", pyx, pyy);
+
+fail:
+    Py_XDECREF(rbpn_iter);
+    Py_XDECREF(pyx);
+    Py_XDECREF(pyy);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_bpn2xy_doc,
+"\nbpn2xy(rbpn) -> x, y\n\n"
+"Extract from the bias-precession-nutation matrix\n"
+"the X,Y coordinates of the Celestial Intermediate Pole.\n"
+"Given:\n"
+"    rbpn       celestial-to-true matrix\n"
+"Returned:\n"
+"    x,y        celestial Intermediate Pole");
+
+static PyObject *
 _erfa_c2ixys(PyObject *self, PyObject *args)
 {
     double *x, *y, *s, rc2i[3][3];
@@ -6549,6 +6623,7 @@ static PyMethodDef _erfa_methods[] = {
     {"bi00", (PyCFunction)_erfa_bi00, METH_NOARGS, _erfa_bi00_doc},
     {"bp00", _erfa_bp00, METH_VARARGS, _erfa_bp00_doc},
     {"bp06", _erfa_bp06, METH_VARARGS, _erfa_bp06_doc},
+    {"bpn2xy", _erfa_bpn2xy, METH_VARARGS, _erfa_bpn2xy_doc},
     {"c2ixys", _erfa_c2ixys, METH_VARARGS, _erfa_c2ixys_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},

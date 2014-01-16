@@ -466,6 +466,16 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rbp[0][2][1], -0.1924880847894457113e-6, places=14)
         self.assertAlmostEqual(rbp[0][2][2], 0.9999999285679971958, places=12)
 
+    def test_bpn2xy(self):
+        rbpn = np.array([
+            ((9.999962358680738e-1,-2.516417057665452e-3,-1.093569785342370e-3),
+             (2.516462370370876e-3,9.999968329010883e-1,4.006159587358310e-5),
+             (1.093465510215479e-3,-4.281337229063151e-5,9.999994012499173e-1))
+            ])
+        x, y = erfa.bpn2xy(rbpn)
+        self.assertAlmostEqual(x[0], 1.093465510215479e-3, places=12)
+        self.assertAlmostEqual(y[0], -4.281337229063151e-5, places=12)
+
     def test_c2ixys(self):
         x =  np.array([0.5791308486706011000e-3])
         y =  np.array([0.4020579816732961219e-4])

@@ -300,6 +300,10 @@ def bp06(d1, d2):
     check_args(d1, d2)
     return _erfa.bp06(d1, d2)
 
+def bpn2xy(rbpn):
+    check_args(rbpn)
+    return _erfa.bpn2xy(rbpn)
+
 def c2ixys(x, y, s):
     check_args(x, y, s)
     return _erfa.c2ixys(x, y, s)
