@@ -320,6 +320,10 @@ def c2ibpn(d1, d2, rbpn):
     check_args(d1, d2, rbpn)
     return _erfa.c2ibpn(d1, d2, rbpn)
 
+def c2ixy(d1, d2, x, y):
+    check_args(d1, d2, x, y)
+    return _erfa.c2ixy(d1, d2, x, y)
+
 def c2ixys(x, y, s):
     check_args(x, y, s)
     return _erfa.c2ixys(x, y, s)
