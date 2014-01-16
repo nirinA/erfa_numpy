@@ -967,6 +967,7 @@ _erfa_bpn2xy(PyObject *self, PyObject *args)
     return Py_BuildValue("OO", pyx, pyy);
 
 fail:
+    Py_XDECREF(arbpn);
     Py_XDECREF(rbpn_iter);
     Py_XDECREF(pyx);
     Py_XDECREF(pyy);
@@ -1020,7 +1021,10 @@ _erfa_c2i00a(PyObject *self, PyObject *args)
         goto fail;
     }
     rc2i_iter = PyArray_IterNew((PyObject*)pyrc2i);
-    if (rc2i_iter == NULL) goto fail;
+    if (rc2i_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
 
     for (i=0;i<dims[0];i++) {
         int j,k;
@@ -1095,82 +1099,10 @@ _erfa_c2i00b(PyObject *self, PyObject *args)
         goto fail;
     }
     rc2i_iter = PyArray_IterNew((PyObject*)pyrc2i);
-    if (rc2i_iter == NULL) goto fail;
-
-    for (i=0;i<dims[0];i++) {
-        int j,k;
-        eraC2i00b(d1[i], d2[i], rc2i);
-        for (j=0;j<3;j++) {
-            for (k=0;k<3;k++) {                    
-                if (PyArray_SETITEM(pyrc2i, PyArray_ITER_DATA(rc2i_iter), PyFloat_FromDouble(rc2i[j][k]))) {
-                    PyErr_SetString(_erfaError, "unable to set rc2i");
-                    goto fail;
-                }
-                PyArray_ITER_NEXT(rc2i_iter);
-            }
-        }
-    }
-    Py_DECREF(ad1);
-    Py_DECREF(ad2);
-    Py_DECREF(rc2i_iter);
-    Py_INCREF(pyrc2i);
-    return (PyObject *)pyrc2i;
-
-fail:
-    Py_XDECREF(ad1);
-    Py_XDECREF(ad2);
-    Py_XDECREF(rc2i_iter);
-    return NULL;
-}
-
-PyDoc_STRVAR(_erfa_c2i00b_doc,
-"\nc2i00b(d1, d2) -> rc2i\n\n"
-"Form the celestial-to-intermediate matrix for a given\n"
-"date using the IAU 2000B precession-nutation model.\n"
-"Given:\n"
-"    d1,d2      TT as 2-part Julian date\n"
-"Returned:\n"
-"    rc2i       celestial-to-intermediate matrix");
-
-static PyObject *
-_erfa_c2i00b(PyObject *self, PyObject *args)
-{
-    double *d1, *d2, rc2i[3][3];
-    PyObject *pyd1, *pyd2;
-    PyObject *ad1, *ad2;
-    PyArrayObject *pyrc2i = NULL;
-    PyObject *rc2i_iter = NULL;
-    PyArray_Descr * dsc;
-    dsc = PyArray_DescrFromType(NPY_DOUBLE);
-    npy_intp *dims, dim_out[3];
-    int ndim, i;
-    if (!PyArg_ParseTuple(args, "O!O!",
-                                 &PyArray_Type, &pyd1,
-                                 &PyArray_Type, &pyd2)) {
-        return NULL;
-    }
-    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    if (ad1 == NULL || ad2 == NULL) {
+    if (rc2i_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
         goto fail;
     }
-    ndim = PyArray_NDIM(ad1);
-    if (!ndim) {
-        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
-        goto fail;
-    }
-    dims = PyArray_DIMS(ad1);
-    d1 = (double *)PyArray_DATA(ad1);
-    d2 = (double *)PyArray_DATA(ad2);
-    dim_out[0] = dims[0];
-    dim_out[1] = 3;
-    dim_out[2] = 3;
-    pyrc2i = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
-    if (NULL == pyrc2i) {
-        goto fail;
-    }
-    rc2i_iter = PyArray_IterNew((PyObject*)pyrc2i);
-    if (rc2i_iter == NULL) goto fail;
 
     for (i=0;i<dims[0];i++) {
         int j,k;
@@ -1245,7 +1177,10 @@ _erfa_c2i06a(PyObject *self, PyObject *args)
         goto fail;
     }
     rc2i_iter = PyArray_IterNew((PyObject*)pyrc2i);
-    if (rc2i_iter == NULL) goto fail;
+    if (rc2i_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
 
     for (i=0;i<dims[0];i++) {
         int j,k;
@@ -1279,6 +1214,105 @@ PyDoc_STRVAR(_erfa_c2i06a_doc,
 "using the IAU 2006 precession and IAU 200A nutation model.\n"
 "Given:\n"
 "    d1,d2      TT as 2-part Julian date\n"
+"Returned:\n"
+"    rc2i       celestial-to-intermediate matrix");
+
+static PyObject *
+_erfa_c2ibpn(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, rbpn[3][3], rc2i[3][3];
+    PyObject *pyd1, *pyd2,  *pyrbpn;
+    PyObject *ad1, *ad2, *arbpn = NULL;
+    PyArrayObject *pyrc2i = NULL;
+    PyObject *rbpn_iter = NULL;
+    PyObject *rc2i_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2,
+                                 &PyArray_Type, &pyrbpn))      
+        return NULL;
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    rbpn_iter = PyArray_IterNew((PyObject *)pyrbpn);
+    if (rbpn_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyrc2i= (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyrc2i) goto fail;
+    rc2i_iter = PyArray_IterNew((PyObject*)pyrc2i);
+    if (rc2i_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        double vrbpn;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {
+                arbpn = PyArray_GETITEM(pyrbpn, PyArray_ITER_DATA(rbpn_iter));
+                if (arbpn == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(arbpn);
+                vrbpn = (double)PyFloat_AsDouble(arbpn);
+                if (vrbpn == -1 && PyErr_Occurred()) goto fail;
+                rbpn[j][k] = vrbpn;
+                Py_DECREF(arbpn);                
+                PyArray_ITER_NEXT(rbpn_iter); 
+            }
+        }
+        eraC2ibpn(d1[i], d2[i], rbpn, rc2i);
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {                    
+                if (PyArray_SETITEM(pyrc2i, PyArray_ITER_DATA(rc2i_iter), PyFloat_FromDouble(rc2i[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rc2i");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rc2i_iter);
+            }
+        }
+    }
+    Py_DECREF(rc2i_iter);
+    Py_DECREF(rbpn_iter);
+    Py_INCREF(pyrc2i);
+    return (PyObject *)pyrc2i;
+
+fail:
+    Py_XDECREF(arbpn);
+    Py_XDECREF(rc2i_iter);
+    Py_XDECREF(rbpn_iter);
+    Py_XDECREF(pyrc2i);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_c2ibpn_doc,
+"\nc2ibpn(d1, d2, rbpn) -> rc2i\n\n"
+"Form the celestial-to-intermediate matrix for a given date\n"
+"and given the bias-precession-nutation matrix. IAU 2000.\n"
+"Given:\n"
+"    d1,d2      TT as 2-part Julian date\n"
+"    rbpn       celestial-to-true matrix\n"
 "Returned:\n"
 "    rc2i       celestial-to-intermediate matrix");
 
@@ -6926,8 +6960,8 @@ static PyMethodDef _erfa_methods[] = {
     {"bpn2xy", _erfa_bpn2xy, METH_VARARGS, _erfa_bpn2xy_doc},
     {"c2i00a", _erfa_c2i00a, METH_VARARGS, _erfa_c2i00a_doc},
     {"c2i00b", _erfa_c2i00b, METH_VARARGS, _erfa_c2i00b_doc},
-    {"c2i00b", _erfa_c2i00b, METH_VARARGS, _erfa_c2i00b_doc},
     {"c2i06a", _erfa_c2i06a, METH_VARARGS, _erfa_c2i06a_doc},
+    {"c2ibpn", _erfa_c2ibpn, METH_VARARGS, _erfa_c2ibpn_doc},
     {"c2ixys", _erfa_c2ixys, METH_VARARGS, _erfa_c2ixys_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
