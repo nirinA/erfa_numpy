@@ -348,6 +348,10 @@ def c2teqx(rc2i, era, rpom):
     check_args(rc2i, era, rpom)
     return _erfa.c2teqx(rc2i, era, rpom)
 
+def c2tpe(tta, ttb, uta, utb, dpsi, deps, xp, yp):
+    check_args(tta, ttb, uta, utb, dpsi, deps, xp, yp)
+    return _erfa.c2tpe(tta, ttb, uta, utb, dpsi, deps, xp, yp)
+
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)
