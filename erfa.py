@@ -308,6 +308,14 @@ def c2i00a(d1, d2):
     check_args(d1, d2)
     return _erfa.c2i00a(d1, d2)
 
+def c2i00b(d1, d2):
+    check_args(d1, d2)
+    return _erfa.c2i00b(d1, d2)
+
+def c2i06a(d1, d2):
+    check_args(d1, d2)
+    return _erfa.c2i06a(d1, d2)
+
 def c2ixys(x, y, s):
     check_args(x, y, s)
     return _erfa.c2ixys(x, y, s)

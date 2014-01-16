@@ -490,6 +490,34 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rc2i[0][2][1], 0.4020595661591500259e-4, places=12)
         self.assertAlmostEqual(rc2i[0][2][2], 0.9999998314954572304, places=12)
 
+    def test_c2i00b(self):
+        rc2i = erfa.c2i00b(np.array([2400000.5]), np.array([53736.0]))[0]
+        self.assertAlmostEqual(rc2i[0][0], 0.9999998323040954356, places=12)
+        self.assertAlmostEqual(rc2i[0][1], 0.5581526349131823372e-9, places=12)
+        self.assertAlmostEqual(rc2i[0][2], -0.5791301934855394005e-3, places=12)
+
+        self.assertAlmostEqual(rc2i[1][0], -0.2384239285499175543e-7, places=12)
+        self.assertAlmostEqual(rc2i[1][1], 0.9999999991917574043, places=12)
+        self.assertAlmostEqual(rc2i[1][2], -0.4020552974819030066e-4, places=12)
+
+        self.assertAlmostEqual(rc2i[2][0], 0.5791301929950208873e-3, places=12)
+        self.assertAlmostEqual(rc2i[2][1], 0.4020553681373720832e-4, places=12)
+        self.assertAlmostEqual(rc2i[2][2], 0.9999998314958529887, places=12)
+
+    def test_c2i06a(self):
+        rc2i = erfa.c2i06a(np.array([2400000.5]), np.array([53736.0]))[0]
+        self.assertAlmostEqual(rc2i[0][0], 0.9999998323037159379, places=12)
+        self.assertAlmostEqual(rc2i[0][1], 0.5581121329587613787e-9, places=12)
+        self.assertAlmostEqual(rc2i[0][2], -0.5791308487740529749e-3, places=12)
+
+        self.assertAlmostEqual(rc2i[1][0], -0.2384253169452306581e-7, places=12)
+        self.assertAlmostEqual(rc2i[1][1], 0.9999999991917467827, places=12)
+        self.assertAlmostEqual(rc2i[1][2], -0.4020579392895682558e-4, places=12)
+
+        self.assertAlmostEqual(rc2i[2][0], 0.5791308482835292617e-3, places=12)
+        self.assertAlmostEqual(rc2i[2][1], 0.4020580099454020310e-4, places=12)
+        self.assertAlmostEqual(rc2i[2][2], 0.9999998314954628695, places=12)
+
     def test_c2ixys(self):
         x =  np.array([0.5791308486706011000e-3])
         y =  np.array([0.4020579816732961219e-4])
