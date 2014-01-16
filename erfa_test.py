@@ -632,6 +632,31 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rc2t[2][1], 0.3961816829632690581e-4, places=12)
         self.assertAlmostEqual(rc2t[2][2], 0.9999998325501747785, places=12)
 
+    def test_c2tcio(self):
+        c = np.array([
+            ((0.9999998323037164738,0.5581526271714303683e-9,-0.5791308477073443903e-3),
+             (-0.2384266227524722273e-7,0.9999999991917404296,-0.4020594955030704125e-4),
+             (0.5791308472168153320e-3,.4020595661593994396e-4,0.9999998314954572365))
+            ])
+        era = np.array([1.75283325530307])
+        p = np.array([
+            ((0.9999999999999674705,-0.1367174580728847031e-10,0.2550602379999972723e-6),
+             (0.1414624947957029721e-10,0.9999999999982694954,-0.1860359246998866338e-5),
+             (-0.2550602379741215275e-6,0.1860359247002413923e-5,0.9999999999982369658))
+            ])
+        rc2t = erfa.c2tcio(c, era, p)[0]
+        self.assertAlmostEqual(rc2t[0][0], -0.1810332128307110439, places=12)
+        self.assertAlmostEqual(rc2t[0][1], 0.9834769806938470149, places=12)
+        self.assertAlmostEqual(rc2t[0][2], 0.6555535638685466874e-4, places=12)
+
+        self.assertAlmostEqual(rc2t[1][0], -0.9834768134135996657, places=12)
+        self.assertAlmostEqual(rc2t[1][1], -0.1810332203649448367, places=12)
+        self.assertAlmostEqual(rc2t[1][2], 0.5749801116141106528e-3, places=12)
+
+        self.assertAlmostEqual(rc2t[2][0], 0.5773474014081407076e-3, places=12)
+        self.assertAlmostEqual(rc2t[2][1], 0.3961832391772658944e-4, places=12)
+        self.assertAlmostEqual(rc2t[2][2], 0.9999998325501691969, places=12)
+
     def test_numat(self):
         epsa =  np.array([0.4090789763356509900])
         dpsi = np.array([-0.9630909107115582393e-5])

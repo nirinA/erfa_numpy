@@ -340,6 +340,10 @@ def c2t06a(tta, ttb, uta, utb, xp, yp):
     check_args(tta, ttb, uta, utb, xp, yp)
     return _erfa.c2t06a(tta, ttb, uta, utb, xp, yp)
 
+def c2tcio(rc2i, era, rpom):
+    check_args(rc2i, era, rpom)
+    return _erfa.c2tcio(rc2i, era, rpom)
+
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)

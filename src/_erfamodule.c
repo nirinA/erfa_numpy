@@ -1396,6 +1396,90 @@ PyDoc_STRVAR(_erfa_c2ixy_doc,
 "    rc2i       celestial-to-intermediate matrix");
 
 static PyObject *
+_erfa_c2ixys(PyObject *self, PyObject *args)
+{
+    double *x, *y, *s, rc2i[3][3];
+    PyObject *pyx, *pyy, *pys;
+    PyObject *ax, *ay, *as;
+    PyArrayObject *pyout = NULL;
+    PyObject *out_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!", 
+                                 &PyArray_Type, &pyx,
+                                 &PyArray_Type, &pyy,
+                                 &PyArray_Type, &pys))
+        return NULL;
+
+    ax = PyArray_FROM_OTF(pyx, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ay = PyArray_FROM_OTF(pyy, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    as = PyArray_FROM_OTF(pys, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (as == NULL || ax == NULL || ay == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ax);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ax);
+    if (dims[0] != PyArray_DIMS(as)[0] || dims[0] != PyArray_DIMS(ay)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    x = (double *)PyArray_DATA(ax);
+    y = (double *)PyArray_DATA(ay);
+    s = (double *)PyArray_DATA(as);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyout = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyout) goto fail;
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    if (out_iter == NULL) goto fail;
+
+    for (i=0;i<dims[0];i++) {
+        eraC2ixys(x[i], y[i], s[i], rc2i);
+        int j,k;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {            
+                if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(rc2i[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rc2i");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(out_iter);
+            }
+        }
+    }
+    Py_DECREF(ax);
+    Py_DECREF(ay);
+    Py_DECREF(as);
+    Py_DECREF(out_iter);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(ax);
+    Py_XDECREF(ay);
+    Py_XDECREF(as);
+    Py_XDECREF(out_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_c2ixys_doc,
+"\nc2ixys(x, y, s) -> rc2i\n\n"
+"Form the celestial to intermediate-frame-of-date matrix\n"
+" given the CIP X,Y and the CIO locator s.\n"
+"Given:\n"
+"    x, y       Celestial Intermediate Pole\n"
+"    s          CIO locator \n"
+"Returned:\n"
+"   rc2i        celestial-to-intermediate matrix");
+
+static PyObject *
 _erfa_c2t00a(PyObject *self, PyObject *args)
 {
     double *tta, *ttb, *uta, *utb, *xp, *yp, rc2t[3][3];
@@ -1720,88 +1804,116 @@ PyDoc_STRVAR(_erfa_c2t06a_doc,
 "    rc2t       celestial-to-terrestrial matrix");
 
 static PyObject *
-_erfa_c2ixys(PyObject *self, PyObject *args)
+_erfa_c2tcio(PyObject *self, PyObject *args)
 {
-    double *x, *y, *s, rc2i[3][3];
-    PyObject *pyx, *pyy, *pys;
-    PyObject *ax, *ay, *as;
-    PyArrayObject *pyout = NULL;
-    PyObject *out_iter = NULL;
+    double rc2i[3][3], *era, rpom[3][3], rc2t[3][3];
+    PyObject *pyrc2i, *pyera, *pyrpom;
+    PyObject *aera, *arc2i = NULL, *arpom = NULL;
+    PyArrayObject *pyrc2t = NULL;
+    PyObject *rc2i_iter = NULL, *rpom_iter = NULL, *rc2t_iter = NULL;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims, dim_out[3];
     int ndim, i;
-    if (!PyArg_ParseTuple(args, "O!O!O!", 
-                                 &PyArray_Type, &pyx,
-                                 &PyArray_Type, &pyy,
-                                 &PyArray_Type, &pys))
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                                &PyArray_Type, &pyrc2i,
+                                &PyArray_Type, &pyera,
+                                &PyArray_Type, &pyrpom))
         return NULL;
-
-    ax = PyArray_FROM_OTF(pyx, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    ay = PyArray_FROM_OTF(pyy, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    as = PyArray_FROM_OTF(pys, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    if (as == NULL || ax == NULL || ay == NULL) {
-        goto fail;
-    }
-    ndim = PyArray_NDIM(ax);
+    ndim = PyArray_NDIM(pyrc2i);
     if (!ndim) {
         PyErr_SetString(_erfaError, "argument is ndarray of length 0");
         goto fail;
     }
-    dims = PyArray_DIMS(ax);
-    if (dims[0] != PyArray_DIMS(as)[0] || dims[0] != PyArray_DIMS(ay)[0]) {
+    dims = PyArray_DIMS(pyrc2i);
+    if (dims[0] != PyArray_DIMS(pyera)[0] || dims[0] != PyArray_DIMS(pyrpom)[0]) {
         PyErr_SetString(_erfaError, "arguments have incompatible shape ");
         goto fail;
     }    
-    x = (double *)PyArray_DATA(ax);
-    y = (double *)PyArray_DATA(ay);
-    s = (double *)PyArray_DATA(as);
     dim_out[0] = dims[0];
     dim_out[1] = 3;
     dim_out[2] = 3;
-    pyout = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
-    if (NULL == pyout) goto fail;
-    out_iter = PyArray_IterNew((PyObject*)pyout);
-    if (out_iter == NULL) goto fail;
+    aera = PyArray_FROM_OTF(pyera, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aera == NULL) goto fail;
+    era = (double *)PyArray_DATA(aera);
+    pyrc2t = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyrc2t) goto fail;
+    rc2i_iter = PyArray_IterNew((PyObject *)pyrc2i);
+    rpom_iter = PyArray_IterNew((PyObject *)pyrpom);
+    rc2t_iter = PyArray_IterNew((PyObject*)pyrc2t);
+    if (rc2i_iter == NULL || rpom_iter == NULL || rc2t_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
 
     for (i=0;i<dims[0];i++) {
-        eraC2ixys(x[i], y[i], s[i], rc2i);
         int j,k;
+        double vrc2i, vrpom;
         for (j=0;j<3;j++) {
-            for (k=0;k<3;k++) {            
-                if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(rc2i[j][k]))) {
-                    PyErr_SetString(_erfaError, "unable to set rc2i");
+            for (k=0;k<3;k++) {
+                arc2i = PyArray_GETITEM(pyrc2i, PyArray_ITER_DATA(rc2i_iter));
+                if (arc2i == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
                     goto fail;
                 }
-                PyArray_ITER_NEXT(out_iter);
+                Py_INCREF(arc2i);
+                vrc2i = (double)PyFloat_AsDouble(arc2i);
+                if (vrc2i == -1 && PyErr_Occurred()) goto fail;
+                rc2i[j][k] = vrc2i;
+                Py_DECREF(arc2i);                
+                PyArray_ITER_NEXT(rc2i_iter); 
+                arpom = PyArray_GETITEM(pyrpom, PyArray_ITER_DATA(rpom_iter));
+                if (arpom == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(arpom);
+                vrpom = (double)PyFloat_AsDouble(arpom);
+                if (vrpom == -1 && PyErr_Occurred()) goto fail;
+                rpom[j][k] = vrpom;
+                Py_DECREF(arpom);                
+                PyArray_ITER_NEXT(rpom_iter); 
+            }
+        }
+        eraC2tcio(rc2i, era[i], rpom, rc2t);
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {
+                if (PyArray_SETITEM(pyrc2t, PyArray_ITER_DATA(rc2t_iter), PyFloat_FromDouble(rc2t[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rc2t");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rc2t_iter);
             }
         }
     }
-    Py_DECREF(ax);
-    Py_DECREF(ay);
-    Py_DECREF(as);
-    Py_DECREF(out_iter);
-    Py_INCREF(pyout);
-    return (PyObject *)pyout;
+    Py_DECREF(arc2i);
+    Py_DECREF(arpom);
+    Py_DECREF(rc2i_iter);
+    Py_DECREF(rpom_iter);
+    Py_DECREF(rc2t_iter);
+    Py_INCREF(pyrc2t);
+    return (PyObject *)pyrc2t;
 
 fail:
-    Py_XDECREF(ax);
-    Py_XDECREF(ay);
-    Py_XDECREF(as);
-    Py_XDECREF(out_iter);
-    Py_XDECREF(pyout);
+    Py_XDECREF(arc2i);
+    Py_XDECREF(arpom);
+    Py_XDECREF(rc2i_iter);
+    Py_XDECREF(rpom_iter);
+    Py_XDECREF(rc2t_iter);
+    Py_XDECREF(pyrc2t);
     return NULL;
 }
 
-PyDoc_STRVAR(_erfa_c2ixys_doc,
-"\nc2ixys(x, y, s) -> rc2i\n\n"
-"Form the celestial to intermediate-frame-of-date matrix\n"
-" given the CIP X,Y and the CIO locator s.\n"
+PyDoc_STRVAR(_erfa_c2tcio_doc,
+"\nc2tcio(rc2i, era, rpom) -> rc2t\n\n"
+"Assemble the celestial to terrestrial matrix from CIO-based components\n"
+"(the celestial-to-intermediate matrix, the Earth Rotation Angle and the polar motion matrix)\n"
 "Given:\n"
-"    x, y       Celestial Intermediate Pole\n"
-"    s          CIO locator \n"
-"Returned:\n"
-"   rc2i        celestial-to-intermediate matrix");
+"    rc2i       celestial-to-intermediate matrix\n"
+"    era        Earth rotation angle\n"
+"    rpom       polar-motion matrix\n"
+"Returned:t\n"
+"    rc2t       celestial-to-terrestrial matrix");
 
 static PyObject *
 _erfa_cal2jd(PyObject *self, PyObject *args)
@@ -7369,10 +7481,11 @@ static PyMethodDef _erfa_methods[] = {
     {"c2i06a", _erfa_c2i06a, METH_VARARGS, _erfa_c2i06a_doc},
     {"c2ibpn", _erfa_c2ibpn, METH_VARARGS, _erfa_c2ibpn_doc},
     {"c2ixy", _erfa_c2ixy, METH_VARARGS, _erfa_c2ixy_doc},
+    {"c2ixys", _erfa_c2ixys, METH_VARARGS, _erfa_c2ixys_doc},
     {"c2t00a", _erfa_c2t00a, METH_VARARGS, _erfa_c2t00a_doc},
     {"c2t00b", _erfa_c2t00b, METH_VARARGS, _erfa_c2t00b_doc},
     {"c2t06a", _erfa_c2t06a, METH_VARARGS, _erfa_c2t06a_doc},
-    {"c2ixys", _erfa_c2ixys, METH_VARARGS, _erfa_c2ixys_doc},
+    {"c2tcio", _erfa_c2tcio, METH_VARARGS, _erfa_c2tcio_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
