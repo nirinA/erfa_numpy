@@ -344,6 +344,10 @@ def c2tcio(rc2i, era, rpom):
     check_args(rc2i, era, rpom)
     return _erfa.c2tcio(rc2i, era, rpom)
 
+def c2teqx(rc2i, era, rpom):
+    check_args(rc2i, era, rpom)
+    return _erfa.c2teqx(rc2i, era, rpom)
+
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)

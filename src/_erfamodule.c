@@ -1916,6 +1916,119 @@ PyDoc_STRVAR(_erfa_c2tcio_doc,
 "    rc2t       celestial-to-terrestrial matrix");
 
 static PyObject *
+_erfa_c2teqx(PyObject *self, PyObject *args)
+{
+    double rbpn[3][3], *gst, rpom[3][3], rc2t[3][3];
+    PyObject *pyrbpn, *pygst, *pyrpom;
+    PyObject *agst, *arbpn = NULL, *arpom = NULL;
+    PyArrayObject *pyrc2t = NULL;
+    PyObject *rbpn_iter = NULL, *rpom_iter = NULL, *rc2t_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                                &PyArray_Type, &pyrbpn,
+                                &PyArray_Type, &pygst,
+                                &PyArray_Type, &pyrpom))
+        return NULL;
+    ndim = PyArray_NDIM(pyrbpn);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pyrbpn);
+    if (dims[0] != PyArray_DIMS(pygst)[0] || dims[0] != PyArray_DIMS(pyrpom)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    agst = PyArray_FROM_OTF(pygst, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (agst == NULL) goto fail;
+    gst = (double *)PyArray_DATA(agst);
+    pyrc2t = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyrc2t) goto fail;
+    rbpn_iter = PyArray_IterNew((PyObject *)pyrbpn);
+    rpom_iter = PyArray_IterNew((PyObject *)pyrpom);
+    rc2t_iter = PyArray_IterNew((PyObject*)pyrc2t);
+    if (rbpn_iter == NULL || rpom_iter == NULL || rc2t_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create itgsttors");
+        goto fail;
+    }
+
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        double vrbpn, vrpom;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {
+                arbpn = PyArray_GETITEM(pyrbpn, PyArray_ITER_DATA(rbpn_iter));
+                if (arbpn == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(arbpn);
+                vrbpn = (double)PyFloat_AsDouble(arbpn);
+                if (vrbpn == -1 && PyErr_Occurred()) goto fail;
+                rbpn[j][k] = vrbpn;
+                Py_DECREF(arbpn);
+                PyArray_ITER_NEXT(rbpn_iter);
+                arpom = PyArray_GETITEM(pyrpom, PyArray_ITER_DATA(rpom_iter));
+                if (arpom == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(arpom);
+                vrpom = (double)PyFloat_AsDouble(arpom);
+                if (vrpom == -1 && PyErr_Occurred()) goto fail;
+                rpom[j][k] = vrpom;
+                Py_DECREF(arpom);
+                PyArray_ITER_NEXT(rpom_iter);
+            }
+        }
+        eraC2teqx(rbpn, gst[i], rpom, rc2t);
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {
+                if (PyArray_SETITEM(pyrc2t, PyArray_ITER_DATA(rc2t_iter), PyFloat_FromDouble(rc2t[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rc2t");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rc2t_iter);
+            }
+        }
+    }
+    Py_DECREF(arbpn);
+    Py_DECREF(arpom);
+    Py_DECREF(rbpn_iter);
+    Py_DECREF(rpom_iter);
+    Py_DECREF(rc2t_iter);
+    Py_INCREF(pyrc2t);
+    return (PyObject *)pyrc2t;
+
+fail:
+    Py_XDECREF(arbpn);
+    Py_XDECREF(arpom);
+    Py_XDECREF(rbpn_iter);
+    Py_XDECREF(rpom_iter);
+    Py_XDECREF(rc2t_iter);
+    Py_XDECREF(pyrc2t);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_c2teqx_doc,
+"\nc2teqx(rbpn, gst, rpom -> rc2t\n\n"
+"Assemble the celestial to terrestrial matrix from equinox-based\n"
+"components (the celestial-to-true matrix, the Greenwich Apparent\n"
+"Sidereal Time and the polar motion matrix).\n"
+"Given:\n"
+"    rbpn       celestial-to-true matrix\n"
+"    gst        Greenwich (apparent) Sidereal Time\n"
+"    rpom       polar-motion matrix\n"
+"Returned:\n"
+"    rc2t       celestial-to-terrestrial matrix");
+
+static PyObject *
 _erfa_cal2jd(PyObject *self, PyObject *args)
 {
     int *iy, *im, *id;
@@ -6787,7 +6900,7 @@ _erfa_af2a(PyObject *self, PyObject *args)
         asec = (double)PyFloat_AsDouble(aasec);
         if (asec == -1 && PyErr_Occurred()) goto fail;
         if (ideg < 0) sign = '-'; else sign = '+';
-        status = eraAf2a(sign, ideg, iamin, asec, &rad);
+        status = eraAf2a(sign, abs(ideg), iamin, asec, &rad);
         if (status == 1) {
             PyErr_WarnEx(PyExc_Warning, "ideg outside range 0-359", 1);
         }
@@ -7486,6 +7599,7 @@ static PyMethodDef _erfa_methods[] = {
     {"c2t00b", _erfa_c2t00b, METH_VARARGS, _erfa_c2t00b_doc},
     {"c2t06a", _erfa_c2t06a, METH_VARARGS, _erfa_c2t06a_doc},
     {"c2tcio", _erfa_c2tcio, METH_VARARGS, _erfa_c2tcio_doc},
+    {"c2teqx", _erfa_c2teqx, METH_VARARGS, _erfa_c2teqx_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
