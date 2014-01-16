@@ -704,6 +704,28 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rc2t[2][1], 0.3977631855605078674, places=12)
         self.assertAlmostEqual(rc2t[2][2], 0.9174875068792735362, places=12)
 
+    def test_c2txy(self):
+        tta = np.array([2400000.5])
+        uta = np.array([2400000.5])
+        ttb = np.array([53736.0])
+        utb = np.array([53736.0])
+        x = np.array([0.5791308486706011000e-3])
+        y = np.array([0.4020579816732961219e-4])
+        xp = np.array([2.55060238e-7])
+        yp = np.array([1.860359247e-6])
+        rc2t = erfa.c2txy(tta, ttb, uta, utb, x, y, xp, yp)[0]
+        self.assertAlmostEqual(rc2t[0][0], -0.1810332128306279253, places=12)
+        self.assertAlmostEqual(rc2t[0][1], 0.9834769806938520084, places=12)
+        self.assertAlmostEqual(rc2t[0][2], 0.6555551248057665829e-4, places=12)
+
+        self.assertAlmostEqual(rc2t[1][0], -0.9834768134136142314, places=12)
+        self.assertAlmostEqual(rc2t[1][1], -0.1810332203649529312, places=12)
+        self.assertAlmostEqual(rc2t[1][2], 0.5749800843594139912e-3, places=12)
+
+        self.assertAlmostEqual(rc2t[2][0], 0.5773474028619264494e-3, places=12)
+        self.assertAlmostEqual(rc2t[2][1], 0.3961816546911624260e-4, places=12)
+        self.assertAlmostEqual(rc2t[2][2], 0.9999998325501746670, places=12)
+
     def test_numat(self):
         epsa =  np.array([0.4090789763356509900])
         dpsi = np.array([-0.9630909107115582393e-5])
