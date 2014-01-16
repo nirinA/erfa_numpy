@@ -1506,6 +1506,116 @@ PyDoc_STRVAR(_erfa_c2t00a_doc,
 "    rc2t       celestial-to-terrestrial matrix");
 
 static PyObject *
+_erfa_c2t00b(PyObject *self, PyObject *args)
+{
+    double *tta, *ttb, *uta, *utb, *xp, *yp, rc2t[3][3];
+    PyObject *pyuta, *pyutb, *pytta, *pyttb, *pyxp, *pyyp;
+    PyObject *auta, *autb, *atta, *attb, *axp, *ayp;
+    PyArrayObject *pyrc2t = NULL;
+    PyObject *rc2t_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!", 
+                                 &PyArray_Type, &pytta,
+                                 &PyArray_Type, &pyttb,
+                                 &PyArray_Type, &pyuta,
+                                 &PyArray_Type, &pyutb,
+                                 &PyArray_Type, &pyxp,
+                                 &PyArray_Type, &pyyp))
+        return NULL;
+    atta = PyArray_FROM_OTF(pytta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    attb = PyArray_FROM_OTF(pyttb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    auta = PyArray_FROM_OTF(pyuta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    autb = PyArray_FROM_OTF(pyutb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    axp = PyArray_FROM_OTF(pyxp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ayp = PyArray_FROM_OTF(pyyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (auta == NULL || autb == NULL ||
+        atta == NULL || attb == NULL ||
+        axp == NULL || ayp == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(atta);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(atta);
+    if (dims[0] != PyArray_DIMS(attb)[0] ||
+        dims[0] != PyArray_DIMS(auta)[0] ||
+        dims[0] != PyArray_DIMS(autb)[0] ||
+        dims[0] != PyArray_DIMS(axp)[0] ||
+        dims[0] != PyArray_DIMS(ayp)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    uta = (double *)PyArray_DATA(auta);
+    utb = (double *)PyArray_DATA(autb);
+    tta = (double *)PyArray_DATA(atta);
+    ttb = (double *)PyArray_DATA(attb);
+    xp = (double *)PyArray_DATA(axp);
+    yp = (double *)PyArray_DATA(ayp);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyrc2t = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyrc2t) goto fail;
+    rc2t_iter = PyArray_IterNew((PyObject*)pyrc2t);
+    if (rc2t_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+
+    for (i=0;i<dims[0];i++) {
+        eraC2t00b(tta[i] ,ttb[i], uta[i], utb[i], xp[i], yp[i], rc2t);
+        printf("%f \n", rc2t[0][0]);
+        int j,k;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {
+                printf("%f \n", rc2t[j][k]);
+                if (PyArray_SETITEM(pyrc2t, PyArray_ITER_DATA(rc2t_iter), PyFloat_FromDouble(rc2t[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rc2t");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rc2t_iter);
+            }
+        }
+    }
+    Py_DECREF(auta);
+    Py_DECREF(autb);
+    Py_DECREF(atta);
+    Py_DECREF(attb);
+    Py_DECREF(axp);
+    Py_DECREF(ayp);
+    Py_DECREF(rc2t_iter);
+    Py_INCREF(pyrc2t);
+    return (PyObject *)pyrc2t;
+
+fail:
+    Py_XDECREF(auta);
+    Py_XDECREF(autb);
+    Py_XDECREF(atta);
+    Py_XDECREF(attb);
+    Py_XDECREF(axp);
+    Py_XDECREF(ayp);
+    Py_XDECREF(rc2t_iter);
+    Py_XDECREF(pyrc2t);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_c2t00b_doc,
+"\nc2t00b(tta,ttb,uta,utb,xp,yp) -> rc2t\n\n"
+"Form the celestial to terrestrial matrix given the date, the UT1 and\n"
+"the polar motion, using the IAU 2000B nutation model.\n"
+"Given:\n"
+"    tta,ttb    TT as 2-part Julian Date\n"
+"    uta,utb    UT1 as 2-part Julian Date\n"
+"    xp, yp     coordinates of the pole (radians)\n"
+"Returned:\n"
+"    rc2t       celestial-to-terrestrial matrix");
+
+static PyObject *
 _erfa_c2ixys(PyObject *self, PyObject *args)
 {
     double *x, *y, *s, rc2i[3][3];
@@ -7156,6 +7266,7 @@ static PyMethodDef _erfa_methods[] = {
     {"c2ibpn", _erfa_c2ibpn, METH_VARARGS, _erfa_c2ibpn_doc},
     {"c2ixy", _erfa_c2ixy, METH_VARARGS, _erfa_c2ixy_doc},
     {"c2t00a", _erfa_c2t00a, METH_VARARGS, _erfa_c2t00a_doc},
+    {"c2t00b", _erfa_c2t00b, METH_VARARGS, _erfa_c2t00b_doc},
     {"c2ixys", _erfa_c2ixys, METH_VARARGS, _erfa_c2ixys_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
