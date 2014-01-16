@@ -328,6 +328,10 @@ def c2ixys(x, y, s):
     check_args(x, y, s)
     return _erfa.c2ixys(x, y, s)
 
+def c2t00a(tta, ttb, uta, utb, xp, yp):
+    check_args(tta, ttb, uta, utb, xp, yp)
+    return _erfa.c2t00a(tta, ttb, uta, utb, xp, yp)
+
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)
