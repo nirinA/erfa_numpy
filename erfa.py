@@ -336,6 +336,10 @@ def c2t00b(tta, ttb, uta, utb, xp, yp):
     check_args(tta, ttb, uta, utb, xp, yp)
     return _erfa.c2t00b(tta, ttb, uta, utb, xp, yp)
 
+def c2t06a(tta, ttb, uta, utb, xp, yp):
+    check_args(tta, ttb, uta, utb, xp, yp)
+    return _erfa.c2t06a(tta, ttb, uta, utb, xp, yp)
+
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)
