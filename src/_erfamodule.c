@@ -2497,6 +2497,86 @@ PyDoc_STRVAR(_erfa_fw2m_doc,
 "    r          rotation matrix");
 
 static PyObject *
+_erfa_fw2xy(PyObject *self, PyObject *args)
+{
+    double *gamb, *phib, *psi, *eps, *x, *y;
+    PyObject *pygamb, *pyphib, *pypsi, *pyeps;
+    PyObject *agamb = NULL, *aphib = NULL, *apsi = NULL, *aeps = NULL;
+    PyArrayObject *pyx = NULL, *pyy = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!",
+                                 &PyArray_Type, &pygamb,
+                                 &PyArray_Type, &pyphib,
+                                 &PyArray_Type, &pypsi,
+                                 &PyArray_Type, &pyeps))      
+        return NULL;
+    agamb = PyArray_FROM_OTF(pygamb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphib = PyArray_FROM_OTF(pyphib, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apsi = PyArray_FROM_OTF(pypsi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aeps = PyArray_FROM_OTF(pyeps, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (agamb == NULL || aphib == NULL || apsi == NULL || aeps == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(agamb);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(agamb);
+    if (dims[0] != PyArray_DIMS(aphib)[0] ||
+        dims[0] != PyArray_DIMS(apsi)[0] ||
+        dims[0] != PyArray_DIMS(aeps)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyx = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyy = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyx || NULL == pyy) {
+        goto fail;
+    }
+    gamb = (double *)PyArray_DATA(agamb);
+    phib = (double *)PyArray_DATA(aphib);
+    psi = (double *)PyArray_DATA(apsi);
+    eps = (double *)PyArray_DATA(aeps);
+    x = (double *)PyArray_DATA(pyx);
+    y = (double *)PyArray_DATA(pyy);
+
+    for (i=0;i<dims[0];i++) {
+        eraFw2xy(gamb[i], phib[i], psi[i], eps[i], &x[i], &y[i]);
+    }
+    Py_DECREF(agamb);
+    Py_DECREF(aphib);
+    Py_DECREF(apsi);
+    Py_DECREF(aeps);
+    Py_INCREF(pyx);
+    Py_INCREF(pyy);
+    return Py_BuildValue("OO", pyx, pyy);    
+
+fail:
+    Py_XDECREF(agamb);
+    Py_XDECREF(aphib);
+    Py_XDECREF(apsi);
+    Py_XDECREF(aeps);
+    Py_XDECREF(pyx);
+    Py_XDECREF(pyy);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_fw2xy_doc,
+"\nfw2xy(gamb, phib, psi, eps) -> x, y\n\n"
+"Form CIP X,Y given Fukushima-Williams bias-precession-nutation angles.\n"
+"Given:\n"
+"    gamb       F-W angle gamma_bar (radians)\n"
+"    phib       F-W angle phi_bar (radians)\n"
+"    psi        F-W angle psi (radians)\n"
+"    eps        F-W angle epsilon (radians)\n"
+"Returned:\n"
+"    x,y        CIP X,Y (radians)");
+
+static PyObject *
 _erfa_cal2jd(PyObject *self, PyObject *args)
 {
     int *iy, *im, *id;
@@ -8073,6 +8153,7 @@ static PyMethodDef _erfa_methods[] = {
     {"eo06a", _erfa_eo06a, METH_VARARGS, _erfa_eo06a_doc},
     {"eors", _erfa_eors, METH_VARARGS, _erfa_eors_doc},
     {"fw2m", _erfa_fw2m, METH_VARARGS, _erfa_fw2m_doc},
+    {"fw2xy", _erfa_fw2xy, METH_VARARGS, _erfa_fw2xy_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},

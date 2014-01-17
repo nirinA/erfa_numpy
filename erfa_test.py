@@ -758,6 +758,15 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(r[2][1], -0.1924880848087615651e-6, places=12)
         self.assertAlmostEqual(r[2][2], 0.9999999285679971958, places=12)
 
+    def test_fw2xy(self):
+        gamb = np.array([-0.2243387670997992368e-5])
+        phib = np.array([0.4091014602391312982])
+        psi = np.array([-0.9501954178013015092e-3])
+        eps = np.array([0.4091014316587367472])
+        x, y = erfa.fw2xy(gamb, phib, psi, eps)
+        self.assertAlmostEqual(x[0], -0.3779734957034082790e-3, 14)
+        self.assertAlmostEqual(y[0], -0.1924880848087615651e-6, 14)
+
     def test_numat(self):
         epsa =  np.array([0.4090789763356509900])
         dpsi = np.array([-0.9630909107115582393e-5])
