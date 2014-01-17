@@ -356,6 +356,10 @@ def c2txy(tta, ttb, uta, utb, x, y, xp, yp):
     check_args(tta, ttb, uta, utb, x, y, xp, yp)
     return _erfa.c2txy(tta, ttb, uta, utb, x, y, xp, yp)
 
+def eo06a(d1, d2):
+    check_args(d1, d2)
+    return _erfa.eo06a(d1, d2)
+
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)

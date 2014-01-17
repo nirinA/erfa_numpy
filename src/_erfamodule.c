@@ -2263,6 +2263,64 @@ PyDoc_STRVAR(_erfa_c2txy_doc,
 "    rc2t       celestial-to-terrestrial matrix");
 
 static PyObject *
+_erfa_eo06a(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *eo;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyeo = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!", 
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2))
+        return NULL;
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyeo = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyeo) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    eo = (double *)PyArray_DATA(pyeo);
+    for (i=0;i<dims[0];i++) {
+        eo[i] = eraEo06a(d1[i], d2[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pyeo);
+    return (PyObject *)pyeo;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pyeo);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_eo06a_doc,
+"\neo06a(d1, d2) -> eo\n"
+"equation of the origins, IAU 2006 precession and IAU 2000A nutation.\n"
+"Given:\n"
+"    d1,d2      TT as 2-part Julian Date\n"
+"Returned:\n"
+"    eo         equation of the origins (radians)");
+
+static PyObject *
 _erfa_cal2jd(PyObject *self, PyObject *args)
 {
     int *iy, *im, *id;
@@ -7836,6 +7894,7 @@ static PyMethodDef _erfa_methods[] = {
     {"c2teqx", _erfa_c2teqx, METH_VARARGS, _erfa_c2teqx_doc},
     {"c2tpe", _erfa_c2tpe, METH_VARARGS, _erfa_c2tpe_doc},
     {"c2txy", _erfa_c2txy, METH_VARARGS, _erfa_c2txy_doc},
+    {"eo06a", _erfa_eo06a, METH_VARARGS, _erfa_eo06a_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
