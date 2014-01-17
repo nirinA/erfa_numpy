@@ -456,6 +456,10 @@ def pn06(d1, d2, dpsi, deps):
     check_args(d1, d2, dpsi, deps)
     return _erfa.pn06(d1, d2, dpsi, deps)
 
+def pn06a(d1, d2):
+    check_args(d1, d2)
+    return _erfa.pn06a(d1, d2)
+
 def pom00(xp, yp, sp):
     check_args(xp, yp, sp)
     return _erfa.pom00(xp, yp, sp)
