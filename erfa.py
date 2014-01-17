@@ -533,6 +533,10 @@ def ee00(d1, d2, epsa, dpsi):
     check_args(d1, d2, epsa, dpsi)
     return _erfa.ee00(d1, d2, epsa, dpsi)
 
+def ee00a(d1, d2):
+    check_args(d1, d2)
+    return _erfa.ee00a(d1, d2)
+
 def eqeq94(d1, d2):
     check_args(d1, d2)
     return _erfa.eqeq94(d1, d2)

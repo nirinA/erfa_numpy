@@ -3143,6 +3143,64 @@ PyDoc_STRVAR(_erfa_ee00_doc,
 "    ee         equation of the equinoxes");
 
 static PyObject *
+_erfa_ee00a(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *ee;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyee = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!", 
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2))
+        return NULL;
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyee = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyee) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    ee = (double *)PyArray_DATA(pyee);
+    for (i=0;i<dims[0];i++) {
+        ee[i] = eraEe00a(d1[i], d2[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pyee);
+    return PyArray_Return(pyee);
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pyee);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_ee00a_doc,
+"\nee00a(d1,d2) -> ee\n\n"
+"equation of the equinoxes, compatible with IAU 2000 resolutions.\n"
+"Given:\n"
+"    d1,d2      TT as 2-part Julian Date\n"
+"Returned:\n"
+"    ee         equation of the equinoxes");
+
+static PyObject *
 _erfa_epb(PyObject *self, PyObject *args)
 {
     double *d1, *d2, *b;
@@ -7689,7 +7747,7 @@ _erfa_prec76(PyObject *self, PyObject *args)
     PyArrayObject *pyzeta = NULL, *pyz = NULL, *pytheta = NULL;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
-    npy_intp *dims, dim_out[2];
+    npy_intp *dims;
     int ndim, i;
     if (!PyArg_ParseTuple(args, "O!O!O!O!",
                                  &PyArray_Type, &pyep01,
@@ -10442,6 +10500,7 @@ static PyMethodDef _erfa_methods[] = {
     {"dtdb", _erfa_dtdb, METH_VARARGS, _erfa_dtdb_doc},
     {"dtf2d", _erfa_dtf2d, METH_VARARGS, _erfa_dtf2d_doc},
     {"ee00", _erfa_ee00, METH_VARARGS, _erfa_ee00_doc},
+    {"ee00a", _erfa_ee00a, METH_VARARGS, _erfa_ee00a_doc},
     {"epb", _erfa_epb, METH_VARARGS, _erfa_epb_doc},
     {"epb2jd", _erfa_epb2jd, METH_VARARGS, _erfa_epb2jd_doc},
     {"epj", _erfa_epj, METH_VARARGS, _erfa_epj_doc},
