@@ -1295,6 +1295,12 @@ class Validate(unittest.TestCase):
         s = erfa.s00a(d1, d2)[0]
         self.assertAlmostEqual(s, -0.1340684448919163584e-7, 18)
         
+    def test_s00b(self):
+        d1 = np.array([2400000.5])
+        d2 = np.array([52541.0])
+        s = erfa.s00b(d1, d2)[0]
+        self.assertAlmostEqual(s, -0.1340695782951026584e-7, 18)
+        
     def test_s06(self):
         d1 = np.array([2400000.5])
         d2 = np.array([53736.0])
@@ -1303,6 +1309,12 @@ class Validate(unittest.TestCase):
         s = erfa.s06(d1, d2, x, y)[0]
         self.assertAlmostEqual(s, -0.1220032213076463117e-7, 18)
         
+    def test_s06a(self):
+        d1 = np.array([2400000.5])
+        d2 = np.array([52541.0])
+        s = erfa.s06a(d1, d2)[0]
+        self.assertAlmostEqual(s, -0.1340680437291812383e-7, 18)
+
     def test_sp00(self):
         s = erfa.sp00(np.array([2400000.5]), np.array([52541.0]))
         self.assertAlmostEqual(s[0], -0.6216698469981019309e-11, 12)
