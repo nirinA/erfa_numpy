@@ -914,6 +914,18 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rbp[2][1], -0.1925857585832024058e-6, places=14)
         self.assertAlmostEqual(rbp[2][2], 0.9999999285680153377, places=12)
 
+    def test_pmat06(self):
+        rbp = erfa.pmat06(np.array([2400000.5]), np.array([50123.9999]))[0]
+        self.assertAlmostEqual(rbp[0][0], 0.9999995505176007047, places=12)
+        self.assertAlmostEqual(rbp[0][1], 0.8695404617348208406e-3, places=14)
+        self.assertAlmostEqual(rbp[0][2], 0.3779735201865589104e-3, places=14)
+        self.assertAlmostEqual(rbp[1][0], -0.8695404723772031414e-3, places=14)
+        self.assertAlmostEqual(rbp[1][1], 0.9999996219496027161, places=12)
+        self.assertAlmostEqual(rbp[1][2], -0.1361752497080270143e-6, places=14)
+        self.assertAlmostEqual(rbp[2][0], -0.3779734957034089490e-3, places=14)
+        self.assertAlmostEqual(rbp[2][1], -0.1924880847894457113e-6, places=14)
+        self.assertAlmostEqual(rbp[2][2], 0.9999999285679971958, places=12)
+
     def test_pmat76(self):
         rmatp = erfa.pmat76(np.array([2400000.5]), np.array([50123.9999]))[0]
         self.assertAlmostEqual(rmatp[0][0], 0.9999995504328350733, places=12)
