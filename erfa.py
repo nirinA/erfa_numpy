@@ -424,6 +424,10 @@ def pb06(d1, d2):
     check_args(d1, d2)
     return _erfa.pb06(d1, d2)
 
+def pfw06(d1, d2):
+    check_args(d1, d2)
+    return _erfa.pfw06(d1, d2)
+
 def pmat76(d1, d2):
     check_args(d1, d2)
     return _erfa.pmat76(d1, d2)

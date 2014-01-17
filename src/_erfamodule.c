@@ -5973,27 +5973,27 @@ _erfa_pb06(PyObject *self, PyObject *args)
         goto fail;
     }
     dims = PyArray_DIMS(ad1);
-    pybz = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     pybzeta = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pybz = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     pybtheta = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     if (NULL == pybz || NULL == pybzeta || NULL == pybtheta) {
         goto fail;
     }
     d1 = (double *)PyArray_DATA(ad1);
     d2 = (double *)PyArray_DATA(ad2);
-    bz = (double *)PyArray_DATA(pybz);
     bzeta = (double *)PyArray_DATA(pybzeta);
+    bz = (double *)PyArray_DATA(pybz);
     btheta = (double *)PyArray_DATA(pybtheta);
 
     for (i=0;i<dims[0];i++) {
         eraPb06(d1[i], d2[i],
-                &bz[i], &bzeta[i], &btheta[i]);
+                 &bzeta[i], &bz[i], &btheta[i]);
     }
     Py_DECREF(ad1);
     Py_DECREF(ad2);
     Py_INCREF(pybz); Py_INCREF(pybzeta); Py_INCREF(pybtheta);
     return Py_BuildValue("OOO",
-                          pybz, pybzeta, pybtheta);
+                          pybzeta, pybz, pybtheta);
 
 fail:
     Py_XDECREF(ad1);
@@ -6013,6 +6013,75 @@ PyDoc_STRVAR(_erfa_pb06_doc,
 "   bzeta   1st rotation: radians cw around z\n"
 "   bz      3rd rotation: radians cw around z\n"
 "   btheta  2nd rotation: radians ccw around y");
+
+static PyObject *
+_erfa_pfw06(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *gamb, *phib, *psib, *epsa;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pygamb = NULL, *pyphib = NULL, *pypsib = NULL, *pyepsa = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2)) {
+        return NULL;
+    }
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    pygamb = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyphib = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypsib = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyepsa = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pygamb || NULL == pyphib || NULL == pypsib || NULL == pyepsa) {
+        goto fail;
+    }
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    gamb = (double *)PyArray_DATA(pygamb);
+    phib = (double *)PyArray_DATA(pyphib);
+    psib = (double *)PyArray_DATA(pypsib);
+    epsa = (double *)PyArray_DATA(pyepsa);
+
+    for (i=0;i<dims[0];i++) {
+        eraPfw06(d1[i], d2[i],
+                 &gamb[i], &phib[i], &psib[i], &epsa[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pygamb); Py_INCREF(pyphib); Py_INCREF(pypsib); Py_INCREF(pyepsa);
+    return Py_BuildValue("OOOO",
+                          pygamb, pyphib, pypsib, pyepsa);
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pygamb); Py_XDECREF(pyphib); Py_XDECREF(pypsib); Py_XDECREF(pyepsa);
+    return NULL;    
+}
+
+PyDoc_STRVAR(_erfa_pfw06_doc,
+"\npfw06(d1, d2) -> gamb, phib, psib, epsa\n\n"
+"Precession angles, IAU 2006 (Fukushima-Williams 4-angle formulation).\n"
+"Given:\n"
+"   d1,d2   TT as a 2-part Julian Date\n"
+"Returned:\n"
+"   gamb    F-W angle gamma_bar (radians)\n"
+"   phib    F-W angle phi_bar (radians)\n"
+"   psib    F-W angle psi_bar (radians)\n"
+"   epsa    F-W angle epsilon_A (radians)");
 
 static PyObject *
 _erfa_plan94(PyObject *self, PyObject *args)
@@ -8912,6 +8981,7 @@ static PyMethodDef _erfa_methods[] = {
     {"obl80", _erfa_obl80, METH_VARARGS, _erfa_obl80_doc},
     {"p06e", _erfa_p06e, METH_VARARGS, _erfa_p06e_doc},
     {"pb06", _erfa_pb06, METH_VARARGS, _erfa_pb06_doc},
+    {"pfw06", _erfa_pfw06, METH_VARARGS, _erfa_pfw06_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
     {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
     {"pn00", _erfa_pn00, METH_VARARGS, _erfa_pn00_doc},

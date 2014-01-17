@@ -893,6 +893,13 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(bz[0], -0.3602772060566044413e-3, places=12)
         self.assertAlmostEqual(btheta[0], -0.3779735537167811177e-3, places=12)
 
+    def test_pfw06(self):
+        gamb, phib, psib, epsa = erfa.pfw06(np.array([2400000.5]), np.array([50123.9999]))
+        self.assertAlmostEqual(gamb[0], -0.2243387670997995690e-5, places=16)
+        self.assertAlmostEqual(phib[0],  0.4091014602391312808, places=12)
+        self.assertAlmostEqual(psib[0], -0.9501954178013031895e-3, places=14)
+        self.assertAlmostEqual(epsa[0],  0.4091014316587367491, places=12)
+
     def test_pmat76(self):
         rmatp = erfa.pmat76(np.array([2400000.5]), np.array([50123.9999]))[0]
         self.assertAlmostEqual(rmatp[0][0], 0.9999995504328350733, places=12)
