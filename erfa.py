@@ -416,6 +416,10 @@ def obl80(d1, d2):
     check_args(d1, d2)
     return _erfa.obl80(d1, d2)
 
+def p06e(d1, d2):
+    check_args(d1, d2)
+    return _erfa.p06e(d1, d2)
+
 def pmat76(d1, d2):
     check_args(d1, d2)
     return _erfa.pmat76(d1, d2)

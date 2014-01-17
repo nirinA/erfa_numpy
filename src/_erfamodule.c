@@ -5820,6 +5820,132 @@ PyDoc_STRVAR(_erfa_obl80_doc,
 "    obl        obliquity of the ecliptic (radians)");
 
 static PyObject *
+_erfa_p06e(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *eps0, *psia, *oma;
+    double *bpa, *bqa, *pia, *bpia, *epsa;
+    double *chia, *za, *zetaa, *thetaa;
+    double *pa, *gam, *phi, *psi;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyeps0 = NULL, *pypsia = NULL, *pyoma = NULL;
+    PyArrayObject *pybpa = NULL, *pybqa = NULL, *pypia = NULL;
+    PyArrayObject *pybpia = NULL, *pyepsa = NULL, *pychia = NULL;
+    PyArrayObject *pyza = NULL, *pyzetaa = NULL, *pythetaa = NULL;
+    PyArrayObject *pypa = NULL, *pygam = NULL, *pyphi = NULL, *pypsi = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2)) {
+        return NULL;
+    }
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    pyeps0 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypsia = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyoma = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pybpa = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pybqa = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypia = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pybpia = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyepsa = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pychia = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyza = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyzetaa = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pythetaa = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypa = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pygam = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyphi = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypsi = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyeps0 || NULL == pypsia || NULL == pyoma || NULL == pybpa || NULL == pybqa || NULL == pypia ||
+        NULL == pybpia ||NULL == pyepsa || NULL == pychia || NULL == pyza || NULL == pyzetaa ||
+        NULL == pythetaa || NULL == pypa || NULL == pygam || NULL == pyphi || NULL == pypsi) {
+        goto fail;
+    }
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    eps0 = (double *)PyArray_DATA(pyeps0);
+    psia = (double *)PyArray_DATA(pypsia);
+    oma = (double *)PyArray_DATA(pyoma);
+    bpa = (double *)PyArray_DATA(pybpa);
+    bqa = (double *)PyArray_DATA(pybqa);
+    pia = (double *)PyArray_DATA(pypia);
+    bpia = (double *)PyArray_DATA(pybpia);
+    epsa = (double *)PyArray_DATA(pyepsa);
+    chia = (double *)PyArray_DATA(pychia);
+    za = (double *)PyArray_DATA(pyza);
+    zetaa = (double *)PyArray_DATA(pyzetaa);
+    thetaa = (double *)PyArray_DATA(pythetaa);
+    pa = (double *)PyArray_DATA(pypa);
+    gam = (double *)PyArray_DATA(pygam);
+    phi = (double *)PyArray_DATA(pyphi);
+    psi = (double *)PyArray_DATA(pypsi);
+
+    for (i=0;i<dims[0];i++) {
+        eraP06e(d1[i], d2[i],
+                &eps0[i], &psia[i], &oma[i], &bpa[i],
+                &bqa[i], &pia[i], &bpia[i], &epsa[i],
+                &chia[i], &za[i], &zetaa[i], &thetaa[i],
+                &pa[i], &gam[i], &phi[i], &psi[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pyeps0); Py_INCREF(pypsia); Py_INCREF(pyoma); Py_INCREF(pybpa);
+    Py_INCREF(pybqa); Py_INCREF(pypia); Py_INCREF(pybpia); Py_INCREF(pyepsa);
+    Py_INCREF(pychia); Py_INCREF(pyza); Py_INCREF(pyzetaa); Py_INCREF(pythetaa);
+    Py_INCREF(pypa); Py_INCREF(pygam); Py_INCREF(pyphi); Py_INCREF(pypsi);
+    return Py_BuildValue("OOOOOOOOOOOOOOOO",
+                          pyeps0, pypsia, pyoma, pybpa,
+                          pybqa, pypia, pybpia, pyepsa,
+                          pychia, pyza, pyzetaa, pythetaa,
+                          pypa, pygam, pyphi, pypsi);
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pyeps0); Py_XDECREF(pypsia); Py_XDECREF(pyoma); Py_XDECREF(pybpa);
+    Py_XDECREF(pybqa); Py_XDECREF(pypia); Py_XDECREF(pybpia); Py_XDECREF(pyepsa);
+    Py_XDECREF(pychia); Py_XDECREF(pyza); Py_XDECREF(pyzetaa); Py_XDECREF(pythetaa);
+    Py_XDECREF(pypa); Py_XDECREF(pygam); Py_XDECREF(pyphi); Py_XDECREF(pypsi);
+    return NULL;    
+}
+
+PyDoc_STRVAR(_erfa_p06e_doc,
+"\np06e(d1, d2) -> eps0,psia,oma,bpa,bqa,pia,bpia,epsa,chia,za,zetaa,thetaa,pa,gam,phi,psi\n\n"
+"Precession angles, IAU 2006, equinox based.\n"
+"Given:\n"
+"   d1,d2   TT as a 2-part Julian Date\n"
+"Returned:\n"
+"   eps0   epsilon_0   obliquity at J2000.0\n"
+"   psia   psi_A       luni-solar precession\n"
+"   oma    omega_A     inclination of equator wrt J2000.0 ecliptic\n"
+"   bpa    P_A         ecliptic pole x, J2000.0 ecliptic triad\n"
+"   bqa    Q_A         ecliptic pole -y, J2000.0 ecliptic triad\n"
+"   pia    pi_A        angle between moving and J2000.0 ecliptics\n"
+"   bpia   Pi_A        longitude of ascending node of the ecliptic\n"
+"   epsa   epsilon_A   obliquity of the ecliptic\n"
+"   chia   chi_A       planetary precession\n"
+"   za     z_A         equatorial precession: -3rd 323 Euler angle\n"
+"   zetaa  zeta_A      equatorial precession: -1st 323 Euler angle\n"
+"   thetaa theta_A     equatorial precession: 2nd 323 Euler angle\n"
+"   pa     p_A         general precession\n"
+"   gam    gamma_J2000 J2000.0 RA difference of ecliptic poles\n"
+"   phi    phi_J2000   J2000.0 codeclination of ecliptic pole\n"
+"   psi    psi_J2000   longitude difference of equator poles, J2000.0");
+
+static PyObject *
 _erfa_plan94(PyObject *self, PyObject *args)
 {
     double *d1, *d2, pv[2][3];
@@ -8715,6 +8841,7 @@ static PyMethodDef _erfa_methods[] = {
     {"nutm80", _erfa_nutm80, METH_VARARGS, _erfa_nutm80_doc},
     {"obl06", _erfa_obl06, METH_VARARGS, _erfa_obl06_doc},
     {"obl80", _erfa_obl80, METH_VARARGS, _erfa_obl80_doc},
+    {"p06e", _erfa_p06e, METH_VARARGS, _erfa_p06e_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
     {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
     {"pn00", _erfa_pn00, METH_VARARGS, _erfa_pn00_doc},

@@ -868,6 +868,25 @@ class Validate(unittest.TestCase):
         obl = erfa.obl80(np.array([2400000.5]), np.array([54388.0]))[0]
         self.assertAlmostEqual(obl, 0.4090751347643816218, 14)
         
+    def test_p06e(self):
+        eps0,psia,oma,bpa,bqa,pia,bpia,epsa,chia,za,zetaa,thetaa,pa,gam,phi,psi = erfa.p06e(np.array([2400000.5]), np.array([52541.0]))
+        self.assertAlmostEqual(eps0[0], 0.4090926006005828715, places=14)
+        self.assertAlmostEqual(psia[0], 0.6664369630191613431e-3, places=14)
+        self.assertAlmostEqual(oma[0], 0.4090925973783255982, places=14)
+        self.assertAlmostEqual(bpa[0], 0.5561149371265209445e-6, places=14)
+        self.assertAlmostEqual(bqa[0], -0.6191517193290621270e-5, places=14)
+        self.assertAlmostEqual(pia[0], 0.6216441751884382923e-5, places=14)
+        self.assertAlmostEqual(bpia[0], 3.052014180023779882, places=14)
+        self.assertAlmostEqual(epsa[0], 0.4090864054922431688, places=14)
+        self.assertAlmostEqual(chia[0], 0.1387703379530915364e-5, places=14)
+        self.assertAlmostEqual(za[0], 0.2921789846651790546e-3, places=14)
+        self.assertAlmostEqual(zetaa[0], 0.3178773290332009310e-3, places=14)
+        self.assertAlmostEqual(thetaa[0], 0.2650932701657497181e-3, places=14)
+        self.assertAlmostEqual(pa[0], 0.6651637681381016344e-3, places=14)
+        self.assertAlmostEqual(gam[0], 0.1398077115963754987e-5, places=14)
+        self.assertAlmostEqual(phi[0], 0.4090864090837462602, places=14)
+        self.assertAlmostEqual(psi[0], 0.6664464807480920325e-3, places=14)
+
     def test_pmat76(self):
         rmatp = erfa.pmat76(np.array([2400000.5]), np.array([50123.9999]))[0]
         self.assertAlmostEqual(rmatp[0][0], 0.9999995504328350733, places=12)
