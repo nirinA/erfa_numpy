@@ -6179,6 +6179,78 @@ PyDoc_STRVAR(_erfa_plan94_doc,
 "    pv         planet p,v (heliocentric, J2000.0, AU,AU/d)");
 
 static PyObject *
+_erfa_pmat00(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, rbp[3][3];
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyout = NULL;
+    PyObject *out_iter = NULL;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2))
+        return NULL;
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (NULL == ad1 || NULL == ad2) goto fail;
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyout = (PyArrayObject *)PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyout)  goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    if (out_iter == NULL) goto fail;
+
+    for (i=0;i<dims[0];i++) {
+        eraPmat00(d1[i], d2[i], rbp);
+        int j,k;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {            
+                if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyFloat_FromDouble(rbp[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rbp");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(out_iter);
+            }
+        }
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(out_iter);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(out_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pmat00_doc,
+"\npmat00(d1, d2) -> rbp\n\n"
+"Precession matrix (including frame bias) from GCRS to a specified\n"
+"date, IAU 2000 model.\n"
+"Given:\n"
+"   d1,d2       TT as a 2-part Julian Date\n"
+"Returned:\n"
+"   rbp         bias-precession matrix");
+
+static PyObject *
 _erfa_pmat76(PyObject *self, PyObject *args)
 {
     double *d1, *d2, rmatp[3][3];
@@ -8983,6 +9055,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pb06", _erfa_pb06, METH_VARARGS, _erfa_pb06_doc},
     {"pfw06", _erfa_pfw06, METH_VARARGS, _erfa_pfw06_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
+    {"pmat00", _erfa_pmat00, METH_VARARGS, _erfa_pmat00_doc},
     {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
     {"pn00", _erfa_pn00, METH_VARARGS, _erfa_pn00_doc},
     {"pom00", _erfa_pom00, METH_VARARGS, _erfa_pom00_doc},
