@@ -7618,6 +7618,69 @@ PyDoc_STRVAR(_erfa_pom00_doc,
 "   rpom        polar-motion matrix");
 
 static PyObject *
+_erfa_pr00(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, *dpsipr, *depspr;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pydpsipr = NULL, *pydepspr = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!", 
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2))
+        return NULL;
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    if (dims[0] != PyArray_DIMS(ad2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pydpsipr = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydepspr = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pydpsipr || NULL == pydepspr) goto fail;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    dpsipr = (double *)PyArray_DATA(pydpsipr);
+    depspr = (double *)PyArray_DATA(pydepspr);
+    for (i=0;i<dims[0];i++) {
+        eraPr00(d1[i], d2[i], &dpsipr[i], &depspr[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pydpsipr);
+    Py_INCREF(pydepspr);
+    return Py_BuildValue("OO", pydpsipr, pydepspr);;
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pydpsipr);
+    Py_XDECREF(pydepspr);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pr00_doc,
+"\npr00(d1,d2) -> dpsipr,depspr\n\n"
+"Precession-rate part of the IAU 2000 precession-nutation models\n"
+"(part of MHB2000).\n"
+"Given:\n"
+"   d1,d2           TT as a 2-part Julian Date\n"
+"Returned:\n"
+"   dpsipr,depspr   precession corrections");
+
+static PyObject *
 _erfa_s00(PyObject *self, PyObject *args)
 {
     double *d1, *d2, *x, *y, *s;
@@ -10118,6 +10181,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pnm06a", _erfa_pnm06a, METH_VARARGS, _erfa_pnm06a_doc},
     {"pnm80", _erfa_pnm80, METH_VARARGS, _erfa_pnm80_doc},
     {"pom00", _erfa_pom00, METH_VARARGS, _erfa_pom00_doc},
+    {"pr00", _erfa_pr00, METH_VARARGS, _erfa_pr00_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
     {"s06", _erfa_s06, METH_VARARGS, _erfa_s06_doc},
     {"sp00", _erfa_sp00, METH_VARARGS, _erfa_sp00_doc},

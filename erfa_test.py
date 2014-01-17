@@ -1266,6 +1266,11 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rpom[2][1], 0.1860359247002414021e-5, places=16)
         self.assertAlmostEqual(rpom[2][2], 0.9999999999982370039, places=12)
 
+    def test_pr00(self):
+        dpsipr, depspr = erfa.pr00(np.array([2400000.5]), np.array([53736]))
+        self.assertAlmostEqual(dpsipr[0], -0.8716465172668347629e-7, places=22)
+        self.assertAlmostEqual(depspr[0], -0.7342018386722813087e-8, places=22)
+
     def test_s00(self):
         d1 = np.array([2400000.5])
         d2 = np.array([53736.0])
