@@ -541,6 +541,10 @@ def ee00b(d1, d2):
     check_args(d1, d2)
     return _erfa.ee00b(d1, d2)
 
+def ee06a(d1, d2):
+    check_args(d1, d2)
+    return _erfa.ee06a(d1, d2)
+
 def eqeq94(d1, d2):
     check_args(d1, d2)
     return _erfa.eqeq94(d1, d2)
