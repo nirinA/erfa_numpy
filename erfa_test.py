@@ -846,6 +846,20 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(dpsi[0], -0.9643658353226563966e-5, 13)
         self.assertAlmostEqual(deps[0], 0.4060051006879713322e-4, 13)
 
+    def test_nutm80(self):
+        rmatn = erfa.nutm80(np.array([2400000.5]), np.array([53736.0]))[0]
+        self.assertAlmostEqual(rmatn[0][0], 0.9999999999534999268, places=12)
+        self.assertAlmostEqual(rmatn[0][1], 0.8847935789636432161e-5, places=12)
+        self.assertAlmostEqual(rmatn[0][2], 0.3835906502164019142e-5, places=12)
+
+        self.assertAlmostEqual(rmatn[1][0], -0.8847780042583435924e-5, places=12)
+        self.assertAlmostEqual(rmatn[1][1], 0.9999999991366569963, places=12)
+        self.assertAlmostEqual(rmatn[1][2], -0.4060052702727130809e-4, places=12)
+
+        self.assertAlmostEqual(rmatn[2][0], -0.3836265729708478796e-5, places=12)
+        self.assertAlmostEqual(rmatn[2][1], 0.4060049308612638555e-4, places=12)
+        self.assertAlmostEqual(rmatn[2][2], 0.9999999991684415129, places=12)
+
     def test_obl80(self):
         obl = erfa.obl80(np.array([2400000.5]), np.array([54388.0]))
         self.assertAlmostEqual(obl[0], 0.4090751347643816218, 14)
