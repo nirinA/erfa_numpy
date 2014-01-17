@@ -420,6 +420,10 @@ def p06e(d1, d2):
     check_args(d1, d2)
     return _erfa.p06e(d1, d2)
 
+def pb06(d1, d2):
+    check_args(d1, d2)
+    return _erfa.pb06(d1, d2)
+
 def pmat76(d1, d2):
     check_args(d1, d2)
     return _erfa.pmat76(d1, d2)

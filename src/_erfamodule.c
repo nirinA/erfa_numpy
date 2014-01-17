@@ -5946,6 +5946,75 @@ PyDoc_STRVAR(_erfa_p06e_doc,
 "   psi    psi_J2000   longitude difference of equator poles, J2000.0");
 
 static PyObject *
+_erfa_pb06(PyObject *self, PyObject *args)
+{
+    double *d1, *d2;
+    double *bz, *bzeta, *btheta;
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pybz = NULL, *pybzeta = NULL, *pybtheta = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2)) {
+        return NULL;
+    }
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    pybz = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pybzeta = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pybtheta = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pybz || NULL == pybzeta || NULL == pybtheta) {
+        goto fail;
+    }
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    bz = (double *)PyArray_DATA(pybz);
+    bzeta = (double *)PyArray_DATA(pybzeta);
+    btheta = (double *)PyArray_DATA(pybtheta);
+
+    for (i=0;i<dims[0];i++) {
+        eraPb06(d1[i], d2[i],
+                &bz[i], &bzeta[i], &btheta[i]);
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_INCREF(pybz); Py_INCREF(pybzeta); Py_INCREF(pybtheta);
+    return Py_BuildValue("OOO",
+                          pybz, pybzeta, pybtheta);
+
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(pybz); Py_XDECREF(pybzeta); Py_XDECREF(pybtheta);
+    return NULL;    
+}
+
+PyDoc_STRVAR(_erfa_pb06_doc,
+"\npb06(d1, d2) -> bzeta, bz, btheta\n\n"
+"Forms three Euler angles which implement general\n"
+"precession from epoch J2000.0, using the IAU 2006 model.\n"
+"Framebias (the offset between ICRS and mean J2000.0) is included.\n"
+"Given:\n"
+"   d1,d2   TT as a 2-part Julian Date\n"
+"Returned:\n"
+"   bzeta   1st rotation: radians cw around z\n"
+"   bz      3rd rotation: radians cw around z\n"
+"   btheta  2nd rotation: radians ccw around y");
+
+static PyObject *
 _erfa_plan94(PyObject *self, PyObject *args)
 {
     double *d1, *d2, pv[2][3];
@@ -8842,6 +8911,7 @@ static PyMethodDef _erfa_methods[] = {
     {"obl06", _erfa_obl06, METH_VARARGS, _erfa_obl06_doc},
     {"obl80", _erfa_obl80, METH_VARARGS, _erfa_obl80_doc},
     {"p06e", _erfa_p06e, METH_VARARGS, _erfa_p06e_doc},
+    {"pb06", _erfa_pb06, METH_VARARGS, _erfa_pb06_doc},
     {"plan94", _erfa_plan94, METH_VARARGS, _erfa_plan94_doc},
     {"pmat76", _erfa_pmat76, METH_VARARGS, _erfa_pmat76_doc},
     {"pn00", _erfa_pn00, METH_VARARGS, _erfa_pn00_doc},
