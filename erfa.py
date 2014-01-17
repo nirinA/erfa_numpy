@@ -440,9 +440,13 @@ def pmat76(d1, d2):
     check_args(d1, d2)
     return _erfa.pmat76(d1, d2)
 
-def pn00(d1,d2,dpsi,deps):
-    check_args(d1,d2,dpsi,deps)
-    return _erfa.pn00(d1,d2,dpsi,deps)
+def pn00(d1, d2, dpsi, deps):
+    check_args(d1, d2, dpsi, deps)
+    return _erfa.pn00(d1, d2, dpsi, deps)
+
+def pn00a(d1, d2):
+    check_args(d1, d2)
+    return _erfa.pn00a(d1, d2)
 
 def pom00(xp, yp, sp):
     check_args(xp, yp, sp)
