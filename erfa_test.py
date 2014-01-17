@@ -831,6 +831,11 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(dpsi[0], -0.9630909107115518431e-5, 13)
         self.assertAlmostEqual(deps[0], 0.4063239174001678710e-4, 13)
         
+    def test_nut00b(self):
+        dpsi, deps = erfa.nut00b(np.array([2400000.5]), np.array([53736.0]))
+        self.assertAlmostEqual(dpsi[0], -0.9632552291148362783e-5, 13)
+        self.assertAlmostEqual(deps[0], 0.4063197106621159367e-4, 13)
+        
     def test_nut80(self):
         dpsi, deps = erfa.nut80(np.array([2400000.5]), np.array([53736.0]))
         self.assertAlmostEqual(dpsi[0], -0.9643658353226563966e-5, 13)

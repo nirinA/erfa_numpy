@@ -392,6 +392,10 @@ def nut00a(d1, d2):
     check_args(d1, d2)
     return _erfa.nut00a(d1, d2)
 
+def nut00b(d1, d2):
+    check_args(d1, d2)
+    return _erfa.nut00b(d1, d2)
+
 def nut80(d1, d2):
     check_args(d1, d2)
     return _erfa.nut80(d1, d2)
