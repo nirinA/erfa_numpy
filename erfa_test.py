@@ -795,6 +795,20 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rmatn[2][1], 0.4063195412258168380e-4, places=12)
         self.assertAlmostEqual(rmatn[2][2], 0.9999999991671806225, places=12)
 
+    def test_num06a(self):
+        rmatn = erfa.num06a(np.array([2400000.5]), np.array([53736.0]))[0]
+        self.assertAlmostEqual(rmatn[0][0], 0.9999999999536227668, places=12)
+        self.assertAlmostEqual(rmatn[0][1], 0.8836241998111535233e-5, places=12)
+        self.assertAlmostEqual(rmatn[0][2], 0.3830834608415287707e-5, places=12)
+
+        self.assertAlmostEqual(rmatn[1][0], -0.8836086334870740138e-5, places=12)
+        self.assertAlmostEqual(rmatn[1][1], 0.9999999991354657474, places=12)
+        self.assertAlmostEqual(rmatn[1][2], -0.4063240188248455065e-4, places=12)
+
+        self.assertAlmostEqual(rmatn[2][0], -0.3831193642839398128e-5, places=12)
+        self.assertAlmostEqual(rmatn[2][1], 0.4063236803101479770e-4, places=12)
+        self.assertAlmostEqual(rmatn[2][2], 0.9999999991671663114, places=12)
+
     def test_numat(self):
         epsa =  np.array([0.4090789763356509900])
         dpsi = np.array([-0.9630909107115582393e-5])
