@@ -376,6 +376,10 @@ def num00a(d1, d2):
     check_args(d1, d2)
     return _erfa.num00a(d1, d2)
 
+def num00b(d1, d2):
+    check_args(d1, d2)
+    return _erfa.num00b(d1, d2)
+
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)
