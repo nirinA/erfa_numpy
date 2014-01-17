@@ -484,6 +484,10 @@ def pr00(d1,d2):
     check_args(d1,d2)
     return _erfa.pr00(d1,d2)
 
+def prec76(ep01, ep02, ep11, ep12):
+    check_args(ep01, ep02, ep11, ep12)
+    return _erfa.prec76(ep01, ep02, ep11, ep12)
+
 def s00(d1, d2, x, y):
     check_args(d1, d2, x, y)
     return _erfa.s00(d1, d2, x, y)

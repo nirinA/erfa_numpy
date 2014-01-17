@@ -7681,6 +7681,80 @@ PyDoc_STRVAR(_erfa_pr00_doc,
 "   dpsipr,depspr   precession corrections");
 
 static PyObject *
+_erfa_prec76(PyObject *self, PyObject *args)
+{
+    double *ep01, *ep02, *ep11, *ep12, *zeta, *z, *theta;
+    PyObject *pyep01, *pyep02, *pyep11, *pyep12;
+    PyObject *aep01, *aep02, *aep11, *aep12;
+    PyArrayObject *pyzeta = NULL, *pyz = NULL, *pytheta = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[2];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!",
+                                 &PyArray_Type, &pyep01,
+                                 &PyArray_Type, &pyep02,
+                                 &PyArray_Type, &pyep11,
+                                 &PyArray_Type, &pyep12)) {
+        return NULL;
+    }
+    aep01 = PyArray_FROM_OTF(pyep01, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aep02 = PyArray_FROM_OTF(pyep02, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aep11 = PyArray_FROM_OTF(pyep11, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aep12 = PyArray_FROM_OTF(pyep12, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if ( aep01 == NULL || aep02 == NULL || aep11 == NULL || aep12 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aep01);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aep01);
+    pyzeta = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyz = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pytheta = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyzeta || NULL == pyz || NULL == pytheta) {
+        goto fail;
+    }
+    ep01 = (double *)PyArray_DATA(aep01);
+    ep02 = (double *)PyArray_DATA(aep02);
+    ep11 = (double *)PyArray_DATA(aep11);
+    ep12 = (double *)PyArray_DATA(aep12);
+    zeta = (double *)PyArray_DATA(pyzeta);
+    z = (double *)PyArray_DATA(pyz);
+    theta = (double *)PyArray_DATA(pytheta);
+    for (i=0;i<dims[0];i++) {
+        eraPrec76(ep01[i], ep02[i], ep11[i], ep12[i], &zeta[i], &z[i], &theta[i]);
+    }
+    Py_DECREF(aep01);
+    Py_DECREF(aep02);
+    Py_DECREF(aep11);
+    Py_DECREF(aep12);
+    Py_INCREF(pyzeta); Py_INCREF(pyz); Py_INCREF(pytheta);
+    return Py_BuildValue("OOO", pyzeta, pyz, pytheta);
+
+fail:
+    Py_XDECREF(aep01);
+    Py_XDECREF(aep02);
+    Py_XDECREF(aep11);
+    Py_XDECREF(aep12);
+    Py_XDECREF(pyzeta); Py_XDECREF(pyz); Py_XDECREF(pytheta);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_prec76_doc,
+"\nprec76(ep01, ep02, ep11, ep12) -> zeta, z, theta\n\n"
+"IAU 1976 precession model.\n"
+"Given:\n"
+"   ep01,ep02   TDB starting epoch as 2-part Julian Date\n"
+"   ep11,ep12   TDB ending epoch as 2-part Julian Date\n"
+"Returned:\n"
+"   zeta        1st rotation: radians cw around z\n"
+"   z           3rd rotation: radians cw around z\n"
+"   theta       2nd rotation: radians ccw around y");
+
+static PyObject *
 _erfa_s00(PyObject *self, PyObject *args)
 {
     double *d1, *d2, *x, *y, *s;
@@ -10182,6 +10256,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pnm80", _erfa_pnm80, METH_VARARGS, _erfa_pnm80_doc},
     {"pom00", _erfa_pom00, METH_VARARGS, _erfa_pom00_doc},
     {"pr00", _erfa_pr00, METH_VARARGS, _erfa_pr00_doc},
+    {"prec76", _erfa_prec76, METH_VARARGS, _erfa_prec76_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
     {"s06", _erfa_s06, METH_VARARGS, _erfa_s06_doc},
     {"sp00", _erfa_sp00, METH_VARARGS, _erfa_sp00_doc},

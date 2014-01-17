@@ -1271,6 +1271,16 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(dpsipr[0], -0.8716465172668347629e-7, places=22)
         self.assertAlmostEqual(depspr[0], -0.7342018386722813087e-8, places=22)
 
+    def test_prec76(self):
+        ep01 = np.array([2400000.5])
+        ep02 = np.array([33282.0])
+        ep11 = np.array([2400000.5])
+        ep12 = np.array([51544.0])
+        zeta, z, theta = erfa.prec76(ep01, ep02, ep11, ep12)
+        self.assertAlmostEqual(zeta[0],  0.5588961642000161243e-2, places=12)
+        self.assertAlmostEqual(z[0],     0.5589922365870680624e-2, places=12)
+        self.assertAlmostEqual(theta[0], 0.4858945471687296760e-2, places=12)
+
     def test_s00(self):
         d1 = np.array([2400000.5])
         d2 = np.array([53736.0])
