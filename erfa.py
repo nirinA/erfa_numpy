@@ -372,6 +372,10 @@ def fw2xy(gamb, phib, psi, eps):
     check_args(gamb, phib, psi, eps)
     return _erfa.fw2xy(gamb, phib, psi, eps)
 
+def num00a(d1, d2):
+    check_args(d1, d2)
+    return _erfa.num00a(d1, d2)
+
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)
