@@ -740,6 +740,24 @@ class Validate(unittest.TestCase):
         eo = erfa.eors(r, s)[0]
         self.assertAlmostEqual(eo, -0.1332882715130744606e-2, 15)
 
+    def test_fw2m(self):
+        gamb = np.array([-0.2243387670997992368e-5])
+        phib = np.array([0.4091014602391312982])
+        psi = np.array([-0.9501954178013015092e-3])
+        eps = np.array([0.4091014316587367472])
+        r = erfa.fw2m(gamb, phib, psi, eps)[0]
+        self.assertAlmostEqual(r[0][0], 0.9999995505176007047, places=12)
+        self.assertAlmostEqual(r[0][1], 0.8695404617348192957e-3, places=12)
+        self.assertAlmostEqual(r[0][2], 0.3779735201865582571e-3, places=12)
+
+        self.assertAlmostEqual(r[1][0], -0.8695404723772016038e-3, places=12)
+        self.assertAlmostEqual(r[1][1], 0.9999996219496027161, places=12)
+        self.assertAlmostEqual(r[1][2], -0.1361752496887100026e-6, places=12)
+
+        self.assertAlmostEqual(r[2][0], -0.3779734957034082790e-3, places=12)
+        self.assertAlmostEqual(r[2][1], -0.1924880848087615651e-6, places=12)
+        self.assertAlmostEqual(r[2][2], 0.9999999285679971958, places=12)
+
     def test_numat(self):
         epsa =  np.array([0.4090789763356509900])
         dpsi = np.array([-0.9630909107115582393e-5])

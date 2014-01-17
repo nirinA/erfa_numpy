@@ -364,6 +364,10 @@ def eors(rnpb, s):
     check_args(rnpb, s)
     return _erfa.eors(rnpb, s)
 
+def fw2m(gamb, phib, psi, eps):
+    check_args(gamb, phib, psi, eps)
+    return _erfa.fw2m(gamb, phib, psi, eps)
+
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)

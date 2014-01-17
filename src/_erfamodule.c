@@ -2403,6 +2403,100 @@ PyDoc_STRVAR(_erfa_eors_doc,
 "    eo         equation of the origins in radians");
 
 static PyObject *
+_erfa_fw2m(PyObject *self, PyObject *args)
+{
+    double *gamb, *phib, *psi, *eps, r[3][3];
+    PyObject *pygamb, *pyphib, *pypsi, *pyeps;
+    PyObject *agamb = NULL, *aphib = NULL, *apsi = NULL, *aeps = NULL;
+    PyArrayObject *pyr = NULL;
+    PyObject *r_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!",
+                                 &PyArray_Type, &pygamb,
+                                 &PyArray_Type, &pyphib,
+                                 &PyArray_Type, &pypsi,
+                                 &PyArray_Type, &pyeps))      
+        return NULL;
+    agamb = PyArray_FROM_OTF(pygamb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphib = PyArray_FROM_OTF(pyphib, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apsi = PyArray_FROM_OTF(pypsi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aeps = PyArray_FROM_OTF(pyeps, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (agamb == NULL || aphib == NULL || apsi == NULL || aeps == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(agamb);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(agamb);
+    if (dims[0] != PyArray_DIMS(aphib)[0] ||
+        dims[0] != PyArray_DIMS(apsi)[0] ||
+        dims[0] != PyArray_DIMS(aeps)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    pyr = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyr) goto fail;
+    r_iter = PyArray_IterNew((PyObject *)pyr);
+    if (r_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    gamb = (double *)PyArray_DATA(agamb);
+    phib = (double *)PyArray_DATA(aphib);
+    psi = (double *)PyArray_DATA(apsi);
+    eps = (double *)PyArray_DATA(aeps);
+
+    for (i=0;i<dims[0];i++) {
+        eraFw2m(gamb[i], phib[i], psi[i], eps[i], r);
+        int j,k;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {
+                if (PyArray_SETITEM(pyr, PyArray_ITER_DATA(r_iter), PyFloat_FromDouble(r[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set output r");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(r_iter);
+            }
+        }
+    }
+    Py_DECREF(agamb);
+    Py_DECREF(aphib);
+    Py_DECREF(apsi);
+    Py_DECREF(aeps);
+    Py_DECREF(r_iter);
+    Py_INCREF(pyr);
+    return (PyObject *)pyr;    
+
+fail:
+    Py_XDECREF(agamb);
+    Py_XDECREF(aphib);
+    Py_XDECREF(apsi);
+    Py_XDECREF(aeps);
+    Py_XDECREF(r_iter);
+    Py_XDECREF(pyr);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_fw2m_doc,
+"\nfw2m(gamb, phib, psi, eps) -> r\n\n"
+"Form rotation matrix given the Fukushima-Williams angles.\n"
+"Given:\n"
+"    gamb       F-W angle gamma_bar (radians)\n"
+"    phib       F-W angle phi_bar (radians)\n"
+"    si         F-W angle psi (radians)\n"
+"    eps        F-W angle epsilon (radians)\n"
+"Returned:\n"
+"    r          rotation matrix");
+
+static PyObject *
 _erfa_cal2jd(PyObject *self, PyObject *args)
 {
     int *iy, *im, *id;
@@ -7978,6 +8072,7 @@ static PyMethodDef _erfa_methods[] = {
     {"c2txy", _erfa_c2txy, METH_VARARGS, _erfa_c2txy_doc},
     {"eo06a", _erfa_eo06a, METH_VARARGS, _erfa_eo06a_doc},
     {"eors", _erfa_eors, METH_VARARGS, _erfa_eors_doc},
+    {"fw2m", _erfa_fw2m, METH_VARARGS, _erfa_fw2m_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
