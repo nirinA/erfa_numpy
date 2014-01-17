@@ -1327,6 +1327,14 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(y[0], 0.4020595661591500259e-4, places=17)
         self.assertAlmostEqual(s[0], -0.1220040848471549623e-7, places=20)
 
+    def test_xys00b(self):
+        d1 = np.array([2400000.5])
+        d2 = np.array([53736.0])
+        x, y, s = erfa.xys00b(d1, d2)
+        self.assertAlmostEqual(x[0], 0.5791301929950208873e-3, places=16)
+        self.assertAlmostEqual(y[0], 0.4020553681373720832e-4, places=16)
+        self.assertAlmostEqual(s[0], -0.1220027377285083189e-7, places=19)
+        
     def test_xy06(self):
         d1 = np.array([2400000.5])
         d2 = np.array([53736.0])

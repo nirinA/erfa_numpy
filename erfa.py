@@ -520,6 +520,10 @@ def xys00a(d1, d2):
     check_args(d1, d2)
     return _erfa.xys00a(d1, d2)
 
+def xys00b(d1, d2):
+    check_args(d1, d2)
+    return _erfa.xys00b(d1, d2)
+
 def xys06a(d1, d2):
     check_args(d1, d2)
     return _erfa.xys06a(d1, d2)
