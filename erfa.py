@@ -408,6 +408,10 @@ def nutm80(d1, d2):
     check_args(d1, d2)
     return _erfa.nutm80(d1, d2)
 
+def obl06(d1, d2):
+    check_args(d1, d2)
+    return _erfa.obl06(d1, d2)
+
 def obl80(d1, d2):
     check_args(d1, d2)
     return _erfa.obl80(d1, d2)

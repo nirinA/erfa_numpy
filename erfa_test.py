@@ -860,9 +860,13 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rmatn[2][1], 0.4060049308612638555e-4, places=12)
         self.assertAlmostEqual(rmatn[2][2], 0.9999999991684415129, places=12)
 
+    def test_obl06(self):
+        obl = erfa.obl06(np.array([2400000.5]), np.array([54388.0]))[0]
+        self.assertAlmostEqual(obl, 0.4090749229387258204, 14)
+        
     def test_obl80(self):
-        obl = erfa.obl80(np.array([2400000.5]), np.array([54388.0]))
-        self.assertAlmostEqual(obl[0], 0.4090751347643816218, 14)
+        obl = erfa.obl80(np.array([2400000.5]), np.array([54388.0]))[0]
+        self.assertAlmostEqual(obl, 0.4090751347643816218, 14)
         
     def test_pmat76(self):
         rmatp = erfa.pmat76(np.array([2400000.5]), np.array([50123.9999]))[0]
