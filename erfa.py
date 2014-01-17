@@ -360,6 +360,10 @@ def eo06a(d1, d2):
     check_args(d1, d2)
     return _erfa.eo06a(d1, d2)
 
+def eors(rnpb, s):
+    check_args(rnpb, s)
+    return _erfa.eors(rnpb, s)
+
 def numat(epsa, dpsi, deps):
     check_args(epsa, dpsi, deps)
     return _erfa.numat(epsa, dpsi, deps)

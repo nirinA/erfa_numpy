@@ -2321,6 +2321,88 @@ PyDoc_STRVAR(_erfa_eo06a_doc,
 "    eo         equation of the origins (radians)");
 
 static PyObject *
+_erfa_eors(PyObject *self, PyObject *args)
+{
+    double rnpb[3][3], *s, *eo;
+    PyObject *pys, *pyrnpb;
+    PyArrayObject *pyeo = NULL;
+    PyObject *as = NULL, *arnpb = NULL;
+    PyObject *rnpb_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyrnpb,
+                                 &PyArray_Type, &pys))      
+        return NULL;
+    ndim = PyArray_NDIM(pyrnpb);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pyrnpb);
+    as = PyArray_FROM_OTF(pys, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (as == NULL) {
+        goto fail;
+    }
+    if (dims[0] != PyArray_DIMS(as)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    dim_out[0] = dims[0];
+    pyeo = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pyeo) goto fail;
+    eo = (double *)PyArray_DATA(pyeo);
+    s = (double *)PyArray_DATA(as);
+    rnpb_iter = PyArray_IterNew((PyObject *)pyrnpb);
+    if (rnpb_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        double vrnpb;
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {
+                arnpb = PyArray_GETITEM(pyrnpb, PyArray_ITER_DATA(rnpb_iter));
+                if (arnpb == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(arnpb);
+                vrnpb = (double)PyFloat_AsDouble(arnpb);
+                if (vrnpb == -1 && PyErr_Occurred()) goto fail;
+                rnpb[j][k] = vrnpb;
+                Py_DECREF(arnpb);                
+                PyArray_ITER_NEXT(rnpb_iter); 
+            }
+        }
+        eo[i] = eraEors(rnpb, s[i]);
+    }
+    Py_DECREF(as);
+    Py_DECREF(rnpb_iter);
+    Py_INCREF(pyeo);
+    return (PyObject *)pyeo;
+
+fail:
+    Py_XDECREF(as);
+    Py_XDECREF(arnpb);
+    Py_XDECREF(rnpb_iter);
+    Py_XDECREF(pyeo);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_eors_doc,
+"\neors(rnpb, s) -> eo\n\n"
+"Equation of the origins, given the classical NPB matrix and the quantity s\n"
+"Given:\n"
+"    rnpb       classical nutation x precession x bias matrix\n"
+"    s          CIO locator\n"
+"Returned:\n"
+"    eo         equation of the origins in radians");
+
+static PyObject *
 _erfa_cal2jd(PyObject *self, PyObject *args)
 {
     int *iy, *im, *id;
@@ -7895,6 +7977,7 @@ static PyMethodDef _erfa_methods[] = {
     {"c2tpe", _erfa_c2tpe, METH_VARARGS, _erfa_c2tpe_doc},
     {"c2txy", _erfa_c2txy, METH_VARARGS, _erfa_c2txy_doc},
     {"eo06a", _erfa_eo06a, METH_VARARGS, _erfa_eo06a_doc},
+    {"eors", _erfa_eors, METH_VARARGS, _erfa_eors_doc},
     {"cal2jd", _erfa_cal2jd, METH_VARARGS, _erfa_cal2jd_doc},
     {"d2dtf", _erfa_d2dtf, METH_VARARGS, _erfa_d2dtf_doc},
     {"dat", _erfa_dat, METH_VARARGS, _erfa_dat_doc},
