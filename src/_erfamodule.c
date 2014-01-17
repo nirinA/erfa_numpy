@@ -7385,6 +7385,81 @@ PyDoc_STRVAR(_erfa_pnm00b_doc,
 "   rbpn        classical NPB matrix");
 
 static PyObject *
+_erfa_pnm06a(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, rbpn[3][3];
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyrbpn = NULL;
+    PyObject *rbpn_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2)) {
+        return NULL;
+    }
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    pyrbpn = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyrbpn) {
+        goto fail;
+    }
+    rbpn_iter = PyArray_IterNew((PyObject*)pyrbpn);
+    if (rbpn_iter == NULL) goto fail;
+
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        eraPnm06a(d1[i], d2[i], rbpn);
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {                    
+                if (PyArray_SETITEM(pyrbpn, PyArray_ITER_DATA(rbpn_iter), PyFloat_FromDouble(rbpn[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rbpn");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rbpn_iter);
+            }
+        }
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(rbpn_iter);
+    Py_INCREF(pyrbpn);
+    return (PyObject*)pyrbpn;
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(rbpn_iter);
+    Py_XDECREF(pyrbpn);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pnm06a_doc,
+"\npnm06a(d1, d2) -> rbpn\n\n"
+"Form the matrix of precession-nutation for a given date (including\n"
+"frame bias), IAU 2006 precession and IAU 2000A nutation models.\n"
+"Given:\n"
+"   d1,d2       TT as a 2-part Julian Date\n"
+"Returned:\n"
+"   rbpn        classical NPB matrix");
+
+static PyObject *
 _erfa_pom00(PyObject *self, PyObject *args)
 {    
     double *xp, *yp, *sp, rpom[3][3];
@@ -9965,6 +10040,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pn06a", _erfa_pn06a, METH_VARARGS, _erfa_pn06a_doc},
     {"pnm00a", _erfa_pnm00a, METH_VARARGS, _erfa_pnm00a_doc},
     {"pnm00b", _erfa_pnm00b, METH_VARARGS, _erfa_pnm00b_doc},
+    {"pnm06a", _erfa_pnm06a, METH_VARARGS, _erfa_pnm06a_doc},
     {"pom00", _erfa_pom00, METH_VARARGS, _erfa_pom00_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
     {"s06", _erfa_s06, METH_VARARGS, _erfa_s06_doc},
