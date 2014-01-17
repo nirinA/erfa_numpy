@@ -1239,6 +1239,17 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rbpn[2][1], -0.4163377605910663999e-4, places=14)
         self.assertAlmostEqual(rbpn[2][2], 0.9999999329094260057, places=12)
 
+    def test_pnm80(self):
+        rmatpn = erfa.pnm80(np.array([2400000.5]), np.array([50123.9999]))[0]
+        self.assertAlmostEqual(rmatpn[0][0], 0.9999995831934611169, places=12)
+        self.assertAlmostEqual(rmatpn[0][1], 0.8373654045728124011e-3, places=14)
+        self.assertAlmostEqual(rmatpn[0][2], 0.3639121916933106191e-3, places=14)
+        self.assertAlmostEqual(rmatpn[1][0], -0.8373804896118301316e-3, places=14)
+        self.assertAlmostEqual(rmatpn[1][1], 0.9999996485439674092, places=12)
+        self.assertAlmostEqual(rmatpn[1][2], 0.4130202510421549752e-4, places=14)
+        self.assertAlmostEqual(rmatpn[2][0], -0.3638774789072144473e-3, places=14)
+        self.assertAlmostEqual(rmatpn[2][1], -0.4160674085851722359e-4, places=14)
+        self.assertAlmostEqual(rmatpn[2][2], 0.9999999329310274805, places=12)
 
     def test_pom00(self):
         xp = np.array([2.55060238e-7])

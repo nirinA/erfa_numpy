@@ -7460,6 +7460,81 @@ PyDoc_STRVAR(_erfa_pnm06a_doc,
 "   rbpn        classical NPB matrix");
 
 static PyObject *
+_erfa_pnm80(PyObject *self, PyObject *args)
+{
+    double *d1, *d2, rmatp[3][3];
+    PyObject *pyd1, *pyd2;
+    PyObject *ad1, *ad2;
+    PyArrayObject *pyrmatp = NULL;
+    PyObject *rmatp_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pyd1,
+                                 &PyArray_Type, &pyd2)) {
+        return NULL;
+    }
+    ad1 = PyArray_FROM_OTF(pyd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ad2 = PyArray_FROM_OTF(pyd2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad1 == NULL || ad2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad1);
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    dim_out[2] = 3;
+    d1 = (double *)PyArray_DATA(ad1);
+    d2 = (double *)PyArray_DATA(ad2);
+    pyrmatp = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pyrmatp) {
+        goto fail;
+    }
+    rmatp_iter = PyArray_IterNew((PyObject*)pyrmatp);
+    if (rmatp_iter == NULL) goto fail;
+
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        eraPnm80(d1[i], d2[i], rmatp);
+        for (j=0;j<3;j++) {
+            for (k=0;k<3;k++) {                    
+                if (PyArray_SETITEM(pyrmatp, PyArray_ITER_DATA(rmatp_iter), PyFloat_FromDouble(rmatp[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set rmatp");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(rmatp_iter);
+            }
+        }
+    }
+    Py_DECREF(ad1);
+    Py_DECREF(ad2);
+    Py_DECREF(rmatp_iter);
+    Py_INCREF(pyrmatp);
+    return (PyObject*)pyrmatp;
+fail:
+    Py_XDECREF(ad1);
+    Py_XDECREF(ad2);
+    Py_XDECREF(rmatp_iter);
+    Py_XDECREF(pyrmatp);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pnm80_doc,
+"\npnm80(d1, d2) -> rmatp\n\n"
+"Form the matrix of precession/nutation for a given date, IAU 1976\n"
+"precession model, IAU 1980 nutation model.\n"
+"Given:\n"
+"   d1,d2           TDB date as a 2-part Julian Date\n"
+"Returned:\n"
+"   rmatp           combined precession/nutation matrix");
+
+static PyObject *
 _erfa_pom00(PyObject *self, PyObject *args)
 {    
     double *xp, *yp, *sp, rpom[3][3];
@@ -10041,6 +10116,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pnm00a", _erfa_pnm00a, METH_VARARGS, _erfa_pnm00a_doc},
     {"pnm00b", _erfa_pnm00b, METH_VARARGS, _erfa_pnm00b_doc},
     {"pnm06a", _erfa_pnm06a, METH_VARARGS, _erfa_pnm06a_doc},
+    {"pnm80", _erfa_pnm80, METH_VARARGS, _erfa_pnm80_doc},
     {"pom00", _erfa_pom00, METH_VARARGS, _erfa_pom00_doc},
     {"s00", _erfa_s00, METH_VARARGS, _erfa_s00_doc},
     {"s06", _erfa_s06, METH_VARARGS, _erfa_s06_doc},
