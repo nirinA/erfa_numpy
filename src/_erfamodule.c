@@ -693,6 +693,110 @@ PyDoc_STRVAR(_erfa_pmsafe_doc,
 "    rv2    radial velocity (km/s, +ve = receding), after");
 
 static PyObject *
+_erfa_pvstar(PyObject *self, PyObject *args)
+{
+    double pv[2][3], *ra, *dec, *pmr, *pmd, *px, *rv;
+    int status;
+    PyObject *pypv, *apv;
+    PyObject *pv_iter = NULL;
+    PyArrayObject *pyra = NULL, *pydec = NULL, *pypmr = NULL, *pypmd = NULL, *pypx = NULL, *pyrv = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pypv)) {
+        return NULL;
+    }
+    pv_iter = PyArray_IterNew((PyObject *)pypv);
+    if (pv_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    ndim = PyArray_NDIM(pypv);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pypv);
+    dim_out[0] = dims[0];
+    pyra = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pydec = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pypmr = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pypmd = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pypx = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pyrv = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pyra || NULL == pydec || NULL == pypmr ||
+        NULL == pypmd || NULL == pypx || NULL == pyrv)
+        goto fail;
+    ra = (double *)PyArray_DATA(pyra);
+    dec = (double *)PyArray_DATA(pydec);
+    pmr = (double *)PyArray_DATA(pypmr);
+    pmd = (double *)PyArray_DATA(pypmd);
+    px = (double *)PyArray_DATA(pypx);
+    rv = (double *)PyArray_DATA(pyrv);
+
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        double p;
+        for (j=0;j<2;j++) {
+            for (k=0;k<3;k++) {
+                apv = PyArray_GETITEM(pypv, PyArray_ITER_DATA(pv_iter));
+                if (apv == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(apv);
+                p = (double)PyFloat_AsDouble(apv);
+                if (p == -1 && PyErr_Occurred()) goto fail;
+                pv[j][k] = p;
+                Py_DECREF(apv);
+                PyArray_ITER_NEXT(pv_iter);
+            }
+        }
+        status = eraPvstar(pv, &ra[i], &dec[i], &pmr[i], &pmd[i], &px[i], &rv[i]);
+        if (status == -1) {
+            PyErr_SetString(_erfaError, "superluminal speed");
+            goto fail;
+        }
+        if (status == -2) {
+            PyErr_SetString(_erfaError, "null position vector");
+            goto fail;
+        }
+    }
+    Py_DECREF(pv_iter);
+    Py_INCREF(pyra);
+    Py_INCREF(pydec);
+    Py_INCREF(pypmr);
+    Py_INCREF(pypmd);
+    Py_INCREF(pypx);
+    Py_INCREF(pyrv);
+    return Py_BuildValue("OOOOOO", pyra, pydec, pypmr, pypmd, pypx, pyrv);
+
+fail:
+    Py_XDECREF(pv_iter);
+    Py_XDECREF(pyra);
+    Py_XDECREF(pydec);
+    Py_XDECREF(pypmr);
+    Py_XDECREF(pypmd);
+    Py_XDECREF(pypx);
+    Py_XDECREF(pyrv);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pvstar_doc,
+"\npvstar(pv) -> ra, dec, pmr, pmd, px, rv\n\n"
+"Convert star position+velocity vector to catalog coordinates.\n"
+"Given:\n"
+"   pv          pv-vector (AU, AU/day)\n"
+"Returned:\n"
+"   ra          right ascension (radians)\n"
+"   dec         declination (radians)\n"
+"   pmr         RA proper motion (radians/year)\n"
+"   pmd         Dec proper motion (radians/year)\n"
+"   px          parallax (arcsec)\n"
+"   rv          radial velocity (km/s, positive = receding)");
+
+static PyObject *
 _erfa_bi00(PyObject *self)
 {
     double dpsibi, depsbi, dra;
@@ -11051,6 +11155,7 @@ static PyMethodDef _erfa_methods[] = {
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
+    {"pvstar", _erfa_pvstar, METH_VARARGS, _erfa_pvstar_doc},
     {"bi00", (PyCFunction)_erfa_bi00, METH_NOARGS, _erfa_bi00_doc},
     {"bp00", _erfa_bp00, METH_VARARGS, _erfa_bp00_doc},
     {"bp06", _erfa_bp06, METH_VARARGS, _erfa_bp06_doc},

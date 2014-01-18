@@ -449,6 +449,10 @@ def pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b):
     check_args(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
     return _erfa.pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
 
+def pvstar(pv):
+    check_args(pv)
+    return _erfa.pvstar(pv)
+
 ## Astronomy/GeodeticGeocentric
 def gc2gd(n, xyz):
     check_args(xyz)
