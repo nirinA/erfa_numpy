@@ -4960,6 +4960,121 @@ PyDoc_STRVAR(_erfa_fk5hz_doc,
 "    dh         Hipparcos Dec (radians)");
 
 static PyObject *
+_erfa_h2fk5(PyObject *self, PyObject *args)
+{
+    double *rh, *dh, *drh, *ddh, *pxh, *rvh;
+    double *r5, *d5, *dr5, *dd5, *px5, *rv5;
+    PyObject *pyrh, *pydh, *pydrh, *pyddh, *pypxh, *pyrvh;
+    PyObject *arh, *adh, *adrh, *addh, *apxh, *arvh;
+    PyArrayObject *pyr5 = NULL, *pyd5 = NULL, *pydr5 = NULL, *pydd5 = NULL, *pypx5 = NULL, *pyrv5 = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!", 
+                                 &PyArray_Type, &pyrh,
+                                 &PyArray_Type, &pydh,
+                                 &PyArray_Type, &pydrh,
+                                 &PyArray_Type, &pyddh,
+                                 &PyArray_Type, &pypxh,
+                                 &PyArray_Type, &pyrvh))
+        return NULL;
+    arh = PyArray_FROM_OTF(pyrh, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adh = PyArray_FROM_OTF(pydh, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adrh = PyArray_FROM_OTF(pydrh, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    addh = PyArray_FROM_OTF(pyddh, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apxh = PyArray_FROM_OTF(pypxh, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arvh = PyArray_FROM_OTF(pyrvh, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (arh == NULL || adh == NULL || adrh == NULL ||
+        apxh == NULL || addh == NULL || arvh == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(arh);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(arh);
+    if (dims[0] != PyArray_DIMS(adh)[0] ||
+        dims[0] != PyArray_DIMS(adrh)[0] || dims[0] != PyArray_DIMS(apxh)[0] ||
+        dims[0] != PyArray_DIMS(addh)[0] || dims[0] != PyArray_DIMS(arvh)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyr5 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyd5 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydr5 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydd5 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypx5 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyrv5 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyr5 || NULL == pyd5 || NULL == pydr5 ||
+        NULL == pydd5 || NULL == pypx5 || NULL == pyrv5) goto fail;
+    rh = (double *)PyArray_DATA(arh);
+    dh = (double *)PyArray_DATA(adh);
+    drh = (double *)PyArray_DATA(adrh);
+    ddh = (double *)PyArray_DATA(addh);
+    pxh = (double *)PyArray_DATA(apxh);
+    rvh = (double *)PyArray_DATA(arvh);
+    r5 = (double *)PyArray_DATA(pyr5);
+    d5 = (double *)PyArray_DATA(pyd5);
+    dr5 = (double *)PyArray_DATA(pydr5);
+    dd5 = (double *)PyArray_DATA(pydd5);
+    px5 = (double *)PyArray_DATA(pypx5);
+    rv5 = (double *)PyArray_DATA(pyrv5);
+
+    for (i=0;i<dims[0];i++) {
+        eraH2fk5(rh[i], dh[i], drh[i], ddh[i], pxh[i], rvh[i],
+                 &r5[i], &d5[i], &dr5[i], &dd5[i], &px5[i], &rv5[i]);
+    }
+    Py_DECREF(arh);
+    Py_DECREF(adh);
+    Py_DECREF(adrh);
+    Py_DECREF(addh);
+    Py_DECREF(apxh);
+    Py_DECREF(arvh);
+    Py_INCREF(pyr5);
+    Py_INCREF(pyd5);
+    Py_INCREF(pydr5);
+    Py_INCREF(pydd5);
+    Py_INCREF(pypx5);
+    Py_INCREF(pyrv5);
+    return Py_BuildValue("OOOOOO", pyr5, pyd5, pydr5, pydd5, pypx5, pyrv5);
+
+fail:
+    Py_XDECREF(arh);
+    Py_XDECREF(adh);
+    Py_XDECREF(adrh);
+    Py_XDECREF(addh);
+    Py_XDECREF(apxh);
+    Py_XDECREF(arvh);
+    Py_XDECREF(pyr5);
+    Py_XDECREF(pyd5);
+    Py_XDECREF(pydr5);
+    Py_XDECREF(pydd5);
+    Py_XDECREF(pypx5);
+    Py_XDECREF(pyrv5);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_h2fk5_doc,
+"\nh2fk5(rh, dh, drh, ddh, pxh, rvh) -> r5, d5, dr5, dd5, px5, rv5\n\n"
+"Transform Hipparcos star data into the FK5 (J2000.0) system.\n"
+"Given (all Hipparcos, epoch J2000.0):\n"
+"     rh    RA (radians)\n"
+"     dh    Dec (radians)\n"
+"     drh   proper motion in RA (dRA/dt, rad/Jyear)\n"
+"     ddh   proper motion in Dec (dDec/dt, rad/Jyear)\n"
+"     pxh   parallax (arcsec)\n"
+"     rvh   radial velocity (km/s, positive = receding)\n"
+"Returned (all FK5, equinox J2000.0, epoch J2000.0):\n"
+"     r5    RA (radians)\n"
+"     d5    Dec (radians)\n"
+"     dr5   proper motion in RA (dRA/dt, rad/Jyear)\n"
+"     dd5   proper motion in Dec (dDec/dt, rad/Jyear)\n"
+"     px5   parallax (arcsec)\n"
+"     rv5   radial velocity (km/s, positive = receding)");
+
+static PyObject *
 _erfa_eform(PyObject *self, PyObject *args)
 {
     int n, status;
@@ -11550,6 +11665,7 @@ static PyMethodDef _erfa_methods[] = {
     {"fk52h", _erfa_fk52h, METH_VARARGS, _erfa_fk52h_doc},
     {"fk5hip", (PyCFunction)_erfa_fk5hip, METH_NOARGS, _erfa_fk5hip_doc},
     {"fk5hz", _erfa_fk5hz, METH_VARARGS, _erfa_fk5hz_doc},
+    {"h2fk5", _erfa_h2fk5, METH_VARARGS, _erfa_h2fk5_doc},
     {"eform", _erfa_eform, METH_VARARGS, _erfa_eform_doc},
     {"gc2gd", _erfa_gc2gd, METH_VARARGS, _erfa_gc2gd_doc},
     {"gc2gde", _erfa_gc2gde, METH_VARARGS, _erfa_gc2gde_doc},

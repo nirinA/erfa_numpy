@@ -466,6 +466,10 @@ def fk5hz(r5, d5, d1, d2):
     check_args(r5, d5, d1, d2)
     return _erfa.fk5hz(r5, d5, d1, d2)
 
+def h2fk5(rh, dh, drh, ddh, pxh, rvh):
+    check_args(rh, dh, drh, ddh, pxh, rvh)
+    return _erfa.h2fk5(rh, dh, drh, ddh, pxh, rvh)
+
 ## Astronomy/GeodeticGeocentric
 def gc2gd(n, xyz):
     check_args(xyz)
