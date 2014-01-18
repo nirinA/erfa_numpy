@@ -457,6 +457,10 @@ def starpv(ra, dec, pmr, pmd, px, rv):
     check_args(ra, dec, pmr, pmd, px, rv)
     return _erfa.starpv(ra, dec, pmr, pmd, px, rv) 
 
+def starpm(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b):
+    check_args(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
+    return _erfa.starpm(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
+
 ## Astronomy/StarCatalogs
 def fk52h(r5, d5, dr5, dd5, px5,rv5):
     check_args(r5, d5, dr5, dd5, px5,rv5)

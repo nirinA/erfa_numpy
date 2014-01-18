@@ -166,6 +166,26 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(pv[1][1], -0.6253919754866173866e-2, places=15)
         self.assertAlmostEqual(pv[1][2], 0.1189353719774107189e-1, places=13)
 
+    def test_starpm(self):
+        ra1 = np.array([0.01686756])
+        dec1 = np.array([-1.093989828])
+        pmr1 = np.array([-1.78323516e-5])
+        pmd1 = np.array([2.336024047e-6])
+        px1 = np.array([0.74723])
+        rv1 = np.array([-21.6])
+        ep1a = np.array([2400000.5])
+        ep1b = np.array([50083.0])
+        ep2a = np.array([2400000.5])
+        ep2b = np.array([53736.0])
+        ra2, dec2, pmr2, pmd2, px2, rv2 = erfa.starpm(ra1, dec1, pmr1, pmd1, px1,
+                                                      rv1, ep1a, ep1b, ep2a, ep2b)
+        self.assertAlmostEqual(ra2[0], 0.01668919069414242368, places=13)
+        self.assertAlmostEqual(dec2[0], -1.093966454217127879, places=13)
+        self.assertAlmostEqual(pmr2[0], -0.1783662682155932702e-4, places=17)
+        self.assertAlmostEqual(pmd2[0], 0.2338092915987603664e-5, places=17)
+        self.assertAlmostEqual(px2[0], 0.7473533835323493644, places=13)
+        self.assertAlmostEqual(rv2[0], -21.59905170476860786, places=11)
+
 ## Astronomy/StarCatalogs
     def test_fk52h(self):
         r5  = np.array([1.76779433])

@@ -927,6 +927,163 @@ PyDoc_STRVAR(_erfa_starpv_doc,
 "   pv      pv-vector (AU, AU/day)");
 
 static PyObject *
+_erfa_starpm(PyObject *self, PyObject *args)
+{
+    double *ra1, *dec1, *pmr1, *pmd1, *px1, *rv1, *ep1a, *ep1b, *ep2a, *ep2b;
+    double *ra2, *dec2, *pmr2, *pmd2, *px2, *rv2;
+    PyObject *pyra1, *pydec1, *pypmr1, *pypmd1, *pypx1, *pyrv1, *pyep1a, *pyep1b, *pyep2a, *pyep2b;
+    PyObject *ara1, *adec1, *apmr1, *apmd1, *apx1, *arv1, *aep1a, *aep1b, *aep2a, *aep2b;
+    PyArrayObject *pyra2 = NULL, *pydec2 = NULL, *pypmr2 = NULL;
+    PyArrayObject *pypmd2 = NULL, *pypx2 = NULL, *pyrv2 = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i, j;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!O!",
+                                 &PyArray_Type, &pyra1, &PyArray_Type, &pydec1,
+                                 &PyArray_Type, &pypmr1, &PyArray_Type, &pypmd1,
+                                 &PyArray_Type, &pypx1, &PyArray_Type, &pyrv1,
+                                 &PyArray_Type, &pyep1a, &PyArray_Type, &pyep1b,
+                                 &PyArray_Type, &pyep2a, &PyArray_Type, &pyep2b))
+        return NULL;
+    ara1 = PyArray_FROM_OTF(pyra1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adec1 = PyArray_FROM_OTF(pydec1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apmr1 = PyArray_FROM_OTF(pypmr1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apmd1 = PyArray_FROM_OTF(pypmd1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apx1 = PyArray_FROM_OTF(pypx1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arv1 = PyArray_FROM_OTF(pyrv1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aep1a = PyArray_FROM_OTF(pyep1a, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aep1b = PyArray_FROM_OTF(pyep1b, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aep2a = PyArray_FROM_OTF(pyep2a, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aep2b = PyArray_FROM_OTF(pyep2b, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ara1 == NULL || adec1 == NULL || apmr1 == NULL || apmd1 == NULL || apx1 == NULL ||
+        arv1 == NULL || aep1a == NULL || aep1b == NULL || aep2a == NULL || aep2b == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ara1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ara1);
+    if (dims[0] != PyArray_DIMS(adec1)[0] ||
+        dims[0] != PyArray_DIMS(apmr1)[0] || dims[0] != PyArray_DIMS(apmd1)[0] ||
+        dims[0] != PyArray_DIMS(apx1)[0] || dims[0] != PyArray_DIMS(arv1)[0] ||
+        dims[0] != PyArray_DIMS(aep1a)[0] || dims[0] != PyArray_DIMS(aep1b)[0] ||
+        dims[0] != PyArray_DIMS(aep2a)[0] || dims[0] != PyArray_DIMS(aep2b)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+
+    pyra2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydec2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypmr2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypmd2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pypx2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyrv2 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyra2 || NULL == pydec2 || NULL == pypmr2 ||
+        NULL == pypmd2 || NULL == pypx2 || NULL == pyrv2)  goto fail;
+
+    ra1 = (double *)PyArray_DATA(ara1);
+    dec1 = (double *)PyArray_DATA(adec1);
+    pmr1 = (double *)PyArray_DATA(apmr1);
+    pmd1 = (double *)PyArray_DATA(apmd1);
+    px1 = (double *)PyArray_DATA(apx1);
+    rv1 = (double *)PyArray_DATA(arv1);
+    ep1a = (double *)PyArray_DATA(aep1a);
+    ep1b = (double *)PyArray_DATA(aep1b);
+    ep2a = (double *)PyArray_DATA(aep2a);
+    ep2b = (double *)PyArray_DATA(aep2b);
+
+    ra2 = (double *)PyArray_DATA(pyra2);
+    dec2 = (double *)PyArray_DATA(pydec2);
+    pmr2 = (double *)PyArray_DATA(pypmr2);
+    pmd2 = (double *)PyArray_DATA(pypmd2);
+    px2 = (double *)PyArray_DATA(pypx2);
+    rv2 = (double *)PyArray_DATA(pyrv2);
+
+    for (i=0;i<dims[0];i++) {
+        j = eraStarpm(ra1[i], dec1[i], pmr1[i], pmd1[i], px1[i],
+                      rv1[i], ep1a[i], ep1b[i], ep2a[i], ep2b[i],
+                      &ra2[i], &dec2[i], &pmr2[i], &pmd2[i], &px2[i], &rv2[i]);
+        if (j == -1) {
+            PyErr_SetString(_erfaError, "system error (should not occur)");
+            goto fail;
+        }
+        else if (j == 1) {
+            PyErr_SetString(_erfaError, "distance overridden");
+            goto fail;
+        }
+        else if (j == 2) {
+            PyErr_SetString(_erfaError, "excessive velocity");
+            goto fail;
+        }
+        else if (j == 4) {
+            PyErr_SetString(_erfaError, "solution didn't converge");
+            goto fail;
+        }
+    }
+    Py_DECREF(ara1);
+    Py_DECREF(adec1);
+    Py_DECREF(apmr1);
+    Py_DECREF(apmd1);
+    Py_DECREF(apx1);
+    Py_DECREF(arv1);
+    Py_DECREF(aep1a);
+    Py_DECREF(aep1b);
+    Py_DECREF(aep2a);
+    Py_DECREF(aep2b);
+    Py_INCREF(pyra2);
+    Py_INCREF(pydec2);
+    Py_INCREF(pypmr2);
+    Py_INCREF(pypmd2);
+    Py_INCREF(pypx2);
+    Py_INCREF(pyrv2);
+    return Py_BuildValue("OOOOOO", pyra2, pydec2, pypmr2, pypmd2, pypx2, pyrv2);
+
+fail:
+    Py_XDECREF(ara1);
+    Py_XDECREF(adec1);
+    Py_XDECREF(apmr1);
+    Py_XDECREF(apmd1);
+    Py_XDECREF(apx1);
+    Py_XDECREF(arv1);
+    Py_XDECREF(aep1a);
+    Py_XDECREF(aep1b);
+    Py_XDECREF(aep2a);
+    Py_XDECREF(aep2b);
+    Py_XDECREF(pyra2);
+    Py_XDECREF(pydec2);
+    Py_XDECREF(pypmr2);
+    Py_XDECREF(pypmd2);
+    Py_XDECREF(pypx2);
+    Py_XDECREF(pyrv2);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_starpm_doc,
+"\nstarpm(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b) -> ra2, dec2, pmr2, pmd2, px2, rv2\n\n"
+"Star proper motion:  update star catalog data for space motion.\n"
+"Given:\n"
+"   ra1     right ascension (radians), before\n"
+"   dec1    declination (radians), before\n"
+"   pmr1    RA proper motion (radians/year), before\n"
+"   pmd1    Dec proper motion (radians/year), before\n"
+"   px1     parallax (arcseconds), before\n"
+"   rv1     radial velocity (km/s, +ve = receding), before\n"
+"   ep1a    ''before'' epoch, part A \n"
+"   ep1b    ''before'' epoch, part B\n"
+"   ep2a    ''after'' epoch, part A\n"
+"   ep2b    ''after'' epoch, part B\n"
+"Returned:\n"
+"   ra2     right ascension (radians), after\n"
+"   dec2    declination (radians), after\n"
+"   pmr2    RA proper motion (radians/year), after\n"
+"   pmd2    Dec proper motion (radians/year), after\n"
+"   px2     parallax (arcseconds), after\n"
+"   rv2     radial velocity (km/s, +ve = receding), after");
+
+static PyObject *
 _erfa_bi00(PyObject *self)
 {
     double dpsibi, depsbi, dra;
@@ -11701,6 +11858,7 @@ static PyMethodDef _erfa_methods[] = {
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"pvstar", _erfa_pvstar, METH_VARARGS, _erfa_pvstar_doc},
     {"starpv", _erfa_starpv, METH_VARARGS, _erfa_starpv_doc},
+    {"starpm", _erfa_starpm, METH_VARARGS, _erfa_starpm_doc},
     {"bi00", (PyCFunction)_erfa_bi00, METH_NOARGS, _erfa_bi00_doc},
     {"bp00", _erfa_bp00, METH_VARARGS, _erfa_bp00_doc},
     {"bp06", _erfa_bp06, METH_VARARGS, _erfa_bp06_doc},
