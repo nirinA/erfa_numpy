@@ -457,6 +457,11 @@ def starpv(ra, dec, pmr, pmd, px, rv):
     check_args(ra, dec, pmr, pmd, px, rv)
     return _erfa.starpv(ra, dec, pmr, pmd, px, rv) 
 
+## Astronomy/StarCatalogs
+def fk52h(r5, d5, dr5, dd5, px5,rv5):
+    check_args(r5, d5, dr5, dd5, px5,rv5)
+    return _erfa.fk52h(r5, d5, dr5, dd5, px5,rv5)
+
 ## Astronomy/GeodeticGeocentric
 def gc2gd(n, xyz):
     check_args(xyz)

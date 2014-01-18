@@ -166,6 +166,22 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(pv[1][1], -0.6253919754866173866e-2, places=15)
         self.assertAlmostEqual(pv[1][2], 0.1189353719774107189e-1, places=13)
 
+## Astronomy/StarCatalogs
+    def test_fk52h(self):
+        r5  = np.array([1.76779433])
+        d5  = np.array([-0.2917517103])
+        dr5 = np.array([-1.91851572e-7])
+        dd5 = np.array([-5.8468475e-6])
+        px5 = np.array([0.379210])
+        rv5 = np.array([-7.6])
+        rh, dh, drh, ddh, pxh, rvh = erfa.fk52h(r5, d5, dr5, dd5, px5, rv5)
+        self.assertAlmostEqual(rh[0], 1.767794226299947632, places=14)
+        self.assertAlmostEqual(dh[0],  -0.2917516070530391757, places=14)
+        self.assertAlmostEqual(drh[0], -0.19618741256057224e-6, places=19)
+        self.assertAlmostEqual(ddh[0], -0.58459905176693911e-5, places=19)
+        self.assertAlmostEqual(pxh[0],  0.37921, places=14)
+        self.assertAlmostEqual(rvh[0], -7.6000000940000254, places=11)
+        
 ## Astronomy/GeodeticGeocentric
     def test_eform(self):
         #a, f = erfa.eform(0)
