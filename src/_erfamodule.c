@@ -10354,6 +10354,101 @@ PyDoc_STRVAR(_erfa_gd2gc_doc,
 "    xyz        geocentric vector in meters");
 
 static PyObject *
+_erfa_gd2gce(PyObject *self, PyObject *args)
+{
+    double a, f, *elong, *phi, *height, xyz[3];
+    int status;
+    PyObject *pyelong, *pyphi, *pyheight;
+    PyObject *aelong = NULL, *aphi = NULL, *aheight = NULL;
+    PyArrayObject *pyxyz = NULL;
+    PyObject *xyz_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[2];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "ddO!O!O!",
+                                 &a, &f,
+                                 &PyArray_Type, &pyelong,
+                                 &PyArray_Type, &pyphi,
+                                 &PyArray_Type, &pyheight))
+        return NULL;
+    aelong = PyArray_FROM_OTF(pyelong, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphi = PyArray_FROM_OTF(pyphi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aheight = PyArray_FROM_OTF(pyheight, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aelong == NULL || aphi == NULL || aheight == NULL) {
+        goto fail;
+    }
+
+    ndim = PyArray_NDIM(aelong);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aelong);
+    if (dims[0] != PyArray_DIMS(aphi)[0] ||
+        dims[0] != PyArray_DIMS(aheight)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    pyxyz = (PyArrayObject *) PyArray_Zeros(2, dim_out, dsc, 0);
+    if (NULL == pyxyz) goto fail;
+    xyz_iter = PyArray_IterNew((PyObject*)pyxyz);
+    if (xyz_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    elong = (double *)PyArray_DATA(aelong);
+    phi = (double *)PyArray_DATA(aphi);
+    height = (double *)PyArray_DATA(aheight);
+    for (i=0;i<dims[0];i++) {
+        status = eraGd2gce(a, f, elong[i], phi[i], height[i], xyz);
+        if (status == -1) {
+            PyErr_SetString(_erfaError, "illegal case");
+            goto fail;
+        }
+        else {
+            int j;
+            for (j=0;j<3;j++) {
+                if (PyArray_SETITEM(pyxyz, PyArray_ITER_DATA(xyz_iter), PyFloat_FromDouble(xyz[j]))) {
+                    PyErr_SetString(_erfaError, "unable to set xyz");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(xyz_iter);
+            }
+        }
+    }
+    Py_DECREF(aelong);
+    Py_DECREF(aphi);
+    Py_DECREF(aheight);
+    Py_DECREF(xyz_iter);
+    Py_INCREF(pyxyz);
+    return (PyObject *)pyxyz;
+
+fail:
+    Py_XDECREF(aelong);
+    Py_XDECREF(aphi);
+    Py_XDECREF(aheight);
+    Py_XDECREF(xyz_iter);
+    Py_XDECREF(pyxyz);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_gd2gce_doc,
+"\ngd2gce(a, f, elong, phi, height) -> xyz\n\n"
+"Transform geodetic coordinates to geocentric for a reference\n"
+" for a reference ellipsoid of specified form\n"
+"Given:\n"
+"    a          equatorial radius in meters\n"
+"    f          flattening\n"
+"    elong      longitude (radians, east +ve)\n"
+"    phi        latitude (geodetic, radians)\n"
+"    height     height above ellipsoid (geodetic in meters)\n"
+"  Returned:\n"
+"    xyz        geocentric vector in meters");
+
+static PyObject *
 _erfa_rxp(PyObject *self, PyObject *args)
 {
     double r[3][3], p[3], rp[3];
@@ -10969,6 +11064,7 @@ static PyMethodDef _erfa_methods[] = {
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
     {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},
     {"gd2gc", _erfa_gd2gc, METH_VARARGS, _erfa_gd2gc_doc},
+    {"gd2gce", _erfa_gd2gce, METH_VARARGS, _erfa_gd2gce_doc},
     {"rxp", _erfa_rxp, METH_VARARGS, _erfa_rxp_doc},
     {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
     {"rx", _erfa_rx, METH_VARARGS, _erfa_rx_doc},
