@@ -206,6 +206,17 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rh[0], 1.767794191464423978, 12)
         self.assertAlmostEqual(dh[0], -0.2917516001679884419, 12)
 
+    def test_hfk5z(self):
+        rh = np.array([1.767794352])
+        dh = np.array([-0.2917512594])
+        d1 = np.array([2400000.5])
+        d2 = np.array([54479.0])
+        r5, d5, dr5, dd5 = erfa.hfk5z(rh, dh, d1, d2)
+        self.assertAlmostEqual(r5[0], 1.767794490535581026, places=13)
+        self.assertAlmostEqual(d5[0], -0.2917513695320114258, places=14)
+        self.assertAlmostEqual(dr5[0], 0.4335890983539243029e-8, places=22)
+        self.assertAlmostEqual(dd5[0], -0.8569648841237745902e-9, places=23)
+
 ## Astronomy/GeodeticGeocentric
     def test_eform(self):
         #a, f = erfa.eform(0)
