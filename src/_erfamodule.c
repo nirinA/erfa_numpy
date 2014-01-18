@@ -4628,6 +4628,89 @@ PyDoc_STRVAR(_erfa_gc2gd_doc,
 "    height     height above ellipsoid (geodetic)");
 
 static PyObject *
+_erfa_gc2gde(PyObject *self, PyObject *args)
+{
+    double xyz[3], a, f, *elong, *phi, *height;
+    int status;
+    PyObject *pyxyz;
+    PyObject *axyz = NULL;
+    PyObject *xyz_iter = NULL;
+    PyArrayObject *pyelong = NULL, *pyphi = NULL, *pyheight = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "ddO!", &a, &f, &PyArray_Type, &pyxyz))
+        return NULL;
+    xyz_iter = PyArray_IterNew((PyObject*)pyxyz);
+    if (xyz_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    ndim = PyArray_NDIM(pyxyz);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pyxyz);
+    dim_out[0] = dims[0];
+    pyelong = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pyphi = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pyheight = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pyelong || NULL == pyphi || NULL == pyheight ) goto fail;
+    elong = (double *)PyArray_DATA(pyelong);
+    phi = (double *)PyArray_DATA(pyphi);
+    height = (double *)PyArray_DATA(pyheight);
+
+    for (i=0;i<dims[0];i++) {
+        int j;
+        for (j=0;j<3;j++) {
+            axyz = PyArray_GETITEM(pyxyz, PyArray_ITER_DATA(xyz_iter));
+            if (axyz == NULL) {
+                PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                goto fail;
+            }
+            Py_INCREF(axyz);
+            xyz[j] = (double)PyFloat_AsDouble(axyz);
+            Py_DECREF(axyz);
+            PyArray_ITER_NEXT(xyz_iter);
+        }
+        status = eraGc2gde(a, f, xyz, &elong[i], &phi[i], &height[i]);
+        if (status == -1) {
+            PyErr_SetString(_erfaError, "illegal f");
+            goto fail;
+        }
+        if (status == -2) {
+            PyErr_SetString(_erfaError, "illegal a");
+            goto fail;
+        }
+    }
+    Py_DECREF(axyz);
+    Py_DECREF(xyz_iter);
+    Py_INCREF(pyelong); Py_INCREF(pyphi); Py_INCREF(pyheight);
+    return Py_BuildValue("OOO", pyelong, pyphi, pyheight);
+
+fail:
+    Py_XDECREF(axyz);
+    Py_XDECREF(xyz_iter);
+    Py_XDECREF(pyelong); Py_XDECREF(pyphi); Py_XDECREF(pyheight);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_gc2gde_doc,
+"\ngc2gde(a, f, xyz) -> elong, phi, height\n\n"
+"Transform geocentric coordinates to geodetic\n"
+" for a reference ellipsoid of specified form.\n"
+"Given:\n"
+"    a          equatorial radius\n"
+"    f          flattening\n"
+"    xyz        geocentric vector\n"
+"Returned:\n"
+"    elong      longitude (radians, east +ve)\n"
+"    phi        latitude (geodetic, radians)\n"
+"    height     height above ellipsoid (geodetic)");
+
+static PyObject *
 _erfa_gmst00(PyObject *self, PyObject *args)
 {
     double *uta, *utb, *tta, *ttb, *g;
@@ -10813,6 +10896,7 @@ static PyMethodDef _erfa_methods[] = {
     {"fave03", _erfa_fave03, METH_VARARGS, _erfa_fave03_doc},
     {"eform", _erfa_eform, METH_VARARGS, _erfa_eform_doc},
     {"gc2gd", _erfa_gc2gd, METH_VARARGS, _erfa_gc2gd_doc},
+    {"gc2gde", _erfa_gc2gde, METH_VARARGS, _erfa_gc2gde_doc},
     {"gmst00", _erfa_gmst00, METH_VARARGS, _erfa_gmst00_doc},
     {"gmst06", _erfa_gmst06, METH_VARARGS, _erfa_gmst06_doc},
     {"gmst82", _erfa_gmst82, METH_VARARGS, _erfa_gmst82_doc},

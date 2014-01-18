@@ -458,6 +458,10 @@ def gd2gc(n, elong, phi, height):
     check_args(elong, phi, height)
     return _erfa.gd2gc(n, elong, phi, height)
 
+def gc2gde(a, f, xyz):
+    check_args(xyz)
+    return _erfa.gc2gde(a, f, xyz)
+    
 ## Astronomy/Timescales
 def d2dtf(scale, ndp, d1, d2):
     scale = scale.upper()
