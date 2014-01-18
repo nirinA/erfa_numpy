@@ -159,6 +159,24 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(xyz[2], -3040908.6861467111, places=7)        
         self.assertRaises(erfa.error, erfa.gd2gc, 4, e, p, h)
 
+    def test_gc2gd(self):
+        xyz = np.array([(2e6, 3e6, 5.244e6)])
+        #e,p,h = erfa.gc2gd(0, xyz)
+        self.assertRaises(erfa.error, erfa.gc2gd, 0, xyz)
+        e,p,h = erfa.gc2gd(1, xyz)
+        self.assertAlmostEqual(e[0], 0.98279372324732907, places=14)
+        self.assertAlmostEqual(p[0], 0.97160184819075459, places=14)
+        self.assertAlmostEqual(h[0], 331.41724614260599, places=8)
+        e,p,h = erfa.gc2gd(2, xyz)
+        self.assertAlmostEqual(e[0], 0.98279372324732907, places=14)
+        self.assertAlmostEqual(p[0], 0.97160184820607853, places=14)
+        self.assertAlmostEqual(h[0], 331.41731754844348, places=8)
+        e,p,h = erfa.gc2gd(3, xyz)
+        self.assertAlmostEqual(e[0], 0.98279372324732907, places=14)
+        self.assertAlmostEqual(p[0], 0.97160181811015119, places=14)
+        self.assertAlmostEqual(h[0], 333.27707261303181, places=8)
+        #e,p,h = erfa.gc2gd(4, xyz)
+        self.assertRaises(erfa.error, erfa.gc2gd, 4, xyz)
 
 ## Astronomy/Timescales
     def test_d_tai_utc(self):

@@ -80,151 +80,6 @@ def ld(bm, p, q, e, em, dlim):
     check_args(bm, p, q, e, em, dlim)
     return _erfa.ld(bm, p, q, e, em, dlim)
 
-## Astronomy/SpaceMotion 
-def pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b):
-    check_args(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
-    return _erfa.pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
-
-## Astronomy/GeodeticGeocentric
-def gd2gc(n, elong, phi, height):
-    check_args(elong, phi, height)
-    return _erfa.gd2gc(n, elong, phi, height)
-
-## Astronomy/Timescales
-def d2dtf(scale, ndp, d1, d2):
-    scale = scale.upper()
-    if scale not in ('TAI', 'TCB', 'TCG', 'TDB', 'TT', 'UT1', 'UTC'):
-        raise _erfa.error('unknown time scale: %s'%scale)
-    check_args(d1, d2)
-    return _erfa.d2dtf(scale, ndp, d1, d2)
-
-jd_dtf = d2dtf
-
-def dat(iy, im, id, fd):
-    check_args(iy, im, id, fd)
-    iy = cast_to_int32(iy)
-    im = cast_to_int32(im)
-    id = cast_to_int32(id)
-    return _erfa.dat(iy, im, id, fd)
-
-d_tai_utc = dat
-
-def dtdb(d1, d2, ut1, elon, u, v):
-    check_args(d1, d2, ut1, elon, u, v)
-    return _erfa.dtdb(d1, d2, ut1, elon, u, v)
-
-d_tdb_tt = dtdb
-
-def dtf2d(scale, iy, im, id, ihr, imn, sec):   
-    scale = scale.upper()
-    if scale not in ('TAI', 'TCB', 'TCG', 'TDB', 'TT', 'UT1', 'UTC'):
-        raise _erfa.error('unknown time scale: %s'%scale)
-    check_args(iy, im, id, ihr, imn, sec)
-    iy = cast_to_int32(iy)
-    im = cast_to_int32(im)
-    id = cast_to_int32(id)
-    ihr = cast_to_int32(ihr)
-    imn = cast_to_int32(imn)
-    return _erfa.dtf2d(scale, iy, im, id, ihr, imn, sec)
-
-dtf_jd = dtf2d
-
-def taitt(tai1, tai2):
-    check_args(tai1, tai2)
-    return _erfa.taitt(tai1, tai2)
-
-tai_tt = taitt
-
-def taiut1(tai1, tai2, dta):
-    check_args(tai1, tai2, dta)
-    return _erfa.taiut1(tai1, tai2, dta)
-
-tai_ut1 = taiut1
-
-def taiutc(tai1, tai2):
-    check_args(tai1, tai2)
-    return _erfa.taiutc(tai1, tai2)
-
-tai_utc = taiutc
-
-def tcbtdb(tcb1, tcb2):
-    check_args(tcb1, tcb2)
-    return _erfa.tcbtdb(tcb1, tcb2)
-
-tcb_tdb = tcbtdb
-
-def tcgtt(tcb1, tcb2):
-    check_args(tcb1, tcb2)
-    return _erfa.tcgtt(tcb1, tcb2)
-
-tcg_tt = tcgtt
-
-def tdbtcb(tdb1, tdb2):
-    check_args(tdb1, tdb2)
-    return _erfa.tdbtcb(tdb1, tdb2)
-
-tdb_tcb = tdbtcb
-
-def tdbtt(tdb1, tdb2, dtr):
-    check_args(tdb1, tdb2, dtr)
-    return _erfa.tdbtt(tdb1, tdb2, dtr)
-
-tdb_tt = tdbtt
-
-def tttai(tt1, tt2):
-    check_args(tt1, tt2)
-    return _erfa.tttai(tt1, tt2)
-
-tt_tai = tttai
-
-def tttcg(tt1, tt2):
-    check_args(tt1, tt2)
-    return _erfa.tttcg(tt1, tt2)
-
-tt_tcg = tttcg
-
-def tttdb(tt1, tt2, dtr):
-    check_args(tt1, tt2, dtr)
-    return _erfa.tttdb(tt1, tt2, dtr)
-
-tt_tdb = tttdb
-
-def ttut1(tt1, tt2, dt):
-    check_args(tt1, tt2, dt)
-    return _erfa.ttut1(tt1, tt2, dt)
-
-tt_ut1 = ttut1
-
-def ut1tai(ut11, ut12, dta):
-    check_args(ut11, ut12, dta)
-    return _erfa.ut1tai(ut11, ut12, dta)
-
-ut1_tai = ut1tai
-
-def ut1utc(ut11, ut12, dut1):
-    check_args(ut11, ut12, dut1)
-    return _erfa.ut1utc(ut11, ut12, dut1)
-
-ut1_utc = ut1utc
-
-def ut1tt(ut11, ut12, dt):
-    check_args(ut11, ut12, dt)
-    return _erfa.ut1tt(ut11, ut12, dt)
-
-ut1_tt = ut1tt
-
-def utctai(utc1, utc2):
-    check_args(utc1, utc2)
-    return _erfa.utctai(utc1, utc2)
-
-utc_tai = utctai
-
-def utcut1(utc1, utc2, dut1):
-    check_args(utc1, utc2, dut1)
-    return _erfa.utcut1(utc1, utc2, dut1)
-
-utc_ut1 = utcut1
-
 ## Astronomy/Ephemerides
 def epv00(d1,d2):
     check_args(d1,d2)
@@ -588,6 +443,155 @@ def gst06a(uta, utb, tta, ttb):
 def gst94(uta, utb):
     check_args(uta, utb)
     return _erfa.gst94(uta, utb)
+
+## Astronomy/SpaceMotion 
+def pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b):
+    check_args(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
+    return _erfa.pmsafe(ra1, dec1, pmr1, pmd1, px1, rv1, ep1a, ep1b, ep2a, ep2b)
+
+## Astronomy/GeodeticGeocentric
+def gc2gd(n, xyz):
+    check_args(xyz)
+    return _erfa.gc2gd(n, xyz)
+    
+def gd2gc(n, elong, phi, height):
+    check_args(elong, phi, height)
+    return _erfa.gd2gc(n, elong, phi, height)
+
+## Astronomy/Timescales
+def d2dtf(scale, ndp, d1, d2):
+    scale = scale.upper()
+    if scale not in ('TAI', 'TCB', 'TCG', 'TDB', 'TT', 'UT1', 'UTC'):
+        raise _erfa.error('unknown time scale: %s'%scale)
+    check_args(d1, d2)
+    return _erfa.d2dtf(scale, ndp, d1, d2)
+
+jd_dtf = d2dtf
+
+def dat(iy, im, id, fd):
+    check_args(iy, im, id, fd)
+    iy = cast_to_int32(iy)
+    im = cast_to_int32(im)
+    id = cast_to_int32(id)
+    return _erfa.dat(iy, im, id, fd)
+
+d_tai_utc = dat
+
+def dtdb(d1, d2, ut1, elon, u, v):
+    check_args(d1, d2, ut1, elon, u, v)
+    return _erfa.dtdb(d1, d2, ut1, elon, u, v)
+
+d_tdb_tt = dtdb
+
+def dtf2d(scale, iy, im, id, ihr, imn, sec):   
+    scale = scale.upper()
+    if scale not in ('TAI', 'TCB', 'TCG', 'TDB', 'TT', 'UT1', 'UTC'):
+        raise _erfa.error('unknown time scale: %s'%scale)
+    check_args(iy, im, id, ihr, imn, sec)
+    iy = cast_to_int32(iy)
+    im = cast_to_int32(im)
+    id = cast_to_int32(id)
+    ihr = cast_to_int32(ihr)
+    imn = cast_to_int32(imn)
+    return _erfa.dtf2d(scale, iy, im, id, ihr, imn, sec)
+
+dtf_jd = dtf2d
+
+def taitt(tai1, tai2):
+    check_args(tai1, tai2)
+    return _erfa.taitt(tai1, tai2)
+
+tai_tt = taitt
+
+def taiut1(tai1, tai2, dta):
+    check_args(tai1, tai2, dta)
+    return _erfa.taiut1(tai1, tai2, dta)
+
+tai_ut1 = taiut1
+
+def taiutc(tai1, tai2):
+    check_args(tai1, tai2)
+    return _erfa.taiutc(tai1, tai2)
+
+tai_utc = taiutc
+
+def tcbtdb(tcb1, tcb2):
+    check_args(tcb1, tcb2)
+    return _erfa.tcbtdb(tcb1, tcb2)
+
+tcb_tdb = tcbtdb
+
+def tcgtt(tcb1, tcb2):
+    check_args(tcb1, tcb2)
+    return _erfa.tcgtt(tcb1, tcb2)
+
+tcg_tt = tcgtt
+
+def tdbtcb(tdb1, tdb2):
+    check_args(tdb1, tdb2)
+    return _erfa.tdbtcb(tdb1, tdb2)
+
+tdb_tcb = tdbtcb
+
+def tdbtt(tdb1, tdb2, dtr):
+    check_args(tdb1, tdb2, dtr)
+    return _erfa.tdbtt(tdb1, tdb2, dtr)
+
+tdb_tt = tdbtt
+
+def tttai(tt1, tt2):
+    check_args(tt1, tt2)
+    return _erfa.tttai(tt1, tt2)
+
+tt_tai = tttai
+
+def tttcg(tt1, tt2):
+    check_args(tt1, tt2)
+    return _erfa.tttcg(tt1, tt2)
+
+tt_tcg = tttcg
+
+def tttdb(tt1, tt2, dtr):
+    check_args(tt1, tt2, dtr)
+    return _erfa.tttdb(tt1, tt2, dtr)
+
+tt_tdb = tttdb
+
+def ttut1(tt1, tt2, dt):
+    check_args(tt1, tt2, dt)
+    return _erfa.ttut1(tt1, tt2, dt)
+
+tt_ut1 = ttut1
+
+def ut1tai(ut11, ut12, dta):
+    check_args(ut11, ut12, dta)
+    return _erfa.ut1tai(ut11, ut12, dta)
+
+ut1_tai = ut1tai
+
+def ut1tt(ut11, ut12, dt):
+    check_args(ut11, ut12, dt)
+    return _erfa.ut1tt(ut11, ut12, dt)
+
+ut1_tt = ut1tt
+
+def ut1utc(ut11, ut12, dut1):
+    check_args(ut11, ut12, dut1)
+    return _erfa.ut1utc(ut11, ut12, dut1)
+
+ut1_utc = ut1utc
+
+def utctai(utc1, utc2):
+    check_args(utc1, utc2)
+    return _erfa.utctai(utc1, utc2)
+
+utc_tai = utctai
+
+def utcut1(utc1, utc2, dut1):
+    check_args(utc1, utc2, dut1)
+    return _erfa.utcut1(utc1, utc2, dut1)
+
+utc_ut1 = utcut1
 
 ## VectorMatrix/AngleOps
 def a2af(n, a):
