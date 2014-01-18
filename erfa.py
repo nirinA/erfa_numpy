@@ -466,6 +466,10 @@ def gd2gce(a, f, elong, phi, height):
     check_args(elong, phi, height)
     return _erfa.gd2gce(a, f, elong, phi, height)
 
+def pvtob(elong, phi, hm, xp, yp, sp, theta):
+    check_args(elong, phi, hm, xp, yp, sp, theta)
+    return _erfa.pvtob(elong, phi, hm, xp, yp, sp, theta)
+
 ## Astronomy/Timescales
 def d2dtf(scale, ndp, d1, d2):
     scale = scale.upper()

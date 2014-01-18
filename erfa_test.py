@@ -213,6 +213,21 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(xyz[1], 233011.63514630572, places=7)
         self.assertAlmostEqual(xyz[2], -3040909.0517314132, places=7)
 
+    def test_pvtob(self):
+        elong = np.array([2.0])
+        phi = np.array([0.5])
+        hm = np.array([3000.0])
+        xp = np.array([1e-6])
+        yp = np.array([-0.5e-6])
+        sp = np.array([1e-8])
+        theta = np.array([5.0])
+        pv = erfa.pvtob(elong, phi, hm, xp, yp, sp, theta)[0]
+        self.assertAlmostEqual(pv[0][0], 4225081.367071159207, places=5)
+        self.assertAlmostEqual(pv[0][1], 3681943.215856198144, places=5)
+        self.assertAlmostEqual(pv[0][2], 3041149.399241260785, places=5)
+        self.assertAlmostEqual(pv[1][0], -268.4915389365998787, places=9)
+        self.assertAlmostEqual(pv[1][1], 308.0977983288903123, places=9)
+        self.assertAlmostEqual(pv[1][2], 0, 0)
 
 ## Astronomy/Timescales
     def test_d_tai_utc(self):
