@@ -797,6 +797,136 @@ PyDoc_STRVAR(_erfa_pvstar_doc,
 "   rv          radial velocity (km/s, positive = receding)");
 
 static PyObject *
+_erfa_starpv(PyObject *self, PyObject *args)
+{
+   double *ra, *dec, *pmr, *pmd, *px, *rv, pv[2][3];
+   int status;
+    PyObject *pyra, *pydec, *pypmr, *pypmd, *pypx, *pyrv;
+    PyObject *ara, *adec, *apmr, *apmd, *apx, *arv;
+    PyArrayObject *pypv = NULL;
+    PyObject *pv_iter = NULL;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!",
+                                 &PyArray_Type, &pyra,
+                                 &PyArray_Type, &pydec,
+                                 &PyArray_Type, &pypmr,
+                                 &PyArray_Type, &pypmd,
+                                 &PyArray_Type, &pypx,
+                                 &PyArray_Type, &pyrv)) {
+        return NULL;
+    }
+    ara = PyArray_FROM_OTF(pyra, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adec = PyArray_FROM_OTF(pydec, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apmr = PyArray_FROM_OTF(pypmr, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apmd = PyArray_FROM_OTF(pypmd, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apx = PyArray_FROM_OTF(pypx, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arv = PyArray_FROM_OTF(pyrv, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ara == NULL || adec == NULL || apmr == NULL ||
+        apmd == NULL || apx == NULL || arv == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ara);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ara);
+    if (dims[0] != PyArray_DIMS(adec)[0] ||
+        dims[0] != PyArray_DIMS(apmr)[0] || dims[0] != PyArray_DIMS(apmd)[0] ||
+        dims[0] != PyArray_DIMS(apx)[0] || dims[0] != PyArray_DIMS(arv)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    ra = (double *)PyArray_DATA(ara);
+    dec = (double *)PyArray_DATA(adec);
+    pmr = (double *)PyArray_DATA(apmr);
+    pmd = (double *)PyArray_DATA(apmd);
+    px = (double *)PyArray_DATA(apx);
+    rv = (double *)PyArray_DATA(arv);
+    dim_out[0] = dims[0];
+    dim_out[1] = 2;
+    dim_out[2] = 3;
+    pypv = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pypv) {
+        goto fail;
+    }
+    pv_iter = PyArray_IterNew((PyObject*)pypv);
+    if (pv_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        status = eraStarpv(ra[i], dec[i], pmr[i], pmd[i], px[i], rv[i], pv);
+        if (status) {
+            if (status == 1) {
+                PyErr_SetString(_erfaError, "distance overriden, extremely small (or zero or negative) parallax");
+                goto fail;
+            }
+            else if (status == 2) {
+                PyErr_SetString(_erfaError, "excessive velocity");
+                goto fail;
+            }
+            else if (status == 4) {
+                PyErr_SetString(_erfaError, "solution didn't converge");
+                goto fail;
+            }
+            else {
+                PyErr_SetString(_erfaError, "binary logical OR of other error above");
+                goto fail;
+            }
+        }
+        else {
+            int j,k;
+            for (j=0;j<2;j++) {
+                for (k=0;k<3;k++) {
+                    if (PyArray_SETITEM(pypv, PyArray_ITER_DATA(pv_iter), PyFloat_FromDouble(pv[j][k]))) {
+                        PyErr_SetString(_erfaError, "unable to set pv");
+                        goto fail;
+                    }
+                    PyArray_ITER_NEXT(pv_iter);
+                }
+            }
+        }
+    }
+    Py_DECREF(ara);
+    Py_DECREF(adec);
+    Py_DECREF(apmr);
+    Py_DECREF(apmd);
+    Py_DECREF(apx);
+    Py_DECREF(arv);
+    Py_DECREF(pv_iter);
+    Py_INCREF(pypv);
+    return PyArray_Return(pypv);
+
+fail:
+    Py_XDECREF(ara);
+    Py_XDECREF(adec);
+    Py_XDECREF(apmr);
+    Py_XDECREF(apmd);
+    Py_XDECREF(apx);
+    Py_XDECREF(arv);
+    Py_XDECREF(pypv);
+    Py_XDECREF(pv_iter);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_starpv_doc,
+"\nstarpv(ra1, dec1, pmr1, pmd1, px1, rv1) -> pv\n\n"
+"Convert star catalog coordinates to position+velocity vector.\n"
+"Given:\n"
+"   ra      right ascension (radians)\n"
+"   dec     declination (radians)\n"
+"   pmr     RA proper motion (radians/year)\n"
+"   pmd     Dec proper motion (radians/year)\n"
+"   px      parallax (arcseconds)\n"
+"   rv  radial velocity (km/s, positive = receding)\n"
+"Returned:\n"
+"   pv      pv-vector (AU, AU/day)");
+
+static PyObject *
 _erfa_bi00(PyObject *self)
 {
     double dpsibi, depsbi, dra;
@@ -11156,6 +11286,7 @@ static PyMethodDef _erfa_methods[] = {
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"pvstar", _erfa_pvstar, METH_VARARGS, _erfa_pvstar_doc},
+    {"starpv", _erfa_starpv, METH_VARARGS, _erfa_starpv_doc},
     {"bi00", (PyCFunction)_erfa_bi00, METH_NOARGS, _erfa_bi00_doc},
     {"bp00", _erfa_bp00, METH_VARARGS, _erfa_bp00_doc},
     {"bp06", _erfa_bp06, METH_VARARGS, _erfa_bp06_doc},

@@ -151,6 +151,21 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(px[0], 0.74723, places=12)
         self.assertAlmostEqual(rv[0], -21.6, places=10) ## failed at 11
 
+    def test_starpv(self):
+        ra = np.array([0.01686756])
+        dec = np.array([-1.093989828])
+        pmr = np.array([-1.78323516e-5])
+        pmd = np.array([2.336024047e-6])
+        px = np.array([0.74723])
+        rv = np.array([-21.6])
+        pv = erfa.starpv(ra, dec, pmr, pmd, px, rv)[0]
+        self.assertAlmostEqual(pv[0][0], 126668.5912743160601, places=10)
+        self.assertAlmostEqual(pv[0][1], 2136.792716839935195, places=12)
+        self.assertAlmostEqual(pv[0][2], -245251.2339876830091, places=10)
+        self.assertAlmostEqual(pv[1][0], -0.4051854035740712739e-2, places=13)
+        self.assertAlmostEqual(pv[1][1], -0.6253919754866173866e-2, places=15)
+        self.assertAlmostEqual(pv[1][2], 0.1189353719774107189e-1, places=13)
+
 ## Astronomy/GeodeticGeocentric
     def test_eform(self):
         #a, f = erfa.eform(0)

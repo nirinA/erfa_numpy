@@ -453,6 +453,10 @@ def pvstar(pv):
     check_args(pv)
     return _erfa.pvstar(pv)
 
+def starpv(ra, dec, pmr, pmd, px, rv):
+    check_args(ra, dec, pmr, pmd, px, rv)
+    return _erfa.starpv(ra, dec, pmr, pmd, px, rv) 
+
 ## Astronomy/GeodeticGeocentric
 def gc2gd(n, xyz):
     check_args(xyz)
