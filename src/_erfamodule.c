@@ -4518,6 +4518,34 @@ PyDoc_STRVAR(_erfa_fave03_doc,
 "    l          mean longitude of Venus, in radians.");
 
 static PyObject *
+_erfa_eform(PyObject *self, PyObject *args)
+{
+    int n, status;
+    double a, f;
+    if (!PyArg_ParseTuple(args, "i", &n)) {
+        return NULL;
+    }
+    status = eraEform(n, &a, &f);
+    if (status) {
+        PyErr_SetString(_erfaError, "illegal identifier; n should be 1,2 or 3");
+        return NULL;
+    }
+    return Py_BuildValue("dd",a,f);
+}
+
+PyDoc_STRVAR(_erfa_eform_doc,
+"\neform(n) -> a, f\n\n"
+"Earth reference ellipsoids.\n"
+"Given:\n"
+"    n          ellipsoid identifier\n\n"
+"    n=1 WGS84\n"
+"    n=2 GRS80\n"
+"    n=3 WGS72\n"
+"Returned:\n"
+"    a          equatorial radius (meters)\n"
+"    f          flattening");
+
+static PyObject *
 _erfa_gc2gd(PyObject *self, PyObject *args)
 {
     double xyz[3], *elong, *phi, *height;
@@ -10783,6 +10811,7 @@ static PyMethodDef _erfa_methods[] = {
     {"fasa03", _erfa_fasa03, METH_VARARGS, _erfa_fasa03_doc},
     {"faur03", _erfa_faur03, METH_VARARGS, _erfa_faur03_doc},
     {"fave03", _erfa_fave03, METH_VARARGS, _erfa_fave03_doc},
+    {"eform", _erfa_eform, METH_VARARGS, _erfa_eform_doc},
     {"gc2gd", _erfa_gc2gd, METH_VARARGS, _erfa_gc2gd_doc},
     {"gmst00", _erfa_gmst00, METH_VARARGS, _erfa_gmst00_doc},
     {"gmst06", _erfa_gmst06, METH_VARARGS, _erfa_gmst06_doc},

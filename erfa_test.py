@@ -139,6 +139,21 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rv2[0], 10.38468380113917014, places=10)
 
 ## Astronomy/GeodeticGeocentric
+    def test_eform(self):
+        #a, f = erfa.eform(0)
+        self.assertRaises(erfa.error, erfa.eform, 0)
+        a, f = erfa.eform(1)
+        self.assertAlmostEqual(a, 6378137.0, 10)
+        self.assertAlmostEqual(f, 0.0033528106647474807, 18)
+        a, f = erfa.eform(2)
+        self.assertAlmostEqual(a, 6378137.0, 10)
+        self.assertAlmostEqual(f, 0.0033528106811823189, 18)
+        a, f = erfa.eform(3)
+        self.assertAlmostEqual(a, 6378135.0, 10)
+        self.assertAlmostEqual(f, 0.0033527794541675049, 18)
+        #a, f = erfa.eform(4)
+        self.assertRaises(erfa.error, erfa.eform, 4)
+
     def test_gd2gc(self):
         e = np.array([3.1])
         p = np.array([-0.5])
