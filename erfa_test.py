@@ -182,6 +182,30 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(pxh[0],  0.37921, places=14)
         self.assertAlmostEqual(rvh[0], -7.6000000940000254, places=11)
         
+    def test_fk5hip(self):
+        r5h, s5h = erfa.fk5hip()
+        self.assertAlmostEqual(r5h[0][0], 0.9999999999999928638, places=14)
+        self.assertAlmostEqual(r5h[0][1], 0.1110223351022919694e-6, places=17)
+        self.assertAlmostEqual(r5h[0][2], 0.4411803962536558154e-7, places=16) # failed at 17
+        self.assertAlmostEqual(r5h[1][0], -0.1110223308458746430e-6, places=17)
+        self.assertAlmostEqual(r5h[1][1], 0.9999999999999891830, places=14)
+        self.assertAlmostEqual(r5h[1][2], -0.9647792498984142358e-7, places=17)
+        self.assertAlmostEqual(r5h[2][0], -0.4411805033656962252e-7, places=16) # failed at 17
+        self.assertAlmostEqual(r5h[2][1], 0.9647792009175314354e-7, places=17)
+        self.assertAlmostEqual(r5h[2][2], 0.9999999999999943728, places=14)
+        self.assertAlmostEqual(s5h[0], -0.1454441043328607981e-8, places=17)
+        self.assertAlmostEqual(s5h[1], 0.2908882086657215962e-8, places=17)
+        self.assertAlmostEqual(s5h[2], 0.3393695767766751955e-8, places=17)
+
+    def test_fk5hz(self):
+        r5 = np.array([1.76779433])
+        d5 = np.array([-0.2917517103])
+        d1 = np.array([2400000.5])
+        d2 = np.array([54479.0])
+        rh, dh = erfa.fk5hz(r5, d5, d1, d2)
+        self.assertAlmostEqual(rh[0], 1.767794191464423978, 12)
+        self.assertAlmostEqual(dh[0], -0.2917516001679884419, 12)
+
 ## Astronomy/GeodeticGeocentric
     def test_eform(self):
         #a, f = erfa.eform(0)

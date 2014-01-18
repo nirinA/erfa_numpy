@@ -11,7 +11,7 @@ from _erfa import AULT , CMPS , D2PI , DAS2R , DAU ,\
      DR2D , DS2R , DTY , ELB , ELG , GRS80 , SRS , \
      TDB0 , TTMTAI , TURNAS , WGS72 , WGS84, \
      ASTROM, LDBODY, \
-     bi00, eform, \
+     bi00, eform, fk5hip,\
      error
 
 def check_args(*args):
@@ -461,6 +461,10 @@ def starpv(ra, dec, pmr, pmd, px, rv):
 def fk52h(r5, d5, dr5, dd5, px5,rv5):
     check_args(r5, d5, dr5, dd5, px5,rv5)
     return _erfa.fk52h(r5, d5, dr5, dd5, px5,rv5)
+
+def fk5hz(r5, d5, d1, d2):
+    check_args(r5, d5, d1, d2)
+    return _erfa.fk5hz(r5, d5, d1, d2)
 
 ## Astronomy/GeodeticGeocentric
 def gc2gd(n, xyz):
