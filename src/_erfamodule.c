@@ -1165,6 +1165,101 @@ PyDoc_STRVAR(_erfa_apcs_doc,
 "    astrom     star-independent astrometry parameters");
 
 static PyObject *
+_erfa_apcs13(PyObject *self, PyObject *args)
+{
+    double *date1, *date2, pv[2][3];
+    PyObject *adate1, *adate2, *apv;
+    PyObject *pydate1, *pydate2, *pypv;
+    PyObject *pv_iter = NULL;
+    PyObject *pyout = NULL;
+    npy_intp *dims;
+    int ndim, i;
+    eraASTROM astrom;
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                                 &PyArray_Type, &pydate1,
+                                 &PyArray_Type, &pydate2,
+                                 &PyArray_Type, &pypv))      
+        return NULL;
+    adate1 = PyArray_FROM_OTF(pydate1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adate2 = PyArray_FROM_OTF(pydate2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (adate1 == NULL || adate2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(adate1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(adate1);
+    if (dims[0] != PyArray_DIMS(adate2)[0] ||
+        dims[0] != PyArray_DIMS(pypv)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    pyout = PyList_New(dims[0]);
+    if (NULL == pyout)  goto fail;
+    date1 = (double *)PyArray_DATA(adate1);
+    date2 = (double *)PyArray_DATA(adate2);
+    pv_iter = PyArray_IterNew((PyObject *)pypv);
+    if (pv_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        int j,k;
+        double p;
+        for (j=0;j<2;j++) {
+            for (k=0;k<3;k++) {
+                apv = PyArray_GETITEM(pypv, PyArray_ITER_DATA(pv_iter));
+                if (apv == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(apv);
+                p = (double)PyFloat_AsDouble(apv);
+                if (p == -1 && PyErr_Occurred()) goto fail;
+                pv[j][k] = p;
+                Py_DECREF(apv);
+                PyArray_ITER_NEXT(pv_iter); 
+            }
+        }
+        eraApcs13(date1[i], date2[i], pv, &astrom);
+        if (PyList_SetItem(pyout, i, _to_py_astrom(&astrom))) {
+            PyErr_SetString(_erfaError, "cannot set astrom into list");
+            goto fail;
+        }       
+    }
+    Py_DECREF(adate1);
+    Py_DECREF(adate2);
+    Py_DECREF(pv_iter);
+    Py_INCREF(pyout);
+    return (PyObject*)pyout;
+
+fail:
+    Py_XDECREF(adate1);
+    Py_XDECREF(adate2);
+    Py_XDECREF(pv_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_apcs13_doc,
+"\napcs13(date1, date2, pv[2][3]) -> astrom\n"
+"For an observer whose geocentric position and velocity are known,\n"
+"prepare star-independent astrometry parameters for transformations\n"
+"between ICRS and GCRS.  The Earth ephemeris is is from ERFA models.\n"
+"\n"
+"The parameters produced by this function are required in the space\n"
+"motion, parallax, light deflection and aberration parts of the astrometric\n"
+"transformation chain.\n"
+"Given:\n"
+"    date1      TDB as a 2-part...\n"
+"    date2      ...Julian Date\n"
+"    pv         observer's geocentric pos/vel (m, m/s)\n"
+"Returned:\n"
+"    astrom     star-independent astrometry parameters");
+
+static PyObject *
 _erfa_ld(PyObject *self, PyObject *args)
 {
     double *bm, *p, *q, *e, *em, *dlim, *p1;
@@ -12576,6 +12671,7 @@ static PyMethodDef _erfa_methods[] = {
     {"apco13", _erfa_apco13, METH_VARARGS, _erfa_apco13_doc},
     {"apco", _erfa_apco, METH_VARARGS, _erfa_apco_doc},
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
+    {"apcs13", _erfa_apcs13, METH_VARARGS, _erfa_apcs13_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"pvstar", _erfa_pvstar, METH_VARARGS, _erfa_pvstar_doc},

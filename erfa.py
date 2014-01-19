@@ -100,6 +100,10 @@ def apcs(date1, date2, pv, ebpv, ehp):
     check_args(date1, date2, pv, ebpv, ehp)
     return _erfa.apcs(date1, date2, pv, ebpv, ehp)
 
+def apcs13(date1, date2, pv):
+    check_args(date1, date2, pv)
+    return _erfa.apcs13(date1, date2, pv)
+
 def ld(bm, p, q, e, em, dlim):
     check_args(bm, p, q, e, em, dlim)
     return _erfa.ld(bm, p, q, e, em, dlim)

@@ -324,6 +324,36 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(astrom.bpn[1][2], 0, 10)
         self.assertAlmostEqual(astrom.bpn[2][2], 1, 10)
 
+    def test_apcs13(self):
+        date1 = np.array([2456165.5])
+        date2 = np.array([0.401182685])
+        pv = np.array([
+            ((-6241497.16,401346.896,-1251136.04),
+             (-29.264597,-455.021831,0.0266151194))
+            ])
+        astrom = erfa.apcs13(date1, date2, pv)[0]
+        self.assertAlmostEqual(astrom.pmt, 12.65133794027378508, places=11)
+        self.assertAlmostEqual(astrom.eb[0], 0.9012691529023298391, places=12)
+        self.assertAlmostEqual(astrom.eb[1], -0.4173999812023068781, places=12)
+        self.assertAlmostEqual(astrom.eb[2], -0.1809906511146821008, places=12)
+        self.assertAlmostEqual(astrom.eh[0], 0.8939939101759726824, places=12)
+        self.assertAlmostEqual(astrom.eh[1], -0.4111053891734599955, places=12)
+        self.assertAlmostEqual(astrom.eh[2], -0.1782336880637689334, places=12)
+        self.assertAlmostEqual(astrom.em, 1.010428384373318379, places=12)
+        self.assertAlmostEqual(astrom.v[0], 0.4279877278327626511e-4, places=16)
+        self.assertAlmostEqual(astrom.v[1], 0.7963255057040027770e-4, places=16)
+        self.assertAlmostEqual(astrom.v[2], 0.3517564000441374759e-4, places=16)
+        self.assertAlmostEqual(astrom.bm1, 0.9999999952947981330, places=12)
+        self.assertAlmostEqual(astrom.bpn[0][0], 1, 10)
+        self.assertAlmostEqual(astrom.bpn[1][0], 0, 10)
+        self.assertAlmostEqual(astrom.bpn[2][0], 0, 10)
+        self.assertAlmostEqual(astrom.bpn[0][1], 0, 10)
+        self.assertAlmostEqual(astrom.bpn[1][1], 1, 10)
+        self.assertAlmostEqual(astrom.bpn[2][1], 0, 10)
+        self.assertAlmostEqual(astrom.bpn[0][2], 0, 10)
+        self.assertAlmostEqual(astrom.bpn[1][2], 0, 10)
+        self.assertAlmostEqual(astrom.bpn[2][2], 1, 10)
+
     def test_ld(self):
         bm = np.array([0.00028574])
         p = np.array([[-0.763276255, -0.608633767, -0.216735543]])
