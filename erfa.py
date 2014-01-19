@@ -138,6 +138,10 @@ def apio13(utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl):
     check_args(utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
     return _erfa.apio13(utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
 
+def atci13(rc, dc, pr, pd, px, rv, date1, date2):
+    check_args(rc, dc, pr, pd, px, rv, date1, date2)
+    return _erfa.atci13(rc, dc, pr, pd, px, rv, date1, date2)
+
 def ld(bm, p, q, e, em, dlim):
     check_args(bm, p, q, e, em, dlim)
     return _erfa.ld(bm, p, q, e, em, dlim)

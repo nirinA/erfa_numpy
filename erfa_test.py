@@ -432,6 +432,20 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(astrom.refa, 0.2014187785940396921e-3, places=15)
         self.assertAlmostEqual(astrom.refb, -0.2361408314943696227e-6, places=18)
 
+    def test_atci13(self):
+        rc = np.array([2.71])
+        dc = np.array([0.174])
+        pr = np.array([1e-5])
+        pd = np.array([5e-6])
+        px = np.array([0.1])
+        rv = np.array([55.0])
+        date1 = np.array([2456165.5])
+        date2 = np.array([0.401182685])
+        ri, di, eo = erfa.atci13(rc, dc, pr, pd, px, rv, date1, date2)
+        self.assertAlmostEqual(ri[0], 2.710121572969038991, places=12)
+        self.assertAlmostEqual(di[0], 0.1729371367218230438, places=12)
+        self.assertAlmostEqual(eo[0], -0.002900618712657375647, places=14)
+
     def test_ld(self):
         bm = np.array([0.00028574])
         p = np.array([[-0.763276255, -0.608633767, -0.216735543]])

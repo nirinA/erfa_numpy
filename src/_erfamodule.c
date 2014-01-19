@@ -1520,6 +1520,111 @@ PyDoc_STRVAR(_erfa_apio13_doc,
 "    astrom     star-independent astrometry parameters");
 
 static PyObject *
+_erfa_atci13(PyObject *self, PyObject *args)
+{
+    double *rc, *dc, *pr, *pd, *px, *rv, *date1, *date2;
+    double *ri, *di, *eo;
+    PyObject *pyrc, *pydc, *pypr, *pypd, *pypx, *pyrv, *pydate1, *pydate2;
+    PyObject *arc, *adc, *apr, *apd, *apx, *arv, *adate1, *adate2;
+    PyArrayObject *pyri = NULL, *pydi = NULL, *pyeo = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!",
+                                 &PyArray_Type, &pyrc,
+                                 &PyArray_Type, &pydc,
+                                 &PyArray_Type, &pypr,
+                                 &PyArray_Type, &pypd,
+                                 &PyArray_Type, &pypx,
+                                 &PyArray_Type, &pyrv,
+                                 &PyArray_Type, &pydate1,
+                                 &PyArray_Type, &pydate2))      
+        return NULL;
+    arc = PyArray_FROM_OTF(pyrc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adc = PyArray_FROM_OTF(pydc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apr = PyArray_FROM_OTF(pypr, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apd = PyArray_FROM_OTF(pypd, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apx = PyArray_FROM_OTF(pypx, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arv = PyArray_FROM_OTF(pyrv, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adate1 = PyArray_FROM_OTF(pydate1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adate2 = PyArray_FROM_OTF(pydate2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ndim = PyArray_NDIM(arc);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(arc);
+    if (dims[0] != PyArray_DIMS(adc)[0] ||
+        dims[0] != PyArray_DIMS(apr)[0] || dims[0] != PyArray_DIMS(apd)[0] ||
+        dims[0] != PyArray_DIMS(apx)[0] || dims[0] != PyArray_DIMS(arv)[0] ||
+        dims[0] != PyArray_DIMS(adate1)[0] || dims[0] != PyArray_DIMS(adate2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    rc = (double *)PyArray_DATA(arc);
+    dc = (double *)PyArray_DATA(adc);
+    pr = (double *)PyArray_DATA(apr);
+    pd = (double *)PyArray_DATA(apd);
+    px = (double *)PyArray_DATA(apx);
+    rv = (double *)PyArray_DATA(arv);
+    date1 = (double *)PyArray_DATA(adate1);
+    date2 = (double *)PyArray_DATA(adate2);
+    pyri = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydi = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyeo = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    ri = (double *)PyArray_DATA(pyri);
+    di = (double *)PyArray_DATA(pydi);
+    eo = (double *)PyArray_DATA(pyeo);
+    for (i=0;i<dims[0];i++) {
+        eraAtci13(rc[i], dc[i], pr[i], pd[i], px[i], rv[i], date1[i], date2[i],
+                  &ri[i], &di[i], &eo[i]);
+    }
+    Py_DECREF(arc);
+    Py_DECREF(adc);
+    Py_DECREF(apr);
+    Py_DECREF(apd);
+    Py_DECREF(apx);
+    Py_DECREF(arv);
+    Py_DECREF(adate1);
+    Py_DECREF(adate2);
+    Py_INCREF(pyri);
+    Py_INCREF(pydi);
+    Py_INCREF(pyeo);
+    return Py_BuildValue("OOO", pyri, pydi, pyeo);
+
+fail:
+    Py_XDECREF(arc);
+    Py_XDECREF(adc);
+    Py_XDECREF(apr);
+    Py_XDECREF(apd);
+    Py_XDECREF(apx);
+    Py_XDECREF(arv);
+    Py_XDECREF(adate1);
+    Py_XDECREF(adate2);
+    Py_XDECREF(pyri);
+    Py_XDECREF(pydi);
+    Py_XDECREF(pyeo);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_atci13_doc,
+"\natci13(rc, dc, pr, pd, px, rv, date1, date2) -> ri, di, eo\n"
+"Transform ICRS star data, epoch J2000.0, to CIRS.\n"
+"Given:\n"
+"    rc     ICRS right ascension at J2000.0 (radians)\n"
+"    dc     ICRS declination at J2000.0 (radians)\n"
+"    pr     RA proper motion (radians/year)\n"
+"    pd     Dec proper motion (radians/year)\n"
+"    px     parallax (arcsec)\n"
+"    rv     radial velocity (km/s, +ve if receding)\n"
+"    date1  TDB as a 2-part...\n"
+"    date2  ...Julian Date\n"
+"Returned:\n"
+"    ri,di  CIRS geocentric RA,Dec (radians)\n"
+"    eo     double*  equation of the origins (ERA-GST)");
+
+static PyObject *
 _erfa_ld(PyObject *self, PyObject *args)
 {
     double *bm, *p, *q, *e, *em, *dlim, *p1;
@@ -12934,6 +13039,7 @@ static PyMethodDef _erfa_methods[] = {
     {"apcs13", _erfa_apcs13, METH_VARARGS, _erfa_apcs13_doc},
     {"apio", _erfa_apio, METH_VARARGS, _erfa_apio_doc},
     {"apio13", _erfa_apio13, METH_VARARGS, _erfa_apio13_doc},
+    {"atci13", _erfa_atci13, METH_VARARGS, _erfa_atci13_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"pvstar", _erfa_pvstar, METH_VARARGS, _erfa_pvstar_doc},
