@@ -338,8 +338,6 @@ _erfa_apcg(PyObject *self, PyObject *args)
     PyObject *pydate1, *pydate2, *pyebpv, *pyehp;
     PyObject *ebpv_iter = NULL, *ehp_iter = NULL;
     PyObject *pyout = NULL;
-    PyArray_Descr * dsc;
-    dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
     int ndim, i;
     eraASTROM astrom;
@@ -449,8 +447,6 @@ _erfa_apcg13(PyObject *self, PyObject *args)
     PyObject *adate1, *adate2;
     PyObject *pydate1, *pydate2;
     PyObject *pyout = NULL;
-    PyArray_Descr * dsc;
-    dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
     int ndim, i;
     eraASTROM astrom;
@@ -520,8 +516,6 @@ _erfa_apci(PyObject *self, PyObject *args)
     PyObject *pydate1, *pydate2, *pyebpv, *pyehp, *pyx, *pyy, *pys;
     PyObject *ebpv_iter = NULL, *ehp_iter = NULL;
     PyObject *pyout = NULL;
-    PyArray_Descr * dsc;
-    dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
     int ndim, i;
     eraASTROM astrom;
@@ -604,6 +598,9 @@ _erfa_apci(PyObject *self, PyObject *args)
     }
     Py_DECREF(adate1);
     Py_DECREF(adate2);
+    Py_DECREF(ax);
+    Py_DECREF(ay);
+    Py_DECREF(as);
     Py_DECREF(ebpv_iter);
     Py_DECREF(ehp_iter);
     Py_INCREF(pyout);
@@ -612,6 +609,9 @@ _erfa_apci(PyObject *self, PyObject *args)
 fail:
     Py_XDECREF(adate1);
     Py_XDECREF(adate2);
+    Py_XDECREF(ax);
+    Py_XDECREF(ay);
+    Py_XDECREF(as);
     Py_XDECREF(ebpv_iter);
     Py_XDECREF(ehp_iter);
     Py_XDECREF(pyout);
@@ -638,6 +638,196 @@ PyDoc_STRVAR(_erfa_apci_doc,
 "    astrom     star-independent astrometry parameters");
 
 static PyObject *
+_erfa_apco(PyObject *self, PyObject *args)
+{
+    double *date1, *date2, ebpv[2][3], ehp[3], *x, *y, *s;
+    double *theta, *elong, *phi, *hm, *xp, *yp, *sp, *refa, *refb;
+    PyObject *pydate1, *pydate2, *pyebpv, *pyehp, *pyx, *pyy, *pys;
+    PyObject *pytheta, *pyelong, *pyphi, *pyhm, *pyxp, *pyyp, *pysp, *pyrefa, *pyrefb;
+    PyObject *adate1, *adate2, *aebpv, *aehp, *ax, *ay, *as;
+    PyObject *atheta, *aelong, *aphi, *ahm, *axp, *ayp, *asp, *arefa, *arefb;
+    PyObject *ebpv_iter = NULL, *ehp_iter = NULL;
+    PyObject *pyout = NULL;
+    npy_intp *dims;
+    int ndim, i;
+    eraASTROM astrom;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!O!O!O!O!O!O!O!",
+                                 &PyArray_Type, &pydate1,
+                                 &PyArray_Type, &pydate2,
+                                 &PyArray_Type, &pyebpv,
+                                 &PyArray_Type, &pyehp,
+                                 &PyArray_Type, &pyx,
+                                 &PyArray_Type, &pyy,
+                                 &PyArray_Type, &pys,
+                                 &PyArray_Type, &pytheta,
+                                 &PyArray_Type, &pyelong,
+                                 &PyArray_Type, &pyphi,
+                                 &PyArray_Type, &pyhm,
+                                 &PyArray_Type, &pyxp,
+                                 &PyArray_Type, &pyyp,
+                                 &PyArray_Type, &pysp,
+                                 &PyArray_Type, &pyrefa,
+                                 &PyArray_Type, &pyrefb))      
+        return NULL;
+    adate1 = PyArray_FROM_OTF(pydate1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adate2 = PyArray_FROM_OTF(pydate2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ax = PyArray_FROM_OTF(pyx, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ay = PyArray_FROM_OTF(pyy, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    as = PyArray_FROM_OTF(pys, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    atheta = PyArray_FROM_OTF(pytheta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aelong = PyArray_FROM_OTF(pyelong, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphi = PyArray_FROM_OTF(pyphi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ahm = PyArray_FROM_OTF(pyhm, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    axp = PyArray_FROM_OTF(pyxp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ayp = PyArray_FROM_OTF(pyyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    asp = PyArray_FROM_OTF(pysp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arefa = PyArray_FROM_OTF(pyrefa, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arefb = PyArray_FROM_OTF(pyrefb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (adate1 == NULL || adate2 == NULL || ax == NULL || ay == NULL || as == NULL ||
+        atheta == NULL || aelong == NULL || aphi == NULL || ahm == NULL || axp == NULL ||
+        ayp == NULL || asp == NULL || arefa == NULL || arefb == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(adate1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(adate1);
+    if (dims[0] != PyArray_DIMS(adate2)[0] ||
+        dims[0] != PyArray_DIMS(pyebpv)[0] || dims[0] != PyArray_DIMS(pyehp)[0] ||
+        dims[0] != PyArray_DIMS(pyx)[0] || dims[0] != PyArray_DIMS(pyy)[0] || 
+        dims[0] != PyArray_DIMS(pys)[0] || dims[0] != PyArray_DIMS(pytheta)[0] || 
+        dims[0] != PyArray_DIMS(pyelong)[0] || dims[0] != PyArray_DIMS(pyphi)[0] || 
+        dims[0] != PyArray_DIMS(pyhm)[0] || dims[0] != PyArray_DIMS(pyxp)[0] || 
+        dims[0] != PyArray_DIMS(pyyp)[0] || dims[0] != PyArray_DIMS(pysp)[0] || 
+         dims[0] != PyArray_DIMS(pyrefa)[0] || dims[0] != PyArray_DIMS(pyrefb)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    pyout = PyList_New(dims[0]);
+    if (NULL == pyout)  goto fail;
+    date1 = (double *)PyArray_DATA(adate1);
+    date2 = (double *)PyArray_DATA(adate2);
+    x = (double *)PyArray_DATA(ax);
+    y = (double *)PyArray_DATA(ay);
+    s = (double *)PyArray_DATA(as);
+    theta = (double *)PyArray_DATA(atheta);
+    elong = (double *)PyArray_DATA(aelong);
+    phi = (double *)PyArray_DATA(aphi);
+    hm = (double *)PyArray_DATA(ahm);
+    xp = (double *)PyArray_DATA(axp);
+    yp = (double *)PyArray_DATA(ayp);
+    sp = (double *)PyArray_DATA(asp);
+    refa = (double *)PyArray_DATA(arefa);
+    refb = (double *)PyArray_DATA(arefb);
+    ebpv_iter = PyArray_IterNew((PyObject *)pyebpv);
+    ehp_iter = PyArray_IterNew((PyObject *)pyehp);
+    if (ebpv_iter == NULL || ehp_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        int j,k,l;
+        double e, h;
+        for (l=0;l<3;l++) {
+            aehp = PyArray_GETITEM(pyehp, PyArray_ITER_DATA(ehp_iter));
+            Py_INCREF(aehp);
+            h = (double)PyFloat_AsDouble(aehp);
+            if (h == -1 && PyErr_Occurred()) goto fail;
+            ehp[l] = h;
+            Py_DECREF(aehp);
+            PyArray_ITER_NEXT(ehp_iter);
+        }
+        for (j=0;j<2;j++) {
+            for (k=0;k<3;k++) {
+                aebpv = PyArray_GETITEM(pyebpv, PyArray_ITER_DATA(ebpv_iter));                
+                if (aebpv == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(aebpv);
+                e = (double)PyFloat_AsDouble(aebpv);
+                if (e == -1 && PyErr_Occurred()) goto fail;
+                ebpv[j][k] = e;
+                Py_DECREF(aebpv);
+                PyArray_ITER_NEXT(ebpv_iter); 
+            }
+        }
+        eraApco(date1[i], date2[i], ebpv, ehp, x[i], y[i], s[i],
+                theta[i], elong[i], phi[i], hm[i], xp[i], yp[i], sp[i], refa[i], refb[i],
+                &astrom);
+        if (PyList_SetItem(pyout, i, _to_py_astrom(&astrom))) {
+            PyErr_SetString(_erfaError, "cannot set astrom into list");
+            goto fail;
+        }       
+    }
+    Py_DECREF(adate1);
+    Py_DECREF(adate2);
+    Py_DECREF(ax);
+    Py_DECREF(ay);
+    Py_DECREF(as);
+    Py_DECREF(atheta);
+    Py_DECREF(aelong);
+    Py_DECREF(aphi);
+    Py_DECREF(ahm);
+    Py_DECREF(axp);
+    Py_DECREF(ayp);
+    Py_DECREF(asp);
+    Py_DECREF(arefa);
+    Py_DECREF(arefb);
+    Py_DECREF(ebpv_iter);
+    Py_DECREF(ehp_iter);
+    Py_INCREF(pyout);
+    return (PyObject*)pyout;
+
+fail:
+    Py_XDECREF(adate1);
+    Py_XDECREF(adate2);
+    Py_XDECREF(ax);
+    Py_XDECREF(ay);
+    Py_XDECREF(as);
+    Py_XDECREF(atheta);
+    Py_XDECREF(aelong);
+    Py_XDECREF(aphi);
+    Py_XDECREF(ahm);
+    Py_XDECREF(axp);
+    Py_XDECREF(ayp);
+    Py_XDECREF(asp);
+    Py_XDECREF(arefa);
+    Py_XDECREF(arefb);
+    Py_XDECREF(ebpv_iter);
+    Py_XDECREF(ehp_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_apco_doc,
+"\napco(date1, date2, ebpv[2][3], ehp[3], x, y, s,theta,,elong, phi, hm,xp, yp, sp, refa, refb) -> astrom\n"
+"For a terrestrial observer, prepare star-independent astrometry\n"
+"parameters for transformations between ICRS and observed\n"
+"coordinates. The caller supplies the Earth ephemeris, the Earth\n"
+"rotation information and the refraction constants as well as the\n"
+"site coordinates.\n"
+"Given:\n"
+"    date1      TDB as a 2-part...\n"
+"    date2      ...Julian Date\n"
+"    ebpv       Earth barycentric pos/vel (au, au/day)\n"
+"    ehp        Earth heliocentric position (au)\n"
+"    x,y        CIP X,Y (components of unit vector)\n"
+"    s          the CIO locator s (radians)\n"
+"    theta      Earth rotation angle (radians)\n"
+"    elong      longitude (radians, east +ve)\n"
+"    phi        latitude (geodetic, radians)\n"
+"    hm         height above ellipsoid (m, geodetic3)\n"
+"    xp,yp      polar motion coordinates (radians)\n"
+"    sp         the TIO locator s' (radians)\n"
+"    refa       refraction constant A (radians)\n"
+"    refb       refraction constant B (radians)\n"
+"Returned:\n"
+"    astrom     star-independent astrometry parameters");
+
+static PyObject *
 _erfa_apcs(PyObject *self, PyObject *args)
 {
     double *date1, *date2, pv[2][3], ebpv[2][3], ehp[3];
@@ -645,8 +835,6 @@ _erfa_apcs(PyObject *self, PyObject *args)
     PyObject *pydate1, *pydate2, *pypv, *pyebpv, *pyehp;
     PyObject *pv_iter = NULL, *ebpv_iter = NULL, *ehp_iter = NULL;
     PyObject *pyout = NULL;
-    PyArray_Descr * dsc;
-    dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
     int ndim, i;
     eraASTROM astrom;
@@ -731,7 +919,7 @@ _erfa_apcs(PyObject *self, PyObject *args)
     Py_DECREF(ebpv_iter);
     Py_DECREF(ehp_iter);
     Py_INCREF(pyout);
-    return (PyObject*)pyout;//_to_py_astrom(&astrom); //
+    return (PyObject*)pyout;
 
 fail:
     Py_XDECREF(adate1);
@@ -12169,6 +12357,7 @@ static PyMethodDef _erfa_methods[] = {
     {"apcg", _erfa_apcg, METH_VARARGS, _erfa_apcg_doc},
     {"apcg13", _erfa_apcg13, METH_VARARGS, _erfa_apcg13_doc},
     {"apci", _erfa_apci, METH_VARARGS, _erfa_apci_doc},
+    {"apco", _erfa_apco, METH_VARARGS, _erfa_apco_doc},
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
