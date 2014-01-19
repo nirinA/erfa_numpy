@@ -105,6 +105,32 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(astrom.bpn[1][2], 0.0, 10)
         self.assertAlmostEqual(astrom.bpn[2][2], 1.0, 10)
 
+    def test_apcg13(self):
+        date1 = np.array([2456165.5])
+        date2 = np.array([0.401182685])
+        astrom=erfa.apcg13(date1, date2)[0]
+        self.assertAlmostEqual(astrom.pmt, 12.65133794027378508, places=12)
+        self.assertAlmostEqual(astrom.eb[0], 0.9013108747340644755, places=12)
+        self.assertAlmostEqual(astrom.eb[1], -0.4174026640406119957, places=12)
+        self.assertAlmostEqual(astrom.eb[2], -0.1809822877867817771, places=12)
+        self.assertAlmostEqual(astrom.eh[0], 0.8940025429255499549, places=12)
+        self.assertAlmostEqual(astrom.eh[1], -0.4110930268331896318, places=12)
+        self.assertAlmostEqual(astrom.eh[2], -0.1782189006019749850, places=12)
+        self.assertAlmostEqual(astrom.em, 1.010465295964664178, places=12)
+        self.assertAlmostEqual(astrom.v[0], 0.4289638897157027528e-4, places=16)
+        self.assertAlmostEqual(astrom.v[1], 0.8115034002544663526e-4, places=16)
+        self.assertAlmostEqual(astrom.v[2], 0.3517555122593144633e-4, places=16)
+        self.assertAlmostEqual(astrom.bm1, 0.9999999951686013498, places=12)
+        self.assertAlmostEqual(astrom.bpn[0][0], 1.0, 10)
+        self.assertAlmostEqual(astrom.bpn[1][0], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[2][0], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[0][1], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[1][1], 1.0, 10)
+        self.assertAlmostEqual(astrom.bpn[2][1], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[0][2], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[1][2], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[2][2], 1.0, 10)
+
     def test_apcs(self):
         date1 = np.array([2456384.5])
         date2 = np.array([0.970031644])

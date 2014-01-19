@@ -443,6 +443,76 @@ PyDoc_STRVAR(_erfa_apcg_doc,
 "    astrom     star-independent astrometry parameters");
 
 static PyObject *
+_erfa_apcg13(PyObject *self, PyObject *args)
+{
+    double *date1, *date2;
+    PyObject *adate1, *adate2;
+    PyObject *pydate1, *pydate2;
+    PyObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    eraASTROM astrom;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pydate1,
+                                 &PyArray_Type, &pydate2))      
+        return NULL;
+    adate1 = PyArray_FROM_OTF(pydate1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adate2 = PyArray_FROM_OTF(pydate2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (adate1 == NULL || adate2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(adate1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(adate1);
+    if (dims[0] != PyArray_DIMS(adate2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    pyout = PyList_New(dims[0]);
+    if (NULL == pyout)  goto fail;
+    date1 = (double *)PyArray_DATA(adate1);
+    date2 = (double *)PyArray_DATA(adate2);
+    for (i=0;i<dims[0];i++) {
+        eraApcg13(date1[i], date2[i], &astrom);
+        if (PyList_SetItem(pyout, i, _to_py_astrom(&astrom))) {
+            PyErr_SetString(_erfaError, "cannot set astrom into list");
+            goto fail;
+        }       
+    }
+    Py_DECREF(adate1);
+    Py_DECREF(adate2);
+    Py_INCREF(pyout);
+    return (PyObject*)pyout;
+
+fail:
+    Py_XDECREF(adate1);
+    Py_XDECREF(adate2);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_apcg13_doc,
+"\napcg13(date1, date2) -> astrom\n"
+"For a geocentric observer, prepare star-independent astrometry\n"
+"parameters for transformations between ICRS and GCRS coordinates.\n"
+"The caller supplies the date, and ERFA models are used to predict\n"
+"the Earth ephemeris.\n"
+"\n"
+"The parameters produced by this function are required in the\n"
+"parallax, light deflection and aberration parts of the astrometric\n"
+"transformation chain.\n"
+"Given:\n"
+"    date1      TDB as a 2-part...\n"
+"    date2      ...Julian Date\n"
+"Returned:\n"
+"    astrom     star-independent astrometry parameters");
+
+static PyObject *
 _erfa_apcs(PyObject *self, PyObject *args)
 {
     double *date1, *date2, pv[2][3], ebpv[2][3], ehp[3];
@@ -11972,6 +12042,7 @@ PyDoc_STRVAR(_erfa_rz_doc,
 static PyMethodDef _erfa_methods[] = {
     {"ab", _erfa_ab, METH_VARARGS, _erfa_ab_doc},
     {"apcg", _erfa_apcg, METH_VARARGS, _erfa_apcg_doc},
+    {"apcg13", _erfa_apcg13, METH_VARARGS, _erfa_apcg13_doc},
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
