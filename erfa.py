@@ -104,6 +104,30 @@ def apcs13(date1, date2, pv):
     check_args(date1, date2, pv)
     return _erfa.apcs13(date1, date2, pv)
 
+def _aper(theta, astrom):
+    pmt, eb, eh, em, v, bm1, bpn, along, phi, xpl, ypl, sphi, cphi, diurab, eral, refa, refb = astrom 
+    return ASTROM((pmt, eb, eh, em, v, bm1, bpn, along, phi, xpl, ypl, sphi, cphi, diurab, theta+along, refa, refb))
+
+def aper(theta, astrom):
+    '''aper(theta, astrom) -> astrom
+In the star-independent astrometry parameters, update only the
+Earth rotation angle, supplied by the caller explicitly.'''
+    check_args(theta)
+    if len(theta) != len(astrom):
+        raise _erfa.error('shape of arguments are not compatible')
+    result = []
+    for i in range(len(theta)):
+        result.append(_aper(theta[i], astrom[i]))
+    return result
+
+def aper13(ut11, ut12, astrom):
+    '''aper13(ut11, ut12, astrom) -> astrom
+In the star-independent astrometry parameters, update only the
+Earth rotation angle. The caller provides UT1, (n.b. not UTC).'''
+    check_args(ut11, ut12)
+    era = era00(ut11, ut12)
+    return aper(era, astrom)
+
 def ld(bm, p, q, e, em, dlim):
     check_args(bm, p, q, e, em, dlim)
     return _erfa.ld(bm, p, q, e, em, dlim)

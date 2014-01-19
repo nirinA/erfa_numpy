@@ -354,6 +354,39 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(astrom.bpn[1][2], 0, 10)
         self.assertAlmostEqual(astrom.bpn[2][2], 1, 10)
 
+    def test_aper(self):
+        theta = np.array([5.678])
+        pmt = 0
+        eb = (0,0,0)
+        eh = (0,0,0)
+        em = 0
+        v = (0,0,0)
+        bm1 = 0
+        bpn = ((0,0,0),(0,0,0),(0,0,0))
+        along = 1.234
+        phi, xpl, ypl, sphi, cphi, diurab, eral, refa, refb = 0, 0, 0, 0, 0, 0, 0, 0, 0
+        astrom = erfa.ASTROM((pmt, eb, eh, em, v, bm1, bpn, along,
+                              phi, xpl, ypl, sphi, cphi, diurab, eral, refa, refb))
+        astrom = erfa.aper(theta, [astrom])[0]
+        self.assertAlmostEqual(astrom.eral, 6.912000000000000000, places=12)
+
+    def test_aper13(self):
+        ut11 = np.array([2456165.5])
+        ut12 = np.array([0.401182685])
+        pmt = 0
+        eb = (0,0,0)
+        eh = (0,0,0)
+        em = 0
+        v = (0,0,0)
+        bm1 = 0
+        bpn = ((0,0,0),(0,0,0),(0,0,0))
+        along = 1.234
+        phi, xpl, ypl, sphi, cphi, diurab, eral, refa, refb = 0, 0, 0, 0, 0, 0, 0, 0, 0
+        astrom = erfa.ASTROM((pmt, eb, eh, em, v, bm1, bpn, along,
+                              phi, xpl, ypl, sphi, cphi, diurab, eral, refa, refb))
+        astrom = erfa.aper13(ut11, ut12, [astrom])[0]
+        self.assertAlmostEqual(astrom.eral, 3.316236661789694933, places=12)
+
     def test_ld(self):
         bm = np.array([0.00028574])
         p = np.array([[-0.763276255, -0.608633767, -0.216735543]])
