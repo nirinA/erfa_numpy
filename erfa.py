@@ -84,7 +84,9 @@ def apci(date1, date2, ebpv, ehp, x, y, s):
     check_args(date1, date2, ebpv, ehp, x, y, s)
     return _erfa.apci(date1, date2, ebpv, ehp, x, y, s)
 
-##apci13
+def apci13(date1, date2):
+    check_args(date1, date2)
+    return _erfa.apci13(date1, date2)
 
 def apco(date1, date2, ebpv, ehp, x, y, s,theta,elong, phi, hm,xp, yp, sp, refa, refb):
     check_args(date1, date2, ebpv, ehp, x, y, s,theta,elong, phi, hm,xp, yp, sp, refa, refb)
