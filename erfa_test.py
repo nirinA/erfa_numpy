@@ -408,6 +408,30 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(astrom.refa, 0.2014187790000000000e-3, places=15)
         self.assertAlmostEqual(astrom.refb, -0.2361408310000000000e-6, places=18)
 
+    def test_apio13(self):
+        utc1 = np.array([2456384.5])
+        utc2 = np.array([0.969254051])
+        dut1 = np.array([0.1550675])
+        elong = np.array([-0.527800806])
+        phi = np.array([-1.2345856])
+        hm = np.array([2738.0])
+        xp = np.array([2.47230737e-7])
+        yp = np.array([1.82640464e-6])
+        phpa = np.array([731.0])
+        tc = np.array([12.8])
+        rh = np.array([0.59])
+        wl = np.array([0.55])
+        astrom = erfa.apio13(utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)[0]
+        self.assertAlmostEqual(astrom.along, -0.5278008060301974337, places=12)
+        self.assertAlmostEqual(astrom.xpl, 0.1133427418174939329e-5, places=17)
+        self.assertAlmostEqual(astrom.ypl, 0.1453347595745898629e-5, places=17)
+        self.assertAlmostEqual(astrom.sphi, -0.9440115679003211329, places=12)
+        self.assertAlmostEqual(astrom.cphi, 0.3299123514971474711, places=12)
+        self.assertAlmostEqual(astrom.diurab, 0.5135843661699913529e-6, places=12)
+        self.assertAlmostEqual(astrom.eral, 2.617608909189066140, places=12)
+        self.assertAlmostEqual(astrom.refa, 0.2014187785940396921e-3, places=15)
+        self.assertAlmostEqual(astrom.refb, -0.2361408314943696227e-6, places=18)
+
     def test_ld(self):
         bm = np.array([0.00028574])
         p = np.array([[-0.763276255, -0.608633767, -0.216735543]])
