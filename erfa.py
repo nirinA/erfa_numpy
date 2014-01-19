@@ -92,6 +92,10 @@ def apco(date1, date2, ebpv, ehp, x, y, s,theta,elong, phi, hm,xp, yp, sp, refa,
     check_args(date1, date2, ebpv, ehp, x, y, s,theta,elong, phi, hm,xp, yp, sp, refa, refb)
     return _erfa.apco(date1, date2, ebpv, ehp, x, y, s,theta,elong, phi, hm,xp, yp, sp, refa, refb)
 
+def apco13(utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl):
+    check_args(utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+    return _erfa.apco13(utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+
 def apcs(date1, date2, pv, ebpv, ehp):
     check_args(date1, date2, pv, ebpv, ehp)
     return _erfa.apcs(date1, date2, pv, ebpv, ehp)

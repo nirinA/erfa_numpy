@@ -12,6 +12,7 @@
 static PyObject *_erfaError;
 
 static int initialized;
+
 /* local prototype */
 double *pyvector_to_Carrayptrs(PyArrayObject *arrayin);
 double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
@@ -21,6 +22,7 @@ void free_Carrayptr(double **v);
 static PyTypeObject AstromType;
 
 static PyTypeObject LdbodyType;
+
 /* local function */
 double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin)
 {
@@ -205,7 +207,6 @@ _apxx13_object(eraASTROM a, double eo)
 {
     return Py_BuildValue("Od", _to_py_astrom(&a), eo);                     
 }
-
 
 static PyStructSequence_Field ASTROM_type_fields[] = {
     {"pmt", "PM time interval (SSB, Julian years)"},
@@ -693,6 +694,160 @@ PyDoc_STRVAR(_erfa_apci13_doc,
 "Given:\n"
 "    date1      TDB as a 2-part...\n"
 "    date2      ...Julian Date\n"
+"Returned:\n"
+"    astrom     star-independent astrometry parameters\n"
+"    eo         equation of the origins (ERA-GST)");
+
+static PyObject *
+_erfa_apco13(PyObject *self, PyObject *args)
+{
+    int j;
+    double *utc1, *utc2, *dut1;
+    double *elong, *phi, *hm, *xp, *yp;
+    double *phpa, *tc, *rh, *wl, eo;
+    eraASTROM astrom;
+    PyObject *pyutc1, *pyutc2, *pydut1;
+    PyObject *pyelong, *pyphi, *pyhm, *pyxp, *pyyp;
+    PyObject *pyphpa, *pytc, *pyrh, *pywl;
+    PyObject *autc1, *autc2, *adut1;
+    PyObject *aelong, *aphi, *ahm, *axp, *ayp;
+    PyObject *aphpa, *atc, *arh, *awl;
+    PyObject *pyout = NULL;
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!O!O!O!",
+                                 &PyArray_Type, &pyutc1,
+                                 &PyArray_Type, &pyutc2,
+                                 &PyArray_Type, &pydut1,
+                                 &PyArray_Type, &pyelong,
+                                 &PyArray_Type, &pyphi,
+                                 &PyArray_Type, &pyhm,
+                                 &PyArray_Type, &pyxp,
+                                 &PyArray_Type, &pyyp,
+                                 &PyArray_Type, &pyphpa,
+                                 &PyArray_Type, &pytc,
+                                 &PyArray_Type, &pyrh,
+                                 &PyArray_Type, &pywl))      
+        return NULL;
+    autc1 = PyArray_FROM_OTF(pyutc1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    autc2 = PyArray_FROM_OTF(pyutc2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adut1 = PyArray_FROM_OTF(pydut1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aelong = PyArray_FROM_OTF(pyelong, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphi = PyArray_FROM_OTF(pyphi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ahm = PyArray_FROM_OTF(pyhm, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    axp = PyArray_FROM_OTF(pyxp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ayp = PyArray_FROM_OTF(pyyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphpa = PyArray_FROM_OTF(pyphpa, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    atc = PyArray_FROM_OTF(pytc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arh = PyArray_FROM_OTF(pyrh, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    awl = PyArray_FROM_OTF(pywl, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (autc1 == NULL || autc2 == NULL || adut1 == NULL || aelong == NULL || aphi == NULL ||
+        ahm == NULL || axp == NULL || ayp == NULL || aphpa == NULL || atc == NULL ||
+        arh == NULL || awl == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(autc1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(autc1);
+    if (dims[0] != PyArray_DIMS(autc2)[0] ||
+        dims[0] != PyArray_DIMS(adut1)[0] || dims[0] != PyArray_DIMS(aelong)[0] ||
+        dims[0] != PyArray_DIMS(ahm)[0] || dims[0] != PyArray_DIMS(axp)[0] || 
+        dims[0] != PyArray_DIMS(ayp)[0] || dims[0] != PyArray_DIMS(aphpa)[0] || 
+        dims[0] != PyArray_DIMS(atc)[0] || dims[0] != PyArray_DIMS(arh)[0] || 
+        dims[0] != PyArray_DIMS(aphi)[0] || dims[0] != PyArray_DIMS(awl)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    pyout = PyList_New(dims[0]);
+    if (NULL == pyout)  goto fail;
+    utc1 = (double *)PyArray_DATA(autc1);
+    utc2 = (double *)PyArray_DATA(autc2);
+    dut1 = (double *)PyArray_DATA(adut1);
+    elong = (double *)PyArray_DATA(aelong);
+    phi = (double *)PyArray_DATA(aphi);
+    hm = (double *)PyArray_DATA(ahm);
+    xp = (double *)PyArray_DATA(axp);
+    yp = (double *)PyArray_DATA(ayp);
+    phpa = (double *)PyArray_DATA(aphpa);
+    tc = (double *)PyArray_DATA(atc);
+    rh = (double *)PyArray_DATA(arh);
+    wl = (double *)PyArray_DATA(awl);
+    for (i=0;i<dims[0];i++) {
+        j = eraApco13(utc1[i], utc2[i], dut1[i], elong[i],
+                      phi[i], hm[i], xp[i], yp[i],
+                      phpa[i], tc[i], rh[i], wl[i],
+                      &astrom, &eo);
+        if (j == +1) {
+            PyErr_SetString(_erfaError, "doubious year");
+            goto fail;
+        }
+        if (j == -1) {
+            PyErr_SetString(_erfaError, "unacceptable date");
+            goto fail;
+        }
+        if (PyList_SetItem(pyout, i, _apxx13_object(astrom, eo))) {
+            PyErr_SetString(_erfaError, "cannot set astrom, eo into list");
+            goto fail;
+        }       
+    }
+    Py_DECREF(autc1);
+    Py_DECREF(autc2);
+    Py_DECREF(adut1);
+    Py_DECREF(aelong);
+    Py_DECREF(aphi);
+    Py_DECREF(ahm);
+    Py_DECREF(axp);
+    Py_DECREF(ayp);
+    Py_DECREF(aphpa);
+    Py_DECREF(atc);
+    Py_DECREF(arh);
+    Py_DECREF(awl);
+    Py_INCREF(pyout);
+    return (PyObject*)pyout;
+
+fail:
+    Py_XDECREF(autc1);
+    Py_XDECREF(autc2);
+    Py_XDECREF(adut1);
+    Py_XDECREF(aelong);
+    Py_XDECREF(aphi);
+    Py_XDECREF(ahm);
+    Py_XDECREF(axp);
+    Py_XDECREF(ayp);
+    Py_XDECREF(aphpa);
+    Py_XDECREF(atc);
+    Py_XDECREF(arh);
+    Py_XDECREF(awl);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_apco13_doc,
+"\napco13(utc1, utc2, dut1, elong, phi, hm, xp, yp, sp, phpa, tc, rh, wl) -> astrom, eo\n"
+"For a terrestrial observer, prepare star-independent astrometry\n"
+"parameters for transformations between ICRS and geocentric CIRS\n"
+"coordinates.  The caller supplies the date, and ERFA models are used\n"
+"to predict the Earth ephemeris and CIP/CIO.\n"
+"\n"
+"The parameters produced by this function are required in the\n"
+"parallax, light deflection, aberration, and bias-precession-nutation\n"
+"parts of the ICRS/CIRS transformations.\n"
+"Given:\n"
+"    utc1   double     UTC as a 2-part...\n"
+"    utc2   double     ...quasi Julian Date\n"
+"    dut1   double     UT1-UTC (seconds)\n"
+"    theta  double     Earth rotation angle (radians)\n"
+"    elong  double     longitude (radians, east +ve)\n"
+"    phi    double     latitude (geodetic, radians)\n"
+"    hm     double     height above ellipsoid (m, geodetic)\n"
+"    xp,yp  double     polar motion coordinates (radians)\n"
+"    phpa   double     pressure at the observer (hPa = mB)\n"
+"    tc     double     ambient temperature at the observer (deg C)\n"
+"    rh     double     relative humidity at the observer (range 0-1)\n"
+"    wl     double     wavelength (micrometers)\n"
 "Returned:\n"
 "    astrom     star-independent astrometry parameters\n"
 "    eo         equation of the origins (ERA-GST)");
@@ -12418,6 +12573,7 @@ static PyMethodDef _erfa_methods[] = {
     {"apcg13", _erfa_apcg13, METH_VARARGS, _erfa_apcg13_doc},
     {"apci", _erfa_apci, METH_VARARGS, _erfa_apci_doc},
     {"apci13", _erfa_apci13, METH_VARARGS, _erfa_apci13_doc},
+    {"apco13", _erfa_apco13, METH_VARARGS, _erfa_apco13_doc},
     {"apco", _erfa_apco, METH_VARARGS, _erfa_apco_doc},
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
