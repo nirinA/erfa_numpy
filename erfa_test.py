@@ -387,6 +387,27 @@ class Validate(unittest.TestCase):
         astrom = erfa.aper13(ut11, ut12, [astrom])[0]
         self.assertAlmostEqual(astrom.eral, 3.316236661789694933, places=12)
 
+    def test_apio(self):
+        sp = np.array([-3.01974337e-11])
+        theta = np.array([3.14540971])
+        elong = np.array([-0.527800806])
+        phi = np.array([-1.2345856])
+        hm = np.array([2738.0])
+        xp = np.array([2.47230737e-7])
+        yp = np.array([1.82640464e-6])
+        refa = np.array([0.000201418779])
+        refb = np.array([-2.36140831e-7])
+        astrom = erfa.apio(sp, theta, elong, phi, hm, xp, yp, refa, refb)[0]
+        self.assertAlmostEqual(astrom.along, -0.5278008060301974337, places=12)
+        self.assertAlmostEqual(astrom.xpl, 0.1133427418174939329e-5, places=17)
+        self.assertAlmostEqual(astrom.ypl, 0.1453347595745898629e-5, places=17)
+        self.assertAlmostEqual(astrom.sphi, -0.9440115679003211329, places=12)
+        self.assertAlmostEqual(astrom.cphi, 0.3299123514971474711, places=12)
+        self.assertAlmostEqual(astrom.diurab, 0.5135843661699913529e-6, places=12)
+        self.assertAlmostEqual(astrom.eral, 2.617608903969802566, places=12)
+        self.assertAlmostEqual(astrom.refa, 0.2014187790000000000e-3, places=15)
+        self.assertAlmostEqual(astrom.refb, -0.2361408310000000000e-6, places=18)
+
     def test_ld(self):
         bm = np.array([0.00028574])
         p = np.array([[-0.763276255, -0.608633767, -0.216735543]])

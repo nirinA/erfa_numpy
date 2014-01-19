@@ -113,6 +113,8 @@ def aper(theta, astrom):
 In the star-independent astrometry parameters, update only the
 Earth rotation angle, supplied by the caller explicitly.'''
     check_args(theta)
+    if type(astrom) is not type(list()):
+        raise _erfa.error('astrom argument should be a list')
     if len(theta) != len(astrom):
         raise _erfa.error('shape of arguments are not compatible')
     result = []
@@ -127,6 +129,10 @@ Earth rotation angle. The caller provides UT1, (n.b. not UTC).'''
     check_args(ut11, ut12)
     era = era00(ut11, ut12)
     return aper(era, astrom)
+
+def apio(sp, theta, elong, phi, hm, xp, yp, refa, refb):
+    check_args(sp, theta, elong, phi, hm, xp, yp, refa, refb)
+    return _erfa.apio(sp, theta, elong, phi, hm, xp, yp, refa, refb)
 
 def ld(bm, p, q, e, em, dlim):
     check_args(bm, p, q, e, em, dlim)

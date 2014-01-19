@@ -1260,6 +1260,118 @@ PyDoc_STRVAR(_erfa_apcs13_doc,
 "    astrom     star-independent astrometry parameters");
 
 static PyObject *
+_erfa_apio(PyObject *self, PyObject *args)
+{
+    double *sp, *theta, *elong, *phi, *hm, *xp, *yp, *refa, *refb;
+    PyObject *pytheta, *pyelong, *pyphi, *pyhm, *pyxp, *pyyp, *pysp, *pyrefa, *pyrefb;
+    PyObject *atheta, *aelong, *aphi, *ahm, *axp, *ayp, *asp, *arefa, *arefb;
+    PyObject *pyout = NULL;
+    npy_intp *dims;
+    int ndim, i;
+    eraASTROM astrom;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!",
+                                 &PyArray_Type, &pysp,
+                                 &PyArray_Type, &pytheta,
+                                 &PyArray_Type, &pyelong,
+                                 &PyArray_Type, &pyphi,
+                                 &PyArray_Type, &pyhm,
+                                 &PyArray_Type, &pyxp,
+                                 &PyArray_Type, &pyyp,
+                                 &PyArray_Type, &pyrefa,
+                                 &PyArray_Type, &pyrefb))      
+        return NULL;
+    asp = PyArray_FROM_OTF(pysp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    atheta = PyArray_FROM_OTF(pytheta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aelong = PyArray_FROM_OTF(pyelong, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphi = PyArray_FROM_OTF(pyphi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ahm = PyArray_FROM_OTF(pyhm, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    axp = PyArray_FROM_OTF(pyxp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ayp = PyArray_FROM_OTF(pyyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arefa = PyArray_FROM_OTF(pyrefa, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arefb = PyArray_FROM_OTF(pyrefb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (atheta == NULL || aelong == NULL || aphi == NULL || ahm == NULL || axp == NULL ||
+        ayp == NULL || asp == NULL || arefa == NULL || arefb == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(asp);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(asp);
+    if (dims[0] != PyArray_DIMS(pytheta)[0] || 
+        dims[0] != PyArray_DIMS(pyelong)[0] || dims[0] != PyArray_DIMS(pyphi)[0] || 
+        dims[0] != PyArray_DIMS(pyhm)[0] || dims[0] != PyArray_DIMS(pyxp)[0] || 
+        dims[0] != PyArray_DIMS(pyyp)[0] || 
+         dims[0] != PyArray_DIMS(pyrefa)[0] || dims[0] != PyArray_DIMS(pyrefb)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    pyout = PyList_New(dims[0]);
+    if (NULL == pyout)  goto fail;
+    theta = (double *)PyArray_DATA(atheta);
+    elong = (double *)PyArray_DATA(aelong);
+    phi = (double *)PyArray_DATA(aphi);
+    hm = (double *)PyArray_DATA(ahm);
+    xp = (double *)PyArray_DATA(axp);
+    yp = (double *)PyArray_DATA(ayp);
+    sp = (double *)PyArray_DATA(asp);
+    refa = (double *)PyArray_DATA(arefa);
+    refb = (double *)PyArray_DATA(arefb);
+    for (i=0;i<dims[0];i++) {
+        eraApio(sp[i], theta[i], elong[i],
+                phi[i], hm[i], xp[i], yp[i],
+                refa[i], refb[i], &astrom);
+        if (PyList_SetItem(pyout, i, _to_py_astrom(&astrom))) {
+            PyErr_SetString(_erfaError, "cannot set astrom into list");
+            goto fail;
+        }       
+    }
+    Py_DECREF(atheta);
+    Py_DECREF(aelong);
+    Py_DECREF(aphi);
+    Py_DECREF(ahm);
+    Py_DECREF(axp);
+    Py_DECREF(ayp);
+    Py_DECREF(asp);
+    Py_DECREF(arefa);
+    Py_DECREF(arefb);
+    Py_INCREF(pyout);
+    return (PyObject*)pyout;
+
+fail:
+    Py_XDECREF(atheta);
+    Py_XDECREF(aelong);
+    Py_XDECREF(aphi);
+    Py_XDECREF(ahm);
+    Py_XDECREF(axp);
+    Py_XDECREF(ayp);
+    Py_XDECREF(asp);
+    Py_XDECREF(arefa);
+    Py_XDECREF(arefb);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_apio_doc,
+"\napio(sp,theta,elong,phi,hm,xp,yp,refa,refb) -> astrom\n"
+"For a terrestrial observer, prepare star-independent astrometry\n"
+"parameters for transformations between CIRS and observed\n"
+"coordinates.  The caller supplies the Earth orientation information\n"
+"and the refraction constants as well as the site coordinates.\n"
+"Given:\n"
+"    sp         the TIO locator s'\n"
+"    theta      Earth rotation angle (radians)\n"
+"    elong      longitude (radians, east +ve)\n"
+"    phi        latitude (geodetic, radians)\n"
+"    hm         height above ellipsoid (m, geodetic3)\n"
+"    xp,yp      polar motion coordinates (radians)\n"
+"    refa       refraction constant A (radians)\n"
+"    refb       refraction constant B (radians)\n"
+"Returned:\n""   x       \n"
+"    astrom     star-independent astrometry parameters");
+
+static PyObject *
 _erfa_ld(PyObject *self, PyObject *args)
 {
     double *bm, *p, *q, *e, *em, *dlim, *p1;
@@ -12672,6 +12784,7 @@ static PyMethodDef _erfa_methods[] = {
     {"apco", _erfa_apco, METH_VARARGS, _erfa_apco_doc},
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"apcs13", _erfa_apcs13, METH_VARARGS, _erfa_apcs13_doc},
+    {"apio", _erfa_apio, METH_VARARGS, _erfa_apio_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"pvstar", _erfa_pvstar, METH_VARARGS, _erfa_pvstar_doc},
