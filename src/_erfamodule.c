@@ -331,6 +331,118 @@ PyDoc_STRVAR(_erfa_ab_doc,
 "    ppr        proper direction to source (unit vector)");
 
 static PyObject *
+_erfa_apcg(PyObject *self, PyObject *args)
+{
+    double *date1, *date2, ebpv[2][3], ehp[3];
+    PyObject *adate1, *adate2, *aebpv, *aehp;
+    PyObject *pydate1, *pydate2, *pyebpv, *pyehp;
+    PyObject *ebpv_iter = NULL, *ehp_iter = NULL;
+    PyObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    eraASTROM astrom;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!",
+                                 &PyArray_Type, &pydate1,
+                                 &PyArray_Type, &pydate2,
+                                 &PyArray_Type, &pyebpv,
+                                 &PyArray_Type, &pyehp))      
+        return NULL;
+    adate1 = PyArray_FROM_OTF(pydate1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adate2 = PyArray_FROM_OTF(pydate2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (adate1 == NULL || adate2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(adate1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(adate1);
+    if (dims[0] != PyArray_DIMS(adate2)[0] ||
+        dims[0] != PyArray_DIMS(pyebpv)[0] ||
+        dims[0] != PyArray_DIMS(pyehp)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    pyout = PyList_New(dims[0]);
+    if (NULL == pyout)  goto fail;
+    date1 = (double *)PyArray_DATA(adate1);
+    date2 = (double *)PyArray_DATA(adate2);
+    ebpv_iter = PyArray_IterNew((PyObject *)pyebpv);
+    ehp_iter = PyArray_IterNew((PyObject *)pyehp);
+    if (ebpv_iter == NULL || ehp_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        int j,k,l;
+        double e, h;
+        for (l=0;l<3;l++) {
+            aehp = PyArray_GETITEM(pyehp, PyArray_ITER_DATA(ehp_iter));
+            Py_INCREF(aehp);
+            h = (double)PyFloat_AsDouble(aehp);
+            if (h == -1 && PyErr_Occurred()) goto fail;
+            ehp[l] = h;
+            Py_DECREF(aehp);
+            PyArray_ITER_NEXT(ehp_iter);
+        }
+        for (j=0;j<2;j++) {
+            for (k=0;k<3;k++) {
+                aebpv = PyArray_GETITEM(pyebpv, PyArray_ITER_DATA(ebpv_iter));                
+                if (aebpv == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(aebpv);
+                e = (double)PyFloat_AsDouble(aebpv);
+                if (e == -1 && PyErr_Occurred()) goto fail;
+                ebpv[j][k] = e;
+                Py_DECREF(aebpv);
+                PyArray_ITER_NEXT(ebpv_iter); 
+            }
+        }
+        eraApcg(date1[i], date2[i], ebpv, ehp, &astrom);
+        if (PyList_SetItem(pyout, i, _to_py_astrom(&astrom))) {
+            PyErr_SetString(_erfaError, "cannot set astrom into list");
+            goto fail;
+        }       
+    }
+    Py_DECREF(adate1);
+    Py_DECREF(adate2);
+    Py_DECREF(ebpv_iter);
+    Py_DECREF(ehp_iter);
+    Py_INCREF(pyout);
+    return (PyObject*)pyout;
+
+fail:
+    Py_XDECREF(adate1);
+    Py_XDECREF(adate2);
+    Py_XDECREF(ebpv_iter);
+    Py_XDECREF(ehp_iter);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_apcg_doc,
+"\napcg(date1, date2, ebpv[2][3], ehp[3]) -> astrom\n"
+"For a geocentric observer, prepare star-independent astrometry\n"
+"parameters for transformations between ICRS and GCRS coordinates.\n"
+"The Earth ephemeris is supplied by the caller.\n"
+"\n"
+"The parameters produced by this function are required in the\n"
+"parallax, light deflection and aberration parts of the astrometric\n"
+"transformation chain.\n"
+"Given:\n"
+"    date1      TDB as a 2-part...\n"
+"    date2      ...Julian Date\n"
+"    ebpv       Earth barycentric pos/vel (au, au/day)\n"
+"    ehp        Earth heliocentric position (au)\n"
+"Returned:\n"
+"    astrom     star-independent astrometry parameters");
+
+static PyObject *
 _erfa_apcs(PyObject *self, PyObject *args)
 {
     double *date1, *date2, pv[2][3], ebpv[2][3], ehp[3];
@@ -361,6 +473,12 @@ _erfa_apcs(PyObject *self, PyObject *args)
         goto fail;
     }
     dims = PyArray_DIMS(adate1);
+    if (dims[0] != PyArray_DIMS(adate2)[0] ||
+        dims[0] != PyArray_DIMS(pypv)[0] || dims[0] != PyArray_DIMS(pyebpv)[0] ||
+        dims[0] != PyArray_DIMS(pyehp)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
     pyout = PyList_New(dims[0]);
     if (NULL == pyout)  goto fail;
     date1 = (double *)PyArray_DATA(adate1);
@@ -11853,6 +11971,7 @@ PyDoc_STRVAR(_erfa_rz_doc,
 
 static PyMethodDef _erfa_methods[] = {
     {"ab", _erfa_ab, METH_VARARGS, _erfa_ab_doc},
+    {"apcg", _erfa_apcg, METH_VARARGS, _erfa_apcg_doc},
     {"apcs", _erfa_apcs, METH_VARARGS, _erfa_apcs_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},

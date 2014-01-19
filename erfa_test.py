@@ -74,6 +74,37 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(ppr[1], -0.6087553082505590832, places=12)
         self.assertAlmostEqual(ppr[2], -0.2167926269368471279, places=12)
 
+    def test_apcg(self):
+        date1 = np.array([2456165.5])
+        date2 = np.array([0.401182685])
+        ebpv = np.array([
+            ((0.901310875,-0.417402664,-0.180982288),
+             ( 0.00742727954,0.0140507459,0.00609045792))
+            ])
+        ehp = np.array([(0.903358544,-0.415395237,-0.180084014)])
+        astrom = erfa.apcg(date1,date2,ebpv,ehp)[0]
+        self.assertAlmostEqual(astrom.pmt, 12.65133794027378508, places=11)
+        self.assertAlmostEqual(astrom.eb[0], 0.901310875, places=12)
+        self.assertAlmostEqual(astrom.eb[1], -0.417402664, places=12,)
+        self.assertAlmostEqual(astrom.eb[2], -0.180982288, places=12)
+        self.assertAlmostEqual(astrom.eh[0], 0.8940025429324143045, places=12,)
+        self.assertAlmostEqual(astrom.eh[1], -0.4110930268679817955, places=12)
+        self.assertAlmostEqual(astrom.eh[2], -0.1782189004872870264, places=12)
+        self.assertAlmostEqual(astrom.em, 1.010465295811013146, places=12)
+        self.assertAlmostEqual(astrom.v[0], 0.4289638897813379954e-4, places=16)
+        self.assertAlmostEqual(astrom.v[1], 0.8115034021720941898e-4, places=16)
+        self.assertAlmostEqual(astrom.v[2], 0.3517555123437237778e-4, places=16)
+        self.assertAlmostEqual(astrom.bm1, 0.9999999951686013336, places=15) #failed at 16
+        self.assertAlmostEqual(astrom.bpn[0][0], 1.0, 10)
+        self.assertAlmostEqual(astrom.bpn[1][0], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[2][0], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[0][1], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[1][1], 1.0, 10)
+        self.assertAlmostEqual(astrom.bpn[2][1], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[0][2], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[1][2], 0.0, 10)
+        self.assertAlmostEqual(astrom.bpn[2][2], 1.0, 10)
+
     def test_apcs(self):
         date1 = np.array([2456384.5])
         date2 = np.array([0.970031644])

@@ -72,6 +72,10 @@ def ab(pnat, v, s, bm1):
     check_args(pnat, v, s, bm1)
     return _erfa.ab(pnat, v, s, bm1)
 
+def apcg(date1, date2, ebpv, ehp):
+    check_args(date1, date2, ebpv, ehp)
+    return _erfa.apcg(date1, date2, ebpv, ehp)
+
 def apcs(date1, date2, pv, ebpv, ehp):
     check_args(date1, date2, pv, ebpv, ehp)
     return _erfa.apcs(date1, date2, pv, ebpv, ehp)
