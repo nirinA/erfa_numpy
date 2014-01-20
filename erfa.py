@@ -192,6 +192,13 @@ def atciqz(rc, dc, astrom):
     check_astrom(astrom)
     return _erfa.atciqz(rc, dc, astrom)
 
+def atco13(rc, dc, pr, pd, px, rv, utc1, utc2,
+           dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl):
+    check_args(rc, dc, pr, pd, px, rv, utc1, utc2,
+               dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+    return _erfa.atco13(rc, dc, pr, pd, px, rv, utc1, utc2,
+                        dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+
 def aticq(ri, di, astrom):
     if len(ri) != len(astrom):
         raise _erfa.error('shape of arguments are not compatible')

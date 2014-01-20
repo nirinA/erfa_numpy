@@ -497,6 +497,35 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(ri[0], 2.709994899247599271, places=12)
         self.assertAlmostEqual(di[0], 0.1728740720983623469, places=12)
 
+    def test_atco13(self):
+        rc = np.array([2.71])
+        dc = np.array([0.174])
+        pr = np.array([1e-5])
+        pd = np.array([5e-6])
+        px = np.array([0.1])
+        rv = np.array([55.0])
+        utc1 = np.array([2456384.5])
+        utc2 = np.array([0.969254051])
+        dut1 = np.array([0.1550675])
+        elong = np.array([-0.527800806])
+        phi = np.array([-1.2345856])
+        hm = np.array([2738.0])
+        xp = np.array([2.47230737e-7])
+        yp = np.array([1.82640464e-6])
+        phpa = np.array([731.0])
+        tc = np.array([12.8])
+        rh = np.array([0.59])
+        wl = np.array([0.55])
+        aob, zob, hob, dob, rob, eo = erfa.atco13(rc, dc, pr, pd, px, rv,
+                                                  utc1, utc2, dut1, elong, phi, hm, xp, yp,
+                                                  phpa, tc, rh, wl)
+        self.assertAlmostEqual(aob[0], 0.09251774485358230653, places=12)
+        self.assertAlmostEqual(zob[0], 1.407661405256767021, places=12)
+        self.assertAlmostEqual(hob[0], -0.09265154431403157925, places=12)
+        self.assertAlmostEqual(dob[0], 0.1716626560075591655, places=12)
+        self.assertAlmostEqual(rob[0], 2.710260453503097719, places=12)
+        self.assertAlmostEqual(eo[0], -0.003020548354802412839, places=14)
+
     def test_aticq(self):
         date1 = np.array([2456165.5])
         date2 = np.array([0.401182685])
