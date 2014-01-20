@@ -174,6 +174,141 @@ _to_py_astrom(eraASTROM *a)
     return v;
 }
 
+static void
+_to_c_vector(PyObject *p, double v[3])
+{
+    int i;
+    PyObject *a, *iter = NULL;
+    iter = PyArray_IterNew(p);
+    for (i=0;i<3;i++) {
+        a = PyArray_GETITEM(p, PyArray_ITER_DATA(iter));
+        if (a == NULL) {
+            PyErr_SetString(_erfaError, "cannot retrieve data from args");
+            goto fail;
+        }
+        Py_INCREF(a);
+        v[i] = (double)PyFloat_AsDouble(a);
+        Py_DECREF(a);
+        PyArray_ITER_NEXT(iter);
+    }
+    Py_DECREF(iter);
+    return;
+
+fail:
+    Py_XDECREF(a);
+    Py_XDECREF(iter);
+    return;
+}
+
+static void
+_to_c_matrix(PyObject *p, double m[3][3])
+{
+    int i,j;
+    PyObject *a, *iter = NULL;
+    iter = PyArray_IterNew(p);
+    for (i=0;i<3;i++) {
+        for (j=0;j<3;j++) {
+            a = PyArray_GETITEM(p, PyArray_ITER_DATA(iter));
+            if (a == NULL) {
+                PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                goto fail;
+            }
+            Py_INCREF(a);
+            m[i][j] = (double)PyFloat_AsDouble(a);
+            Py_DECREF(a);
+            PyArray_ITER_NEXT(iter);
+        }
+    }
+    Py_DECREF(iter);
+    return;
+
+fail:
+    Py_XDECREF(a);
+    Py_XDECREF(iter);
+    return;
+
+}
+
+static eraASTROM
+_to_c_astrom(PyObject *a)
+{
+    eraASTROM astrom;
+    PyObject *pypmt, *pyeb, *pyeh, *pyem, *pyv, *pybm1, *pybpn;
+    PyObject *pyalong, *pyphi, *pyxpl, *pyypl, *pysphi, *pycphi, *pydiurab, *pyeral, *pyrefa, *pyrefb;
+#define GET(i) PyStructSequence_GET_ITEM(a, i)
+    pypmt = GET(0);
+    Py_INCREF(pypmt);
+    astrom.pmt = PyFloat_AsDouble(pypmt);
+    Py_DECREF(pypmt);
+    pyeb = GET(1);
+    Py_INCREF(pyeb);
+    _to_c_vector(pyeb, astrom.eb);
+    Py_DECREF(pyeb);
+    pyeh = GET(2);
+    Py_INCREF(pyeh);
+    _to_c_vector(pyeh, astrom.eh);
+    Py_DECREF(pyeh);
+    pyem = GET(3);
+    Py_INCREF(pyem);
+    astrom.em = PyFloat_AsDouble(pyem);
+    Py_DECREF(pyem);
+    pyv = GET(4);
+    Py_INCREF(pyv);
+    _to_c_vector(pyv, astrom.v);
+    Py_DECREF(pyv);
+    pybm1 = GET(5);
+    Py_INCREF(pybm1);
+    astrom.bm1 = PyFloat_AsDouble(pybm1);
+    Py_DECREF(pypmt);
+    pybpn = GET(6);
+    Py_INCREF(pybpn);
+    _to_c_matrix(pybpn, astrom.bpn);
+    Py_DECREF(pybpn);
+    pyalong = GET(7);
+    Py_INCREF(pyalong);
+    astrom.along = PyFloat_AsDouble(pyalong);
+    Py_DECREF(pyalong);
+    pyphi = GET(8);
+    Py_INCREF(pyphi);
+    astrom.phi = PyFloat_AsDouble(pyphi);
+    Py_DECREF(pyphi);
+    pyxpl = GET(9);
+    Py_INCREF(pyxpl);
+    astrom.xpl = PyFloat_AsDouble(pyxpl);
+    Py_DECREF(pyxpl);
+    pyypl = GET(10);
+    Py_INCREF(pyypl);
+    astrom.ypl = PyFloat_AsDouble(pyypl);
+    Py_DECREF(pyypl);
+    pysphi = GET(11);
+    Py_INCREF(pysphi);
+    astrom.sphi = PyFloat_AsDouble(pysphi);
+    Py_DECREF(pysphi);
+    pycphi = GET(12);
+    Py_INCREF(pycphi);
+    astrom.cphi = PyFloat_AsDouble(pycphi);
+    Py_DECREF(pycphi);
+    pydiurab = GET(13);
+    Py_INCREF(pydiurab);
+    astrom.diurab = PyFloat_AsDouble(pydiurab);
+    Py_DECREF(pydiurab);
+    pyeral = GET(14);
+    Py_INCREF(pyeral);
+    astrom.eral = PyFloat_AsDouble(pyeral);
+    Py_DECREF(pyeral);
+    pyrefa = GET(15);
+    Py_INCREF(pyrefa);
+    astrom.refa = PyFloat_AsDouble(pyrefa);
+    Py_DECREF(pyrefa);
+    pyrefb = GET(16);
+    Py_INCREF(pyrefb);
+    astrom.refb = PyFloat_AsDouble(pyrefb);
+    Py_DECREF(pyrefb);
+
+#undef SET
+    return astrom;
+}
+
 static PyObject *
 _a2xf_object(char sign, int idmsf[4])
 {
@@ -1623,6 +1758,88 @@ PyDoc_STRVAR(_erfa_atci13_doc,
 "Returned:\n"
 "    ri,di  CIRS geocentric RA,Dec (radians)\n"
 "    eo     double*  equation of the origins (ERA-GST)");
+
+static PyObject *
+_erfa_aticq(PyObject *self, PyObject *args)
+{
+    double *rc, *dc, *ri, *di;
+    PyObject *pyri, *pydi;
+    PyObject *ari, *adi;
+    PyObject *pyastrom, *a;
+    PyArrayObject *pyrc = NULL, *pydc = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i, len;
+    eraASTROM astrom;
+
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                          &PyArray_Type, &pyri,
+                          &PyArray_Type, &pydi,
+                          &PyList_Type, &pyastrom))      
+        return NULL;
+    ari = PyArray_FROM_OTF(pyri, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adi = PyArray_FROM_OTF(pydi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ari == NULL || adi == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ari);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ari);
+    len = (int)PyList_Size(pyastrom);
+    if (dims[0] != PyArray_DIMS(adi)[0] ||
+        dims[0] != len) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    pyrc = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydc = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyrc || NULL == pydc) {
+        goto fail;
+    }
+    ri = (double *)PyArray_DATA(ari);
+    di = (double *)PyArray_DATA(adi);
+    rc = (double *)PyArray_DATA(pyrc);
+    dc = (double *)PyArray_DATA(pydc);
+
+    for (i=0;i<dims[0];i++) {
+        a = PyList_GetItem(pyastrom, i);
+        Py_INCREF(a);
+        astrom = _to_c_astrom(a);
+        Py_DECREF(a);
+        eraAticq(ri[i], di[i], &astrom, &rc[i], &dc[i]);
+    }
+    Py_DECREF(ari);
+    Py_DECREF(adi);
+    Py_INCREF(pyrc);
+    Py_INCREF(pydc);
+    return Py_BuildValue("OO", pyrc, pydc);//return Py_BuildValue("O", pyastrom); //
+
+fail:
+    Py_XDECREF(ari);
+    Py_XDECREF(adi);
+    Py_XDECREF(pyrc);
+    Py_XDECREF(pydc);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_aticq_doc,
+"\naticq(ri,di, astrom) -> rc, dc\n"
+"Quick CIRS RA,Dec to ICRS astrometric place, given the star-\n"
+"independent astrometry parameters.\n"
+"\n"
+"Use of this function is appropriate when efficiency is important and\n"
+"where many star positions are all to be transformed for one date.  The\n"
+"star-independent parameters can be obtained by calling one of the\n"
+"functions apci[13], apcg[13], apco[13] or apcs[13].\n"
+"Given:\n"
+"    ri,di      CIRS RA,Dec (radians)\n"
+"    astrom     star-independent astrometry parameters\n"
+"Returned:\n"
+"    rc,dc      ICRS astrometric RA,Dec (radians)\n");
 
 static PyObject *
 _erfa_ld(PyObject *self, PyObject *args)
@@ -13040,6 +13257,7 @@ static PyMethodDef _erfa_methods[] = {
     {"apio", _erfa_apio, METH_VARARGS, _erfa_apio_doc},
     {"apio13", _erfa_apio13, METH_VARARGS, _erfa_apio13_doc},
     {"atci13", _erfa_atci13, METH_VARARGS, _erfa_atci13_doc},
+    {"aticq", _erfa_aticq, METH_VARARGS, _erfa_aticq_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"pvstar", _erfa_pvstar, METH_VARARGS, _erfa_pvstar_doc},

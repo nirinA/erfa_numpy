@@ -446,6 +446,31 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(di[0], 0.1729371367218230438, places=12)
         self.assertAlmostEqual(eo[0], -0.002900618712657375647, places=14)
 
+##    def test_atciq(self):
+##        date1 = np.array([2456165.5])
+##        date2 = np.array([0.401182685])
+##        astrom, eo = erfa.apci13(date1, date2)[0]
+##        rc = np.array([2.71])
+##        dc = np.array([0.174])
+##        pr = np.array([1e-5])
+##        pd = np.array([5e-6])
+##        px = np.array([0.1])
+##        rv = np.array([55.0])
+##        ri, di = erfa.atciq(rc, dc, pr, pd, px, rv, [astrom])
+##        self.assertAlmostEqual(ri[0], 2.710121572969038991, places=12)
+##        self.assertAlmostEqual(di[0], 0.1729371367218230438, places=12)
+
+    def test_aticq(self):
+        date1 = np.array([2456165.5])
+        date2 = np.array([0.401182685])
+        astrom, eo = erfa.apci13(date1, date2)[0]
+        ri = np.array([2.710121572969038991])
+        di = np.array([0.1729371367218230438])
+        rc, dc = erfa.aticq(ri, di, [astrom])
+        self.assertAlmostEqual(rc[0], 2.710126504531374930, places=12)
+        self.assertAlmostEqual(dc[0], 0.1740632537628342320, places=12)
+
+
     def test_ld(self):
         bm = np.array([0.00028574])
         p = np.array([[-0.763276255, -0.608633767, -0.216735543]])
