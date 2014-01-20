@@ -1942,6 +1942,173 @@ PyDoc_STRVAR(_erfa_atciq_doc,
 "    ri,di      CIRS RA,Dec (radians)\n");
 
 static PyObject *
+_erfa_atciqn(PyObject *self, PyObject *args)
+{
+    double *rc, *dc, *pr, *pd, *px, *rv;
+    double *ri, *di;
+    PyObject *pyrc, *pydc, *pypr, *pypd, *pypx, *pyrv;
+    PyObject *arc, *adc, *apr, *apd, *apx, *arv;
+    PyObject *pyldbody, *ldbody, *pyastrom, *a;
+    PyArrayObject *pyri = NULL, *pydi = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    eraASTROM astrom;
+    int ndim, i, n, len_ldbody, len_astrom;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!",
+                                 &PyArray_Type, &pyrc,
+                                 &PyArray_Type, &pydc,
+                                 &PyArray_Type, &pypr,
+                                 &PyArray_Type, &pypd,
+                                 &PyArray_Type, &pypx,
+                                 &PyArray_Type, &pyrv,
+                                 &PyList_Type, &pyastrom,
+                                 &PyList_Type, &pyldbody))      
+        return NULL;
+    arc = PyArray_FROM_OTF(pyrc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adc = PyArray_FROM_OTF(pydc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apr = PyArray_FROM_OTF(pypr, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apd = PyArray_FROM_OTF(pypd, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apx = PyArray_FROM_OTF(pypx, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arv = PyArray_FROM_OTF(pyrv, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (arc == NULL || adc == NULL || apr == NULL ||
+        apd == NULL || apx == NULL || arv == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(arc);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(arc);
+    len_ldbody = (int)PyList_Size(pyldbody);
+    len_astrom = (int)PyList_Size(pyastrom);
+    if (dims[0] != PyArray_DIMS(adc)[0] ||
+        dims[0] != PyArray_DIMS(apr)[0] || dims[0] != PyArray_DIMS(apd)[0] ||
+        dims[0] != PyArray_DIMS(apx)[0] || dims[0] != PyArray_DIMS(arv)[0] ||
+        dims[0] != len_ldbody || dims[0] != len_astrom) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    rc = (double *)PyArray_DATA(arc);
+    dc = (double *)PyArray_DATA(adc);
+    pr = (double *)PyArray_DATA(apr);
+    pd = (double *)PyArray_DATA(apd);
+    px = (double *)PyArray_DATA(apx);
+    rv = (double *)PyArray_DATA(arv);
+    pyri = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydi = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    ri = (double *)PyArray_DATA(pyri);
+    di = (double *)PyArray_DATA(pydi);
+
+    for (i=0;i<dims[0];i++) {
+        a = PyList_GetItem(pyastrom, i);
+        Py_INCREF(a);
+        astrom = _to_c_astrom(a);
+        Py_DECREF(a);
+        ldbody = PyList_GetItem(pyldbody, i);
+        Py_INCREF(ldbody);
+        n = (int)PyList_Size(ldbody);
+        eraLDBODY b[n];
+        int j;
+        PyObject *pyl, *pybm, *pydl, *pypv;
+        for (j=0;j<n;j++) {
+            pyl = PyList_GetItem(ldbody, j);
+            Py_INCREF(pyl);
+            pybm = PyStructSequence_GET_ITEM(pyl, 0);
+            Py_INCREF(pybm);
+            b[j].bm = (double)PyFloat_AsDouble(pybm);
+            Py_DECREF(pybm);
+            Py_DECREF(pyl);
+
+            Py_INCREF(pyl);
+            pydl = PyStructSequence_GET_ITEM(pyl, 1);
+            Py_INCREF(pydl);
+            b[j].dl = (double)PyFloat_AsDouble(pydl);
+            Py_DECREF(pydl);
+            Py_DECREF(pyl);
+
+            Py_INCREF(pyl);
+            pypv = PyStructSequence_GET_ITEM(pyl, 2);
+            Py_INCREF(pypv);
+            int k,l;
+            PyObject *a = NULL, *iter = NULL;
+            iter = PyArray_IterNew(pypv);
+            for (k=0;k<2;k++) {
+                for (l=0;l<3;l++) {
+                    a = PyArray_GETITEM(pypv, PyArray_ITER_DATA(iter));
+                    if (a == NULL) {
+                        PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                        Py_XDECREF(a);
+                        Py_XDECREF(pypv);
+                        return NULL;
+                    }
+                    Py_INCREF(a);
+                    b[j].pv[k][l] = (double)PyFloat_AsDouble(a);
+                    Py_DECREF(a);
+                    PyArray_ITER_NEXT(iter);
+                }
+            }
+            PyArray_ITER_RESET(iter);
+            Py_DECREF(iter);
+
+            Py_DECREF(pypv);
+            Py_DECREF(pyl);
+            
+        }
+        Py_DECREF(ldbody);
+        eraAtciqn(rc[i], dc[i], pr[i], pd[i], px[i], rv[i], &astrom, n, b, &ri[i], &di[i]);
+    }
+    Py_DECREF(arc);
+    Py_DECREF(adc);
+    Py_DECREF(apr);
+    Py_DECREF(apd);
+    Py_DECREF(apx);
+    Py_DECREF(arv);
+    Py_DECREF(pyastrom);
+    Py_INCREF(pyri);
+    Py_INCREF(pydi);
+    return Py_BuildValue("OO", pyri, pydi);
+
+fail:
+    Py_XDECREF(arc);
+    Py_XDECREF(adc);
+    Py_XDECREF(apr);
+    Py_XDECREF(apd);
+    Py_XDECREF(apx);
+    Py_XDECREF(arv);
+    Py_XDECREF(pyri);
+    Py_XDECREF(pydi);
+    Py_XDECREF(pyldbody);
+    Py_XDECREF(pyastrom);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_atciqn_doc,
+"\natciqn(rc, dc, pr, pd, px,rv, astrom, ldbody) -> ri,di\n"
+"Quick ICRS, epoch J2000.0, to CIRS transformation, given precomputed\n"
+"star-independent astrometry parameters plus a list of light-deflecting bodies.\n"
+"\n"
+"Use of this function is appropriate when efficiency is important and\n"
+"where many star positions are to be transformed for one date.  The\n"
+"star-independent parameters can be obtained by calling one of the\n"
+"functions apci[13], apcg[13], apco[13] or apcs[13].\n"
+"\n"
+"If the only light-deflecting body to be taken into account is the\n"
+"Sun, the atciq function can be used instead.  If in addition the\n"
+"parallax and proper motions are zero, the aciqz function can be used.\n"
+"Given:\n"
+"    rc,dc      ICRS RA,Dec at J2000.0 (radians)\n"
+"    pr         RA proper motion (radians/year)\n"
+"    pd         Dec proper motion (radians/year)\n"
+"    px         parallax (arcsec)\n"
+"    rv         radial velocity (km/s, +ve if receding)\n"
+"    astrom     star-independent astrometry parameters\n"
+"    ldbody     data for each of the n bodies\n"
+"Returned:\n"
+"    ri,di      CIRS RA,Dec (radians)");
+
+static PyObject *
 _erfa_aticq(PyObject *self, PyObject *args)
 {
     double *rc, *dc, *ri, *di;
@@ -13560,6 +13727,7 @@ static PyMethodDef _erfa_methods[] = {
     {"apio13", _erfa_apio13, METH_VARARGS, _erfa_apio13_doc},
     {"atci13", _erfa_atci13, METH_VARARGS, _erfa_atci13_doc},
     {"atciq", _erfa_atciq, METH_VARARGS, _erfa_atciq_doc},
+    {"atciqn", _erfa_atciqn, METH_VARARGS, _erfa_atciqn_doc},
     {"aticq", _erfa_aticq, METH_VARARGS, _erfa_aticq_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"ldn", _erfa_ldn, METH_VARARGS, _erfa_ldn_doc},

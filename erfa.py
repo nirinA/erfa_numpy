@@ -24,6 +24,30 @@ def check_args(*args):
         except IndexError:
             raise _erfa.error('cannot compute ndarray of length 0')
 
+def check_astrom(astrom):
+    if type(astrom) is not type(list()):
+        raise _erfa.error('astrom argument should be a list')
+    for a in astrom:
+        if type(a) is not ASTROM:
+            raise _erfa.error('astrom argument is not of type ASTROM')
+        if (type(a.eb) is not np.ndarray and \
+            type(a.eh) is not np.ndarray and \
+            type(a.v) is not np.ndarray and \
+            type(a.bpn) is not np.ndarray):
+            raise _erfa.error('astrom is not of type of ndarray')
+
+def check_ldbody(ldbody):
+    if type(ldbody) is not type(list()):
+        raise _erfa.error('ldbody argument should be a list')
+    if type(ldbody[0]) is not type(list()):
+        raise _erfa.error('ldbody argument should be a list')
+    for l in ldbody:
+        for i in l:
+            if type(i) is not LDBODY:
+                raise _erfa.error('ldbody argument is not of type LDBODY')
+            if type(i.pv) is not np.ndarray:
+                raise _erfa.error('LDBODY pv is not of type of ndarray')
+
 def cast_to_int32(i):
     return np.array([n for n in i], dtype='int32')
 
@@ -112,11 +136,10 @@ def aper(theta, astrom):
     '''aper(theta, astrom) -> astrom
 In the star-independent astrometry parameters, update only the
 Earth rotation angle, supplied by the caller explicitly.'''
-    check_args(theta)
-    if type(astrom) is not type(list()):
-        raise _erfa.error('astrom argument should be a list')
     if len(theta) != len(astrom):
         raise _erfa.error('shape of arguments are not compatible')
+    check_args(theta)
+    check_astrom(astrom)
     result = []
     for i in range(len(theta)):
         result.append(_aper(theta[i], astrom[i]))
@@ -126,7 +149,10 @@ def aper13(ut11, ut12, astrom):
     '''aper13(ut11, ut12, astrom) -> astrom
 In the star-independent astrometry parameters, update only the
 Earth rotation angle. The caller provides UT1, (n.b. not UTC).'''
+    if len(ut11) != len(astrom):
+        raise _erfa.error('shape of arguments are not compatible')
     check_args(ut11, ut12)
+    check_astrom(astrom)
     era = era00(ut11, ut12)
     return aper(era, astrom)
 
@@ -143,25 +169,27 @@ def atci13(rc, dc, pr, pd, px, rv, date1, date2):
     return _erfa.atci13(rc, dc, pr, pd, px, rv, date1, date2)
 
 def atciq(rc, dc, pr, pd, px, rv, astrom):
-    check_args(rc, dc, pr, pd, px, rv)
-    if type(astrom) is not type(list()):
-        raise _erfa.error('astrom argument should be a list')
     if len(rc) != len(astrom):
         raise _erfa.error('shape of arguments are not compatible')
-    for a in astrom:
-        if type(a) is not ASTROM:
-            raise _erfa.error('astrom argument is not of type ASTROM')
+    check_args(rc, dc, pr, pd, px, rv)
+    check_astrom(astrom)
     return _erfa.atciq(rc, dc, pr, pd, px, rv, astrom)
 
+def atciqn(rc, dc, pr, pd, px,rv, astrom, ldbody):
+    if len(rc) != len(astrom):
+        raise _erfa.error('shape of arguments are not compatible')
+    if len(rc) != len(ldbody):
+        raise _erfa.error('shape of arguments are not compatible')
+    check_args(rc, dc, pr, pd, px, rv)
+    check_astrom(astrom)
+    check_ldbody(ldbody)
+    return _erfa.atciqn(rc, dc, pr, pd, px,rv, astrom, ldbody)
+
 def aticq(ri, di, astrom):
-    check_args(ri, di)
-    if type(astrom) is not type(list()):
-        raise _erfa.error('astrom argument should be a list')
     if len(ri) != len(astrom):
         raise _erfa.error('shape of arguments are not compatible')
-    for a in astrom:
-        if type(a) is not ASTROM:
-            raise _erfa.error('astrom argument is not of type ASTROM')
+    check_args(ri, di)
+    check_astrom(astrom)
     return _erfa.aticq(ri, di, astrom)
 
 def ld(bm, p, q, e, em, dlim):
@@ -169,19 +197,10 @@ def ld(bm, p, q, e, em, dlim):
     return _erfa.ld(bm, p, q, e, em, dlim)
 
 def ldn(ldbody, ob, sc):
-    check_args(ob, sc)
-    if type(ldbody) is not type(list()):
-        raise _erfa.error('ldbody argument should be a list')
     if len(ob) != len(ldbody):
         raise _erfa.error('shape of arguments are not compatible')
-    if type(ldbody[0]) is not type(list()):
-        raise _erfa.error('ldbody argument should be a list')
-    for l in ldbody:
-        for i in l:
-            if type(i) is not LDBODY:
-                raise _erfa.error('ldbody argument is not of type LDBODY')
-            if type(i.pv) is not np.ndarray:
-                raise _erfa.error('LDBODY pv is not of type of ndarray')
+    check_args(ob, sc)
+    check_ldbody(ldbody)
     return _erfa.ldn(ldbody, ob, sc)
 
 ## Astronomy/Ephemerides
