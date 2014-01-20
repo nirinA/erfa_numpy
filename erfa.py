@@ -142,13 +142,16 @@ def atci13(rc, dc, pr, pd, px, rv, date1, date2):
     check_args(rc, dc, pr, pd, px, rv, date1, date2)
     return _erfa.atci13(rc, dc, pr, pd, px, rv, date1, date2)
 
-##def atciq(rc, dc, pr, pd, px, rv, astrom):
-##    check_args(rc, dc, pr, pd, px, rv)
-##    if type(astrom) is not type(list()):
-##        raise _erfa.error('astrom argument should be a list')
-##    if len(rc) != len(astrom):
-##        raise _erfa.error('shape of arguments are not compatible')
-##    return _erfa.atciq(rc, dc, pr, pd, px, rv, astrom)
+def atciq(rc, dc, pr, pd, px, rv, astrom):
+    check_args(rc, dc, pr, pd, px, rv)
+    if type(astrom) is not type(list()):
+        raise _erfa.error('astrom argument should be a list')
+    if len(rc) != len(astrom):
+        raise _erfa.error('shape of arguments are not compatible')
+    for a in astrom:
+        if type(a) is not ASTROM:
+            raise _erfa.error('astrom argument is not of type ASTROM')
+    return _erfa.atciq(rc, dc, pr, pd, px, rv, astrom)
 
 def aticq(ri, di, astrom):
     check_args(ri, di)

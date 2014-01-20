@@ -18,11 +18,11 @@ moduleerfa = Extension('_erfa',
                     include_dirs = INC_DIR,
                     libraries = ['erfa', 'm'],
                     library_dirs = LIB_DIR,
-                    extra_compile_args = ["-std=gnu99"],
+##                    extra_compile_args = ["-std=gnu99", "-g"],
                     sources = ['src/_erfamodule.c'])
 
 setup (name = 'erfa_numpy',
-       version = '2014.01.08',
+       version = '2014.01.20',
        description = 'numpy wrapper for ERFA library',
        url = 'https://github.com/nirinA/erfa_numpy',
        author = 'nirinA raseliarison',
