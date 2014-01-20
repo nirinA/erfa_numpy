@@ -2362,6 +2362,87 @@ PyDoc_STRVAR(_erfa_atco13_doc,
 "    eo     equation of the origins (ERA-GST)");
 
 static PyObject *
+_erfa_atic13(PyObject *self, PyObject *args)
+{
+    double *ri, *di, *date1, *date2;
+    double *rc, *dc, *eo;
+    PyObject *pyri, *pydi, *pydate1, *pydate2;
+    PyObject *ari, *adi, *adate1, *adate2;
+    PyArrayObject *pyrc = NULL, *pydc = NULL, *pyeo = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!",
+                                 &PyArray_Type, &pyri,
+                                 &PyArray_Type, &pydi,
+                                 &PyArray_Type, &pydate1,
+                                 &PyArray_Type, &pydate2))      
+        return NULL;
+    ari = PyArray_FROM_OTF(pyri, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adi = PyArray_FROM_OTF(pydi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adate1 = PyArray_FROM_OTF(pydate1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adate2 = PyArray_FROM_OTF(pydate2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ari == NULL || adi == NULL ||
+        adate1 == NULL || adate2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ari);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ari);
+    if (dims[0] != PyArray_DIMS(adi)[0] ||
+        dims[0] != PyArray_DIMS(adate1)[0] || dims[0] != PyArray_DIMS(adate2)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    ri = (double *)PyArray_DATA(ari);
+    di = (double *)PyArray_DATA(adi);
+    date1 = (double *)PyArray_DATA(adate1);
+    date2 = (double *)PyArray_DATA(adate2);
+    pyrc = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydc = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyeo = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    rc = (double *)PyArray_DATA(pyrc);
+    dc = (double *)PyArray_DATA(pydc);
+    eo = (double *)PyArray_DATA(pyeo);
+    for (i=0;i<dims[0];i++) {
+        eraAtic13(ri[i], di[i], date1[i], date2[i], &rc[i], &dc[i], &eo[i]);
+    }
+    Py_DECREF(ari);
+    Py_DECREF(adi);
+    Py_DECREF(adate1);
+    Py_DECREF(adate2);
+    Py_INCREF(pyrc);
+    Py_INCREF(pydc);
+    Py_INCREF(pyeo);
+    return Py_BuildValue("OOO", pyrc, pydc, pyeo);
+
+fail:
+    Py_XDECREF(ari);
+    Py_XDECREF(adi);
+    Py_XDECREF(adate1);
+    Py_XDECREF(adate2);
+    Py_XDECREF(pyrc);
+    Py_XDECREF(pydc);
+    Py_XDECREF(pyeo);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_atic13_doc,
+"\natic13(ri, di, date1, date2) -> rc, dc, eo\n"
+"Transform star RA,Dec from geocentric CIRS to ICRS astrometric.\n"
+"Given:\n"
+"    ri,di  CIRS geocentric RA,Dec (radians)\n"
+"    date1  TDB as a 2-part...\n"
+"    date2  ...Julian Date\n"
+"Returned:\n"
+"    rc,dc  ICRS astrometric RA,Dec (radians)\n"
+"    eo     equation of the origins (ERA-GST)");
+
+static PyObject *
 _erfa_aticq(PyObject *self, PyObject *args)
 {
     double *rc, *dc, *ri, *di;
@@ -13982,6 +14063,7 @@ static PyMethodDef _erfa_methods[] = {
     {"atciqn", _erfa_atciqn, METH_VARARGS, _erfa_atciqn_doc},
     {"atciqz", _erfa_atciqz, METH_VARARGS, _erfa_atciqz_doc},
     {"atco13", _erfa_atco13, METH_VARARGS, _erfa_atco13_doc},
+    {"atic13", _erfa_atic13, METH_VARARGS, _erfa_atic13_doc},
     {"aticq", _erfa_aticq, METH_VARARGS, _erfa_aticq_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"ldn", _erfa_ldn, METH_VARARGS, _erfa_ldn_doc},

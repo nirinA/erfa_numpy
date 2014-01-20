@@ -199,6 +199,10 @@ def atco13(rc, dc, pr, pd, px, rv, utc1, utc2,
     return _erfa.atco13(rc, dc, pr, pd, px, rv, utc1, utc2,
                         dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
 
+def atic13(ri, di, date1, date2):
+    check_args(ri, di, date1, date2)
+    return _erfa.atic13(ri, di, date1, date2)
+    
 def aticq(ri, di, astrom):
     if len(ri) != len(astrom):
         raise _erfa.error('shape of arguments are not compatible')

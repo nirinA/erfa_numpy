@@ -526,6 +526,16 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rob[0], 2.710260453503097719, places=12)
         self.assertAlmostEqual(eo[0], -0.003020548354802412839, places=14)
 
+    def test_atic13(self):
+        ri = np.array([2.710121572969038991])
+        di = np.array([0.1729371367218230438])
+        date1 = np.array([2456165.5])
+        date2 = np.array([0.401182685])
+        rc, dc, eo = erfa.atic13(ri, di, date1, date2)
+        self.assertAlmostEqual(rc[0], 2.710126504531374930, places=12)
+        self.assertAlmostEqual(dc[0], 0.1740632537628342320, places=12)
+        self.assertAlmostEqual(eo[0], -0.002900618712657375647, places=14)
+
     def test_aticq(self):
         date1 = np.array([2456165.5])
         date2 = np.array([0.401182685])
