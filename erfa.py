@@ -185,6 +185,13 @@ def atciqn(rc, dc, pr, pd, px,rv, astrom, ldbody):
     check_ldbody(ldbody)
     return _erfa.atciqn(rc, dc, pr, pd, px,rv, astrom, ldbody)
 
+def atciqz(rc, dc, astrom):
+    if len(rc) != len(astrom):
+        raise _erfa.error('shape of arguments are not compatible')
+    check_args(rc, dc)
+    check_astrom(astrom)
+    return _erfa.atciqz(rc, dc, astrom)
+
 def aticq(ri, di, astrom):
     if len(ri) != len(astrom):
         raise _erfa.error('shape of arguments are not compatible')

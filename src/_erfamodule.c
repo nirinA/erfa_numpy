@@ -2109,6 +2109,89 @@ PyDoc_STRVAR(_erfa_atciqn_doc,
 "    ri,di      CIRS RA,Dec (radians)");
 
 static PyObject *
+_erfa_atciqz(PyObject *self, PyObject *args)
+{
+    double *rc, *dc, *ri, *di;
+    PyObject *pyrc, *pydc;
+    PyObject *arc, *adc;
+    PyObject *pyastrom, *a;
+    PyArrayObject *pyri = NULL, *pydi = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i, len;
+    eraASTROM astrom;
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                                 &PyArray_Type, &pyrc,
+                                 &PyArray_Type, &pydc,
+                                 &PyList_Type, &pyastrom))      
+        return NULL;
+    arc = PyArray_FROM_OTF(pyrc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adc = PyArray_FROM_OTF(pydc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (arc == NULL || adc == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(arc);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(arc);
+    len = (int)PyList_Size(pyastrom);
+    if (dims[0] != PyArray_DIMS(adc)[0] || dims[0] != len) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    pyri = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydi = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyri || NULL == pydi) {
+        goto fail;
+    }
+    rc = (double *)PyArray_DATA(arc);
+    dc = (double *)PyArray_DATA(adc);
+    ri = (double *)PyArray_DATA(pyri);
+    di = (double *)PyArray_DATA(pydi);
+
+    for (i=0;i<dims[0];i++) {
+        a = PyList_GetItem(pyastrom, i);
+        Py_INCREF(a);
+        astrom = _to_c_astrom(a);
+        Py_DECREF(a);
+        eraAtciqz(rc[i], dc[i], &astrom, &ri[i], &di[i]);
+    }
+    Py_DECREF(arc);
+    Py_DECREF(adc);
+    Py_INCREF(pyri);
+    Py_INCREF(pydi);
+    return Py_BuildValue("OO", pyri, pydi);
+
+fail:
+    Py_XDECREF(arc);
+    Py_XDECREF(adc);
+    Py_XDECREF(pyri);
+    Py_XDECREF(pydi);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_atciqz_doc,
+"\natciqz( rc, dc, astrom) -> ri,di\n"
+"Quick ICRS to CIRS transformation, given precomputed star-\n"
+"independent astrometry parameters, and assuming zero parallax and proper motion.\n"
+"\n"
+"Use of this function is appropriate when efficiency is important and\n"
+"where many star positions are to be transformed for one date.  The\n"
+"star-independent parameters can be obtained by calling one of the\n"
+"functions apci[13], apcg[13], apco[13] or apcs[13].\n"
+"\n"
+"The corresponding function for the case of non-zero parallax and\n"
+"proper motion is atciq.\n"
+"Given:\n"
+"    rc,dc      ICRS RA,Dec at J2000.0 (radians)\n"
+"    astrom     star-independent astrometry parameters\n"
+"Returned:\n"
+"    ri,di      CIRS RA,Dec (radians)\n");
+
+static PyObject *
 _erfa_aticq(PyObject *self, PyObject *args)
 {
     double *rc, *dc, *ri, *di;
@@ -2121,7 +2204,6 @@ _erfa_aticq(PyObject *self, PyObject *args)
     npy_intp *dims;
     int ndim, i, len;
     eraASTROM astrom;
-
     if (!PyArg_ParseTuple(args, "O!O!O!",
                           &PyArray_Type, &pyri,
                           &PyArray_Type, &pydi,
@@ -13728,6 +13810,7 @@ static PyMethodDef _erfa_methods[] = {
     {"atci13", _erfa_atci13, METH_VARARGS, _erfa_atci13_doc},
     {"atciq", _erfa_atciq, METH_VARARGS, _erfa_atciq_doc},
     {"atciqn", _erfa_atciqn, METH_VARARGS, _erfa_atciqn_doc},
+    {"atciqz", _erfa_atciqz, METH_VARARGS, _erfa_atciqz_doc},
     {"aticq", _erfa_aticq, METH_VARARGS, _erfa_aticq_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"ldn", _erfa_ldn, METH_VARARGS, _erfa_ldn_doc},
