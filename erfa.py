@@ -16,7 +16,7 @@ from _erfa import AULT , CMPS , D2PI , DAS2R , DAU ,\
 
 def check_args(*args):
     for t in args:
-        if not (type(t) == np.ndarray):
+        if type(t) is not np.ndarray:
             raise _erfa.error('arguments are not of type of ndarray')
         try:
             if t.shape[0] != args[0].shape[0]:
@@ -167,6 +167,22 @@ def aticq(ri, di, astrom):
 def ld(bm, p, q, e, em, dlim):
     check_args(bm, p, q, e, em, dlim)
     return _erfa.ld(bm, p, q, e, em, dlim)
+
+def ldn(ldbody, ob, sc):
+    check_args(ob, sc)
+    if type(ldbody) is not type(list()):
+        raise _erfa.error('ldbody argument should be a list')
+    if len(ob) != len(ldbody):
+        raise _erfa.error('shape of arguments are not compatible')
+    if type(ldbody[0]) is not type(list()):
+        raise _erfa.error('ldbody argument should be a list')
+    for l in ldbody:
+        for i in l:
+            if type(i) is not LDBODY:
+                raise _erfa.error('ldbody argument is not of type LDBODY')
+            if type(i.pv) is not np.ndarray:
+                raise _erfa.error('LDBODY pv is not of type of ndarray')
+    return _erfa.ldn(ldbody, ob, sc)
 
 ## Astronomy/Ephemerides
 def epv00(d1,d2):

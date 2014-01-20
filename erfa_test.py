@@ -483,6 +483,27 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(p1[1], -0.6086337670823762701, places=12)
         self.assertAlmostEqual(p1[2], -0.2167355431320546947, places=12)
 
+    def test_ldn(self):
+        ob = np.array([(-0.974170437, -0.2115201, -0.0917583114)])
+        sc = np.array([(-0.763276255, -0.608633767, -0.216735543)])
+        b0 = erfa.LDBODY((0.00028574,
+                          3e-10,
+                          np.array(((-7.81014427,-5.60956681,-1.98079819),
+                               (0.0030723249,-0.00406995477,-0.00181335842)))))
+        b1 = erfa.LDBODY((0.00095435,
+                          3e-9,
+                          np.array(((0.738098796, 4.63658692,1.9693136),
+                           (-0.00755816922, 0.00126913722, 0.000727999001)))))
+        b2 = erfa.LDBODY((1.0,
+                          6e-6,
+                          np.array(((-0.000712174377, -0.00230478303, -0.00105865966),
+                           (6.29235213e-6, -3.30888387e-7, -2.96486623e-7)))))
+        l = [[b0, b1, b2]]
+        sn = erfa.ldn(l, ob, sc)[0]
+        self.assertAlmostEqual(sn[0], -0.7632762579693333866, places=12)
+        self.assertAlmostEqual(sn[1], -0.6086337636093002660, places=12)
+        self.assertAlmostEqual(sn[2], -0.2167355420646328159, places=12)
+
 ## Astronomy/SpaceMotion 
     def test_pmsafe(self):
         ra1 = np.array([1.234])

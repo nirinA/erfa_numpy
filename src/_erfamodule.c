@@ -201,6 +201,34 @@ fail:
 }
 
 static void
+_to_c_posvel(PyObject *p, double pv[2][3])
+{
+    int i,j;
+    PyObject *a, *iter = NULL;
+    iter = PyArray_IterNew(p);
+    for (i=0;i<2;i++) {
+        for (j=0;j<3;j++) {
+            a = PyArray_GETITEM(p, PyArray_ITER_DATA(iter));
+            if (a == NULL) {
+                PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                goto fail;
+            }
+            Py_INCREF(a);
+            pv[i][j] = (double)PyFloat_AsDouble(a);
+            Py_DECREF(a);
+            PyArray_ITER_NEXT(iter);
+        }
+    }
+    Py_DECREF(iter);
+    return;
+
+fail:
+    Py_XDECREF(a);
+    Py_XDECREF(iter);
+    return;
+
+}
+static void
 _to_c_matrix(PyObject *p, double m[3][3])
 {
     int i,j;
@@ -227,6 +255,43 @@ fail:
     Py_XDECREF(iter);
     return;
 
+}
+
+static void
+_to_c_ldbody(PyObject *l, eraLDBODY b)
+{
+    int j, k;
+    double bm, dl, pv[2][3];
+    PyObject *pybm = NULL, *pydl = NULL, *pypv = NULL;
+
+    pybm = PyStructSequence_GET_ITEM(l, 0);
+    Py_INCREF(pybm);
+    bm = (double)PyFloat_AsDouble(pybm);
+    if (bm == -1 && PyErr_Occurred()) goto fail;
+    b.bm = bm;
+    Py_DECREF(pybm);
+    pydl = PyStructSequence_GET_ITEM(l, 1);
+    Py_INCREF(pydl);
+    dl = (double)PyFloat_AsDouble(pydl);
+    if (dl == -1 && PyErr_Occurred()) goto fail;
+    b.dl = dl;
+    Py_DECREF(pydl);
+    pypv = PyStructSequence_GET_ITEM(l, 2);
+    Py_INCREF(pypv);
+    _to_c_posvel(pypv, pv);
+    for (j=0;j<2;j++) {
+        for (k=0;k<3;k++) {
+            b.pv[j][k] = pv[j][k];
+        }
+    }
+    Py_DECREF(pypv);
+    return;
+
+fail:
+    Py_XDECREF(pybm);
+    Py_XDECREF(pydl);
+    Py_XDECREF(pypv);
+    return;
 }
 
 static eraASTROM
@@ -2043,6 +2108,126 @@ PyDoc_STRVAR(_erfa_ld_doc,
 "    dlim   deflection limiter\n"
 "Returned:\n"
 "    p1     observer to deflected source (unit vector)");
+
+static PyObject *
+_erfa_ldn(PyObject *self, PyObject *args)
+{
+    double *ob, *sc, *sn;
+    PyObject *pyldbody, *ldbody, *pyob, *pysc;
+    PyObject *aob, *asc;
+    PyArrayObject *pysn = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[2];
+    int ndim, i;
+    int n, len;
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                                 &PyList_Type, &pyldbody,
+                                 &PyArray_Type, &pyob,
+                                 &PyArray_Type, &pysc))
+        return NULL;
+    aob = PyArray_FROM_OTF(pyob, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    asc = PyArray_FROM_OTF(pysc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aob == NULL || asc == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aob);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aob);
+    len = (int)PyList_Size(pyldbody);
+    if (dims[0] != PyArray_DIMS(asc)[0] ||
+        dims[0] != len) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    pysn = (PyArrayObject *) PyArray_Zeros(2, dim_out, dsc, 0);
+    if (NULL == pysn) {
+        goto fail;
+    }
+    ob = (double *)PyArray_DATA(aob);
+    sc = (double *)PyArray_DATA(asc);
+    sn = (double *)PyArray_DATA(pysn);
+
+    for (i=0;i<dims[0];i++) {
+        ldbody = PyList_GetItem(pyldbody, i);
+        Py_INCREF(ldbody);
+        n = (int)PyList_Size(ldbody);
+        eraLDBODY b[n];
+        int j;
+        PyObject *pyl, *pybm, *pydl, *pypv;
+        for (j=0;j<n;j++) {
+            pyl = PyList_GetItem(ldbody, j);
+            Py_INCREF(pyl);
+            pybm = PyStructSequence_GET_ITEM(pyl, 0);
+            Py_INCREF(pybm);
+            b[j].bm = (double)PyFloat_AsDouble(pybm);
+            Py_DECREF(pybm);
+            Py_DECREF(pyl);
+
+            Py_INCREF(pyl);
+            pydl = PyStructSequence_GET_ITEM(pyl, 1);
+            Py_INCREF(pydl);
+            b[j].dl = (double)PyFloat_AsDouble(pydl);
+            Py_DECREF(pydl);
+            Py_DECREF(pyl);
+
+            Py_INCREF(pyl);
+            pypv = PyStructSequence_GET_ITEM(pyl, 2);
+            Py_INCREF(pypv);
+            int k,l;
+            PyObject *a = NULL, *iter = NULL;
+            iter = PyArray_IterNew(pypv);
+            for (k=0;k<2;k++) {
+                for (l=0;l<3;l++) {
+                    a = PyArray_GETITEM(pypv, PyArray_ITER_DATA(iter));
+                    if (a == NULL) {
+                        PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                        Py_XDECREF(a);
+                        Py_XDECREF(pypv);
+                        return NULL;
+                    }
+                    Py_INCREF(a);
+                    b[j].pv[k][l] = (double)PyFloat_AsDouble(a);
+                    Py_DECREF(a);
+                    PyArray_ITER_NEXT(iter);
+                }
+            }
+            PyArray_ITER_RESET(iter);
+            Py_DECREF(iter);
+
+            Py_DECREF(pypv);
+            Py_DECREF(pyl);
+            
+        }
+        Py_DECREF(ldbody);
+        eraLdn(n, b, &ob[i*3], &sc[i*3], &sn[i*3]);
+    }
+    return PyArray_Return(pysn);
+
+fail:
+    Py_XDECREF(aob);
+    Py_XDECREF(asc);
+    Py_XDECREF(pysn);
+    Py_XDECREF(pyldbody);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_ldn_doc,
+"\nld(b[], ob[3], sc[3]) -> sn[3]\n"
+"For a star, apply light deflection by multiple solar-system bodies,\n"
+"as part of transforming coordinate direction into natural direction.\n"
+"Given:\n"
+"    n    number of bodies\n"
+"    b    data for each of the n bodies\n"
+"    ob   barycentric position of the observer (au)\n"
+"    sc   observer to star coord direction (unit vector)\n"
+"Returned:\n"
+"    sn    observer to deflected star (unit vector)");
 
 static PyObject *
 _erfa_pmsafe(PyObject *self, PyObject *args)
@@ -13377,6 +13562,7 @@ static PyMethodDef _erfa_methods[] = {
     {"atciq", _erfa_atciq, METH_VARARGS, _erfa_atciq_doc},
     {"aticq", _erfa_aticq, METH_VARARGS, _erfa_aticq_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
+    {"ldn", _erfa_ldn, METH_VARARGS, _erfa_ldn_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"pvstar", _erfa_pvstar, METH_VARARGS, _erfa_pvstar_doc},
     {"starpv", _erfa_starpv, METH_VARARGS, _erfa_starpv_doc},
