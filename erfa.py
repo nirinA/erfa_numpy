@@ -258,7 +258,11 @@ def ldsun(p, e, em):
 def pmpx(rc, dc, pr, pd, px, rv, pmt, pob):
     check_args(rc, dc, pr, pd, px, rv, pmt, pob)
     return _erfa.pmpx(rc, dc, pr, pd, px, rv, pmt, pob)
-    
+
+def refco(phpa, tc, rh, wl):
+    check_args(phpa, tc, rh, wl)
+    return _erfa.refco(phpa, tc, rh, wl)
+
 ## Astronomy/Ephemerides
 def epv00(d1,d2):
     check_args(d1,d2)

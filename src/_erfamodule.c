@@ -4274,6 +4274,204 @@ PyDoc_STRVAR(_erfa_starpm_doc,
 "   rv2     radial velocity (km/s, +ve = receding), after");
 
 static PyObject *
+_erfa_pvtob(PyObject *self, PyObject *args)
+{
+    double *elong, *phi, *hm, *xp, *yp, *sp, *theta, pv[2][3];
+    PyObject *pyelong, *pyphi, *pyhm, *pyxp, *pyyp, *pysp, *pytheta;
+    PyObject *aelong, *aphi, *ahm, *axp, *ayp, *asp, *atheta;
+    PyArrayObject *pypv = NULL;
+    PyObject *pv_iter = NULL;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!",
+                                 &PyArray_Type, &pyelong,
+                                 &PyArray_Type, &pyphi,
+                                 &PyArray_Type, &pyhm,
+                                 &PyArray_Type, &pyxp,
+                                 &PyArray_Type, &pyyp,
+                                 &PyArray_Type, &pysp,
+                                 &PyArray_Type, &pytheta)) {
+        return NULL;
+    }
+    aelong = PyArray_FROM_OTF(pyelong, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphi = PyArray_FROM_OTF(pyphi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ahm = PyArray_FROM_OTF(pyhm, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    axp = PyArray_FROM_OTF(pyxp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ayp = PyArray_FROM_OTF(pyyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    asp = PyArray_FROM_OTF(pysp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    atheta = PyArray_FROM_OTF(pytheta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aelong == NULL || aphi == NULL || ahm == NULL || axp == NULL ||
+        ayp == NULL || asp == NULL || atheta == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aelong);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aelong);
+    if (dims[0] != PyArray_DIMS(aphi)[0] || dims[0] != PyArray_DIMS(ahm)[0] ||
+        dims[0] != PyArray_DIMS(axp)[0] || dims[0] != PyArray_DIMS(ayp)[0] ||
+        dims[0] != PyArray_DIMS(asp)[0] || dims[0] != PyArray_DIMS(atheta)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    elong = (double *)PyArray_DATA(aelong);
+    phi = (double *)PyArray_DATA(aphi);
+    hm = (double *)PyArray_DATA(ahm);
+    xp = (double *)PyArray_DATA(axp);
+    yp = (double *)PyArray_DATA(ayp);
+    sp = (double *)PyArray_DATA(asp);
+    theta = (double *)PyArray_DATA(atheta);
+    dim_out[0] = dims[0];
+    dim_out[1] = 2;
+    dim_out[2] = 3;
+    pypv = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pypv) {
+        goto fail;
+    }
+    pv_iter = PyArray_IterNew((PyObject*)pypv);
+    if (pv_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    for (i=0;i<dims[0];i++) {
+        eraPvtob(elong[i], phi[i], hm[i], xp[i], yp[i], sp[i], theta[i], pv);
+        int j,k;
+        for (j=0;j<2;j++) {
+            for (k=0;k<3;k++) {
+                if (PyArray_SETITEM(pypv, PyArray_ITER_DATA(pv_iter), PyFloat_FromDouble(pv[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set pv");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(pv_iter);
+            }
+        }
+    }
+    Py_DECREF(aelong);
+    Py_DECREF(aphi);
+    Py_DECREF(ahm);
+    Py_DECREF(axp);
+    Py_DECREF(ayp);
+    Py_DECREF(asp);
+    Py_DECREF(atheta);
+    Py_DECREF(pv_iter);
+    Py_INCREF(pypv);
+    return PyArray_Return(pypv);
+
+fail:
+    Py_XDECREF(aelong);
+    Py_XDECREF(aphi);
+    Py_XDECREF(ahm);
+    Py_XDECREF(axp);
+    Py_XDECREF(ayp);
+    Py_XDECREF(asp);
+    Py_XDECREF(atheta);
+    Py_XDECREF(pv_iter);
+    Py_XDECREF(pypv);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pvtob_doc,
+"\npvtob(elong, phi, hm, xp, yp, sp, theta) -> pv[2][3]\n"
+"Position and velocity of a terrestrial observing station.\n"
+"Given:\n"
+"    elong   double       longitude (radians, east +ve)\n"
+"    phi     double       latitude (geodetic, radians))\n"
+"    hm      double       height above ref. ellipsoid (geodetic, m)\n"
+"    xp,yp   double       coordinates of the pole (radians))\n"
+"    sp      double       the TIO locator s' (radians))\n"
+"    theta   double       Earth rotation angle (radians)\n"
+"Returned:\n"
+"    pv      position/velocity vector (m, m/s, CIRS)");
+
+static PyObject *
+_erfa_refco(PyObject *self, PyObject *args)
+{
+    double *phpa, *tc, *rh, *wl;
+    double *refa, *refb;
+    PyObject *pyphpa, *pytc, *pyrh, *pywl;
+    PyObject *aphpa, *atc, *arh, *awl;
+    PyArrayObject *pyrefa = NULL,  *pyrefb = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!",
+                                 &PyArray_Type, &pyphpa,
+                                 &PyArray_Type, &pytc,
+                                 &PyArray_Type, &pyrh,
+                                 &PyArray_Type, &pywl))
+        return NULL;
+    aphpa = PyArray_FROM_OTF(pyphpa, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    atc = PyArray_FROM_OTF(pytc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arh = PyArray_FROM_OTF(pyrh, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    awl = PyArray_FROM_OTF(pywl, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aphpa == NULL || atc == NULL || arh == NULL || awl == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aphpa);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aphpa);
+    if (dims[0] != PyArray_DIMS(atc)[0] ||
+        dims[0] != PyArray_DIMS(arh)[0] || dims[0] != PyArray_DIMS(awl)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    phpa = (double *)PyArray_DATA(aphpa);
+    tc = (double *)PyArray_DATA(atc);
+    rh = (double *)PyArray_DATA(arh);
+    wl = (double *)PyArray_DATA(awl);
+    pyrefa = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyrefb = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyrefa || NULL == pyrefb) goto fail;
+    refa = (double *)PyArray_DATA(pyrefa);
+    refb = (double *)PyArray_DATA(pyrefb);
+
+    for (i=0;i<dims[0];i++) {
+        eraRefco(phpa[i], tc[i], rh[i], wl[i], &refa[i], &refb[i]);
+    }
+    Py_DECREF(aphpa);
+    Py_DECREF(atc);
+    Py_DECREF(arh);
+    Py_DECREF(awl);
+    Py_INCREF(pyrefa);
+    Py_INCREF(pyrefb);
+    return Py_BuildValue("OO", pyrefa, pyrefb);
+
+fail:
+    Py_XDECREF(aphpa);
+    Py_XDECREF(atc);
+    Py_XDECREF(arh);
+    Py_XDECREF(awl);
+    Py_XDECREF(pyrefa);
+    Py_XDECREF(pyrefb);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_refco_doc,
+"\nrefco(phpa, tc, rh, wl) -> refa, refb\n"
+"Determine the constants A and B in the atmospheric refraction model\n"
+"dZ = A tan Z + B tan^3 Z.\n"
+"\n"
+"Z is the ''observed'' zenith distance (i.e. affected by refraction)\n"
+"and dZ is what to add to Z to give the ''topocentric'' (i.e. in vacuo)\n"
+"zenith distance.\n"
+"Given:\n"
+"   phpa   pressure at the observer (hPa = millibar)\n"
+"   tc     ambient temperature at the observer (deg C)\n"
+"   rh     relative humidity at the observer (range 0-1)\n"
+"   wl     wavelength (micrometers)\n"
+"Returned:\n"
+"   refa   tan Z coefficient (radians)\n"
+"   refb   tan^3 Z coefficient (radians)");
+
+static PyObject *
 _erfa_bi00(PyObject *self)
 {
     double dpsibi, depsbi, dra;
@@ -14444,120 +14642,6 @@ PyDoc_STRVAR(_erfa_gd2gce_doc,
 "    xyz        geocentric vector in meters");
 
 static PyObject *
-_erfa_pvtob(PyObject *self, PyObject *args)
-{
-    double *elong, *phi, *hm, *xp, *yp, *sp, *theta, pv[2][3];
-    PyObject *pyelong, *pyphi, *pyhm, *pyxp, *pyyp, *pysp, *pytheta;
-    PyObject *aelong, *aphi, *ahm, *axp, *ayp, *asp, *atheta;
-    PyArrayObject *pypv = NULL;
-    PyObject *pv_iter = NULL;
-    PyArray_Descr *dsc;
-    dsc = PyArray_DescrFromType(NPY_DOUBLE);
-    npy_intp *dims, dim_out[3];
-    int ndim, i;
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!",
-                                 &PyArray_Type, &pyelong,
-                                 &PyArray_Type, &pyphi,
-                                 &PyArray_Type, &pyhm,
-                                 &PyArray_Type, &pyxp,
-                                 &PyArray_Type, &pyyp,
-                                 &PyArray_Type, &pysp,
-                                 &PyArray_Type, &pytheta)) {
-        return NULL;
-    }
-    aelong = PyArray_FROM_OTF(pyelong, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    aphi = PyArray_FROM_OTF(pyphi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    ahm = PyArray_FROM_OTF(pyhm, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    axp = PyArray_FROM_OTF(pyxp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    ayp = PyArray_FROM_OTF(pyyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    asp = PyArray_FROM_OTF(pysp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    atheta = PyArray_FROM_OTF(pytheta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    if (aelong == NULL || aphi == NULL || ahm == NULL || axp == NULL ||
-        ayp == NULL || asp == NULL || atheta == NULL) {
-        goto fail;
-    }
-    ndim = PyArray_NDIM(aelong);
-    if (!ndim) {
-        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
-        goto fail;
-    }
-    dims = PyArray_DIMS(aelong);
-    if (dims[0] != PyArray_DIMS(aphi)[0] || dims[0] != PyArray_DIMS(ahm)[0] ||
-        dims[0] != PyArray_DIMS(axp)[0] || dims[0] != PyArray_DIMS(ayp)[0] ||
-        dims[0] != PyArray_DIMS(asp)[0] || dims[0] != PyArray_DIMS(atheta)[0]) {
-        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
-        goto fail;
-    }    
-    elong = (double *)PyArray_DATA(aelong);
-    phi = (double *)PyArray_DATA(aphi);
-    hm = (double *)PyArray_DATA(ahm);
-    xp = (double *)PyArray_DATA(axp);
-    yp = (double *)PyArray_DATA(ayp);
-    sp = (double *)PyArray_DATA(asp);
-    theta = (double *)PyArray_DATA(atheta);
-    dim_out[0] = dims[0];
-    dim_out[1] = 2;
-    dim_out[2] = 3;
-    pypv = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
-    if (NULL == pypv) {
-        goto fail;
-    }
-    pv_iter = PyArray_IterNew((PyObject*)pypv);
-    if (pv_iter == NULL) {
-        PyErr_SetString(_erfaError, "cannot create iterators");
-        goto fail;
-    }
-    for (i=0;i<dims[0];i++) {
-        eraPvtob(elong[i], phi[i], hm[i], xp[i], yp[i], sp[i], theta[i], pv);
-        int j,k;
-        for (j=0;j<2;j++) {
-            for (k=0;k<3;k++) {
-                if (PyArray_SETITEM(pypv, PyArray_ITER_DATA(pv_iter), PyFloat_FromDouble(pv[j][k]))) {
-                    PyErr_SetString(_erfaError, "unable to set pv");
-                    goto fail;
-                }
-                PyArray_ITER_NEXT(pv_iter);
-            }
-        }
-    }
-    Py_DECREF(aelong);
-    Py_DECREF(aphi);
-    Py_DECREF(ahm);
-    Py_DECREF(axp);
-    Py_DECREF(ayp);
-    Py_DECREF(asp);
-    Py_DECREF(atheta);
-    Py_DECREF(pv_iter);
-    Py_INCREF(pypv);
-    return PyArray_Return(pypv);
-
-fail:
-    Py_XDECREF(aelong);
-    Py_XDECREF(aphi);
-    Py_XDECREF(ahm);
-    Py_XDECREF(axp);
-    Py_XDECREF(ayp);
-    Py_XDECREF(asp);
-    Py_XDECREF(atheta);
-    Py_XDECREF(pv_iter);
-    Py_XDECREF(pypv);
-    return NULL;
-}
-
-PyDoc_STRVAR(_erfa_pvtob_doc,
-"\npvtob(elong, phi, hm, xp, yp, sp, theta) -> pv[2][3]\n"
-"Position and velocity of a terrestrial observing station.\n"
-"Given:\n"
-"    elong   double       longitude (radians, east +ve)\n"
-"    phi     double       latitude (geodetic, radians))\n"
-"    hm      double       height above ref. ellipsoid (geodetic, m)\n"
-"    xp,yp   double       coordinates of the pole (radians))\n"
-"    sp      double       the TIO locator s' (radians))\n"
-"    theta   double       Earth rotation angle (radians)\n"
-"Returned:\n"
-"    pv      position/velocity vector (m, m/s, CIRS)");
-
-static PyObject *
 _erfa_rxp(PyObject *self, PyObject *args)
 {
     double r[3][3], p[3], rp[3];
@@ -15074,6 +15158,8 @@ static PyMethodDef _erfa_methods[] = {
     {"pvstar", _erfa_pvstar, METH_VARARGS, _erfa_pvstar_doc},
     {"starpv", _erfa_starpv, METH_VARARGS, _erfa_starpv_doc},
     {"starpm", _erfa_starpm, METH_VARARGS, _erfa_starpm_doc},
+    {"pvtob", _erfa_pvtob, METH_VARARGS, _erfa_pvtob_doc},
+    {"refco", _erfa_refco, METH_VARARGS, _erfa_refco_doc},
     {"bi00", (PyCFunction)_erfa_bi00, METH_NOARGS, _erfa_bi00_doc},
     {"bp00", _erfa_bp00, METH_VARARGS, _erfa_bp00_doc},
     {"bp06", _erfa_bp06, METH_VARARGS, _erfa_bp06_doc},
@@ -15207,7 +15293,6 @@ static PyMethodDef _erfa_methods[] = {
     {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},
     {"gd2gc", _erfa_gd2gc, METH_VARARGS, _erfa_gd2gc_doc},
     {"gd2gce", _erfa_gd2gce, METH_VARARGS, _erfa_gd2gce_doc},
-    {"pvtob", _erfa_pvtob, METH_VARARGS, _erfa_pvtob_doc},
     {"rxp", _erfa_rxp, METH_VARARGS, _erfa_rxp_doc},
     {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
     {"rx", _erfa_rx, METH_VARARGS, _erfa_rx_doc},

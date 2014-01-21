@@ -766,6 +766,15 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(pco[1], 0.6651097085397855317, places=12)
         self.assertAlmostEqual(pco[2], 0.7095257765896359847, places=12)
 
+    def test_refco(self):
+        phpa = np.array([800.0])
+        tc = np.array([10.0])
+        rh = np.array([0.9])
+        wl = np.array([0.4])
+        refa, refb = erfa.refco(phpa, tc, rh, wl)
+        self.assertAlmostEqual(refa[0], 0.2264949956241415009e-3, places=15)
+        self.assertAlmostEqual(refb[0], -0.2598658261729343970e-6, places=18)
+
 ## Astronomy/SpaceMotion 
     def test_pmsafe(self):
         ra1 = np.array([1.234])
