@@ -218,6 +218,10 @@ def aticqn(ri, di, astrom, ldbody):
     check_ldbody(ldbody)
     return _erfa.aticqn(ri, di, astrom, ldbody)
 
+def atio13(ri, di, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl):
+    check_args(ri, di, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+    return _erfa.atio13(ri, di, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+    
 def ld(bm, p, q, e, em, dlim):
     check_args(bm, p, q, e, em, dlim)
     return _erfa.ld(bm, p, q, e, em, dlim)

@@ -569,6 +569,28 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rc[0], 2.709999575032685412, places=12)
         self.assertAlmostEqual(dc[0], 0.1739999656317778034, places=12)
 
+    def test_atio13(self):
+        ri = np.array([2.710121572969038991])
+        di = np.array([0.1729371367218230438])
+        utc1 = np.array([2456384.5])
+        utc2 = np.array([0.969254051])
+        dut1 = np.array([0.1550675])
+        elong = np.array([-0.527800806])
+        phi = np.array([-1.2345856])
+        hm = np.array([2738.0])
+        xp = np.array([2.47230737e-7])
+        yp = np.array([1.82640464e-6])
+        phpa = np.array([731.0])
+        tc = np.array([12.8])
+        rh = np.array([0.59])
+        wl = np.array([0.55])
+        aob, zob, hob, dob, rob = erfa.atio13(ri, di, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+        self.assertAlmostEqual(aob[0], 0.09233952224794989993, places=12)
+        self.assertAlmostEqual(zob[0], 1.407758704513722461, places=12)
+        self.assertAlmostEqual(hob[0], -0.09247619879782006106, places=12)
+        self.assertAlmostEqual(dob[0], 0.1717653435758265198, places=12)
+        self.assertAlmostEqual(rob[0], 2.710085107986886201, places=12)
+
     def test_ld(self):
         bm = np.array([0.00028574])
         p = np.array([[-0.763276255, -0.608633767, -0.216735543]])
