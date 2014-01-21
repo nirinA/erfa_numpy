@@ -3785,6 +3785,104 @@ PyDoc_STRVAR(_erfa_pmsafe_doc,
 "    rv2    radial velocity (km/s, +ve = receding), after");
 
 static PyObject *
+_erfa_pmpx(PyObject *self, PyObject *args)
+{
+    double *rc, *dc, *pr, *pd, *px, *rv, *pmt, *pob, *pco;
+    PyObject *pyrc, *pydc, *pypr, *pypd, *pypx, *pyrv, *pypmt, *pypob;
+    PyObject *arc, *adc, *apr, *apd, *apx, *arv, *apmt, *apob;
+    PyArrayObject *pypco = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!",
+                                 &PyArray_Type, &pyrc,
+                                 &PyArray_Type, &pydc,
+                                 &PyArray_Type, &pypr,
+                                 &PyArray_Type, &pypd,
+                                 &PyArray_Type, &pypx,
+                                 &PyArray_Type, &pyrv,
+                                 &PyArray_Type, &pypmt,
+                                 &PyArray_Type, &pypob))
+        return NULL;
+    arc = PyArray_FROM_OTF(pyrc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adc = PyArray_FROM_OTF(pydc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apr = PyArray_FROM_OTF(pypr, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apd = PyArray_FROM_OTF(pypd, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apx = PyArray_FROM_OTF(pypx, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arv = PyArray_FROM_OTF(pyrv, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apmt = PyArray_FROM_OTF(pypmt, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apob = PyArray_FROM_OTF(pypob, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (arc == NULL || adc == NULL || apr == NULL || apd == NULL ||
+        apx == NULL || arv == NULL || apmt == NULL || apob == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(apob);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(apob);
+    if (dims[0] != PyArray_DIMS(arc)[0] || dims[0] != PyArray_DIMS(adc)[0] ||
+        dims[0] != PyArray_DIMS(apr)[0] || dims[0] != PyArray_DIMS(apd)[0] ||
+        dims[0] != PyArray_DIMS(apx)[0] || dims[0] != PyArray_DIMS(arv)[0] ||
+        dims[0] != PyArray_DIMS(apmt)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    rc = (double *)PyArray_DATA(arc);
+    dc = (double *)PyArray_DATA(adc);
+    pr = (double *)PyArray_DATA(apr);
+    pd = (double *)PyArray_DATA(apd);
+    px = (double *)PyArray_DATA(apx);
+    rv = (double *)PyArray_DATA(arv);
+    pmt = (double *)PyArray_DATA(apmt);
+    pob = (double *)PyArray_DATA(apob);
+    pypco = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pco = (double *)PyArray_DATA(pypco);
+
+    for (i=0;i<dims[0];i++) {
+        eraPmpx(rc[i], dc[i], pr[i], pd[i], px[i], rv[i], pmt[i], &pob[i], &pco[i]);
+    }
+    Py_DECREF(arc);
+    Py_DECREF(adc);
+    Py_DECREF(apr);
+    Py_DECREF(apd);
+    Py_DECREF(apx);
+    Py_DECREF(arv);
+    Py_DECREF(apmt);
+    Py_DECREF(apob);
+    Py_INCREF(pypco);
+    return PyArray_Return(pypco);
+
+fail:
+    Py_XDECREF(arc);
+    Py_XDECREF(adc);
+    Py_XDECREF(apr);
+    Py_XDECREF(apd);
+    Py_XDECREF(apx);
+    Py_XDECREF(arv);
+    Py_XDECREF(apmt);
+    Py_XDECREF(apob);
+    Py_XDECREF(pypco);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pmpx_doc,
+"\npmpx(rc, dc, pr, pd, px, rv, pmt, pob) -> pco[3]\n"
+"Proper motion and parallax.\n"
+"Given:\n"
+"    rc,dc  ICRS RA,Dec at catalog epoch (radians)\n"
+"    pr     RA proper motion (radians/year; Note 1)\n"
+"    pd     Dec proper motion (radians/year)\n"
+"    px     parallax (arcsec)\n"
+"    rv     radial velocity (km/s, +ve if receding)\n"
+"    pmt    proper motion time interval (SSB, Julian years)\n"
+"    pob    SSB to observer vector (au)\n"
+"Returned:\n"
+"    pco    coordinate direction (BCRS unit vector)");
+
+static PyObject *
 _erfa_pvstar(PyObject *self, PyObject *args)
 {
     double pv[2][3], *ra, *dec, *pmr, *pmd, *px, *rv;
@@ -14972,6 +15070,7 @@ static PyMethodDef _erfa_methods[] = {
     {"ldn", _erfa_ldn, METH_VARARGS, _erfa_ldn_doc},
     {"ldsun", _erfa_ldsun, METH_VARARGS, _erfa_ldsun_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
+    {"pmpx", _erfa_pmpx, METH_VARARGS, _erfa_pmpx_doc},
     {"pvstar", _erfa_pvstar, METH_VARARGS, _erfa_pvstar_doc},
     {"starpv", _erfa_starpv, METH_VARARGS, _erfa_starpv_doc},
     {"starpm", _erfa_starpm, METH_VARARGS, _erfa_starpm_doc},

@@ -752,6 +752,20 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(p1[1], -0.6086337635262647900, places=12)
         self.assertAlmostEqual(p1[2], -0.2167355419322321302, places=12)
 
+    def test_pmpx(self):
+        rc = np.array([1.234])
+        dc = np.array([0.789])
+        pr = np.array([1e-5])
+        pd = np.array([-2e-5])
+        px = np.array([1e-2])
+        rv = np.array([10.0])
+        pmt = np.array([8.75])
+        pob = np.array([(0.9, 0.4, 0.1)])
+        pco = erfa.pmpx(rc, dc, pr, pd, px, rv, pmt, pob)[0]
+        self.assertAlmostEqual(pco[0], 0.2328137623960308440, places=12)
+        self.assertAlmostEqual(pco[1], 0.6651097085397855317, places=12)
+        self.assertAlmostEqual(pco[2], 0.7095257765896359847, places=12)
+
 ## Astronomy/SpaceMotion 
     def test_pmsafe(self):
         ra1 = np.array([1.234])
