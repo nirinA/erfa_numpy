@@ -210,6 +210,14 @@ def aticq(ri, di, astrom):
     check_astrom(astrom)
     return _erfa.aticq(ri, di, astrom)
 
+def aticqn(ri, di, astrom, ldbody):
+    if len(ri) != len(astrom):
+        raise _erfa.error('shape of arguments are not compatible')
+    check_args(ri, di)
+    check_astrom(astrom)
+    check_ldbody(ldbody)
+    return _erfa.aticqn(ri, di, astrom, ldbody)
+
 def ld(bm, p, q, e, em, dlim):
     check_args(bm, p, q, e, em, dlim)
     return _erfa.ld(bm, p, q, e, em, dlim)

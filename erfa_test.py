@@ -546,28 +546,28 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(rc[0], 2.710126504531374930, places=12)
         self.assertAlmostEqual(dc[0], 0.1740632537628342320, places=12)
 
-##    def test_aticqn(self):
-##        date1 = np.array([2456165.5])
-##        date2 = np.array([0.401182685])
-##        astrom, eo = erfa.apci13(date1, date2)[0]
-##        ri = np.array([2.709994899247599271])
-##        di = np.array([0.1728740720983623469])
-##        b0 = erfa.LDBODY((0.00028574,
-##                          3e-10,
-##                          np.array(((-7.81014427,-5.60956681,-1.98079819),
-##                           (0.0030723249,-0.00406995477,-0.00181335842)))))
-##        b1 = erfa.LDBODY((0.00095435,
-##                          3e-9,
-##                          np.array(((0.738098796, 4.63658692,1.9693136),
-##                           (-0.00755816922, 0.00126913722, 0.000727999001)))))
-##        b2 = erfa.LDBODY((1.0,
-##                          6e-6,
-##                          np.array(((-0.000712174377, -0.00230478303, -0.00105865966),
-##                           (6.29235213e-6, -3.30888387e-7, -2.96486623e-7)))))
-##        l = [b0, b1, b2]
-##        rc, dc = erfa.aticqn(ri, di, astrom, l)
-##        self.assertAlmostEqual(rc[0], 2.709999575032685412, places=12)
-##        self.assertAlmostEqual(dc[0], 0.1739999656317778034, places=12)
+    def test_aticqn(self):
+        date1 = np.array([2456165.5])
+        date2 = np.array([0.401182685])
+        astrom, eo = erfa.apci13(date1, date2)[0]
+        ri = np.array([2.709994899247599271])
+        di = np.array([0.1728740720983623469])
+        b0 = erfa.LDBODY((0.00028574,
+                          3e-10,
+                          np.array(((-7.81014427,-5.60956681,-1.98079819),
+                           (0.0030723249,-0.00406995477,-0.00181335842)))))
+        b1 = erfa.LDBODY((0.00095435,
+                          3e-9,
+                          np.array(((0.738098796, 4.63658692,1.9693136),
+                           (-0.00755816922, 0.00126913722, 0.000727999001)))))
+        b2 = erfa.LDBODY((1.0,
+                          6e-6,
+                          np.array(((-0.000712174377, -0.00230478303, -0.00105865966),
+                           (6.29235213e-6, -3.30888387e-7, -2.96486623e-7)))))
+        l = [b0, b1, b2]
+        rc, dc = erfa.aticqn(ri, di, [astrom], [l])
+        self.assertAlmostEqual(rc[0], 2.709999575032685412, places=12)
+        self.assertAlmostEqual(dc[0], 0.1739999656317778034, places=12)
 
     def test_ld(self):
         bm = np.array([0.00028574])
