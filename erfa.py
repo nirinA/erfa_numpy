@@ -1,7 +1,7 @@
 '''ERFA wrapper
 note:
     af2a has different form of arguments: array of [h,m,s]
-    tf2a : array of [h], array of [m] , array of [s] 
+    or is this to be: array of [h], array of [m] , array of [s] 
 '''
 import math
 import numpy as np
@@ -852,7 +852,11 @@ def tf2a(hms):
 ##    hour = cast_to_int32(hour)
 ##    min = cast_to_int32(min)
 ##    return _erfa.tf2a(hour, min, sec)
-##
+
+def tf2d(hms):
+    check_args(hms)
+    return _erfa.tf2d(hms)
+
 ## VectorMatrix/BuildRotations 
 def rx(phi, r):
     check_args(phi, r)

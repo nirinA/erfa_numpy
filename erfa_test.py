@@ -2319,6 +2319,10 @@ class Validate(unittest.TestCase):
         a = erfa.tf2a(np.array([[4, 58, 20.2]]))[0]
         self.assertAlmostEqual(a, 1.301739278189537429, 12)
         
+    def test_tf2d(self):
+        d = erfa.tf2d(np.array([[23,55,10.9]]))[0]
+        self.assertAlmostEqual(d, 0.9966539351851851852, 12)
+
 
 ## VectorMatrix/BuildRotations 
     def test_rx(self):

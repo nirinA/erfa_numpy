@@ -15337,6 +15337,101 @@ PyDoc_STRVAR(_erfa_tf2a_doc,
 "Returned:\n"
 "   rad     angle in radians");
 
+static PyObject *
+_erfa_tf2d(PyObject *self, PyObject *args)
+{
+    char s = '+';
+    int ihour, imin, status;
+    double sec, *days;
+    PyObject *pyin;
+    PyObject *aihour, *aimin, *asec;
+    PyObject *in_iter = NULL;
+    PyArrayObject *pydays = NULL;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyin)) {
+        return NULL;
+    }
+    ndim = PyArray_NDIM(pyin);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pyin);
+    dim_out[0] = dims[0];
+    pydays = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pydays) goto fail;
+    days = (double *)PyArray_DATA(pydays);
+    in_iter = PyArray_IterNew((PyObject*)pyin);
+    if (in_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+
+    for (i=0;i<dims[0];i++) {
+        aihour = PyArray_GETITEM(pyin, PyArray_ITER_DATA(in_iter));
+        if (aihour == NULL) {
+            PyErr_SetString(_erfaError, "cannot retrieve data from args");
+            goto fail;
+        }
+        Py_INCREF(aihour);
+        ihour = (int)PyLong_AsLong(aihour);
+        if (ihour == -1 && PyErr_Occurred()) goto fail;
+        Py_DECREF(aihour);
+        PyArray_ITER_NEXT(in_iter);
+        aimin = PyArray_GETITEM(pyin, PyArray_ITER_DATA(in_iter));
+        if (aimin == NULL) {
+            PyErr_SetString(_erfaError, "cannot retrieve data from args");
+            goto fail;
+        }
+        Py_INCREF(aimin);
+        imin = (int)PyLong_AsLong(aimin);
+        if (imin == -1 && PyErr_Occurred()) goto fail;
+        Py_DECREF(aimin);
+        PyArray_ITER_NEXT(in_iter);
+        asec = PyArray_GETITEM(pyin, PyArray_ITER_DATA(in_iter));
+        if (asec == NULL) {
+            PyErr_SetString(_erfaError, "cannot retrieve data from args");
+            goto fail;
+        }
+        Py_INCREF(asec);
+        sec = (double)PyFloat_AsDouble(asec);
+        if (sec == -1 && PyErr_Occurred()) goto fail;
+        Py_DECREF(asec);
+        PyArray_ITER_NEXT(in_iter);
+        if (ihour < 0) s = '-';
+        status = eraTf2d(s, abs(ihour), imin, sec, &days[i]);
+        if (status == 1) {
+            PyErr_WarnEx(PyExc_Warning, "hour outside range 0-23", 1);
+        }
+        else if (status == 2) {
+            PyErr_WarnEx(PyExc_Warning, "min outside range 0-59", 1);
+        }
+        else if (status == 3) {
+            PyErr_WarnEx(PyExc_Warning, "sec outside range 0-59", 1);
+        }
+    }
+    Py_DECREF(in_iter);
+    return PyArray_Return(pydays);
+
+fail:
+    Py_XDECREF(in_iter);
+    Py_XDECREF(pydays);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_tf2d_doc,
+"\ntf2d(hour, min, sec) -> days\n\n"
+"Convert hours, minutes, seconds to days.\n"
+"Given:\n"
+"   hour    hours\n"
+"   min     minutes\n"
+"   sec     seconds\n"
+"Returned:\n"
+"   days    interval in days");
+
 
 static PyMethodDef _erfa_methods[] = {
     {"ab", _erfa_ab, METH_VARARGS, _erfa_ab_doc},
@@ -15514,6 +15609,7 @@ static PyMethodDef _erfa_methods[] = {
     {"ry", _erfa_ry, METH_VARARGS, _erfa_ry_doc},
     {"rz", _erfa_rz, METH_VARARGS, _erfa_rz_doc},
     {"tf2a", _erfa_tf2a, METH_VARARGS, _erfa_tf2a_doc},
+    {"tf2d", _erfa_tf2d, METH_VARARGS, _erfa_tf2d_doc},
     {NULL,		NULL}		/* sentinel */
 };
 
