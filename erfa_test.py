@@ -615,6 +615,38 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(dob[0], 0.1717653435758265198, places=12)
         self.assertAlmostEqual(rob[0], 2.710085107986886201, places=12)
 
+    def test_atoc13(self):
+        utc1 = np.array([2456384.5])
+        utc2 = np.array([0.969254051])
+        dut1 = np.array([0.1550675])
+        elong = np.array([-0.527800806])
+        phi = np.array([-1.2345856])
+        hm = np.array([2738.0])
+        xp = np.array([2.47230737e-7])
+        yp = np.array([1.82640464e-6])
+        phpa = np.array([731.0])
+        tc = np.array([12.8])
+        rh = np.array([0.59])
+        wl = np.array([0.55])
+        ob1 = np.array([2.710085107986886201])
+        ob2 = np.array([0.1717653435758265198])
+        rc, dc = erfa.atoc13("R", ob1, ob2, utc1, utc2, dut1,
+                             elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+        self.assertAlmostEqual(rc[0], 2.709956744661000609, places=12)
+        self.assertAlmostEqual(dc[0], 0.1741696500895398562, places=12)
+        ob1 = np.array([-0.09247619879782006106])
+        ob2 = np.array([0.1717653435758265198])
+        rc, dc = erfa.atoc13("H", ob1, ob2, utc1, utc2, dut1,
+                             elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+        self.assertAlmostEqual(rc[0], 2.709956744661000609, places=12)
+        self.assertAlmostEqual(dc[0], 0.1741696500895398562, places=12)
+        ob1 = np.array([0.09233952224794989993])
+        ob2 = np.array([1.407758704513722461])
+        rc, dc = erfa.atoc13("A", ob1, ob2, utc1, utc2, dut1,
+                             elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+        self.assertAlmostEqual(rc[0], 2.709956744661000609, places=12)
+        self.assertAlmostEqual(dc[0], 0.1741696500895398562, places=12)
+
     def test_atoiq(self):
         utc1 = np.array([2456384.5])
         utc2 = np.array([0.969254051])

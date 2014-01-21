@@ -227,6 +227,10 @@ def atioq(ri, di, astrom):
     check_astrom(astrom)
     return _erfa.atioq(ri, di, astrom)
 
+def atoc13(c, ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl):
+    check_args(ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+    return _erfa.atoc13(c, ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+
 def atoiq(c, ob1, ob2, astrom):
     check_args(ob1, ob2)
     check_astrom(astrom)
