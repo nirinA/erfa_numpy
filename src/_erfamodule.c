@@ -2837,6 +2837,93 @@ PyDoc_STRVAR(_erfa_atio13_doc,
 "    rob    observed right ascension (CIO-based, radians)");
 
 static PyObject *
+_erfa_atoiq(PyObject *self, PyObject *args)
+{
+    const char *type;
+    double *ob1, *ob2;
+    double *ri, *di;
+    PyObject *pyob1, *pyob2;
+    PyObject *aob1, *aob2;
+    PyObject *pyastrom, *a;
+    PyArrayObject *pyri = NULL, *pydi = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i, len;
+    eraASTROM astrom;
+    if (!PyArg_ParseTuple(args, "sO!O!O!",
+                                 &type,
+                                 &PyArray_Type, &pyob1,
+                                 &PyArray_Type, &pyob2,
+                                 &PyList_Type, &pyastrom))      
+        return NULL;
+    aob1 = PyArray_FROM_OTF(pyob1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aob2 = PyArray_FROM_OTF(pyob2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aob1 == NULL || aob2 == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aob1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aob1);
+    len = (int)PyList_Size(pyastrom);
+    if (dims[0] != PyArray_DIMS(aob2)[0] || dims[0] != len) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    pyri = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydi = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyri || NULL == pydi) {
+        goto fail;
+    }
+    ob1 = (double *)PyArray_DATA(aob1);
+    ob2 = (double *)PyArray_DATA(aob2);
+    ri = (double *)PyArray_DATA(pyri);
+    di = (double *)PyArray_DATA(pydi);
+
+    for (i=0;i<dims[0];i++) {
+        a = PyList_GetItem(pyastrom, i);
+        Py_INCREF(a);
+        astrom = _to_c_astrom(a);
+        Py_DECREF(a);
+        if (strcmp("R", type) == 0 || strcmp("H", type) == 0 || strcmp("A", type) == 0) {
+            eraAtoiq(type, ob1[i], ob2[i], &astrom, &ri[i], &di[i]);
+        }
+        else {
+            PyErr_SetString(_erfaError, "unknown type of coordinates");
+            goto fail;
+        }
+    }
+    Py_DECREF(aob1);
+    Py_DECREF(aob2);
+    Py_INCREF(pyri);
+    Py_INCREF(pydi);
+    return Py_BuildValue("OO", pyri, pydi);
+fail:
+    Py_XDECREF(aob1);
+    Py_XDECREF(aob2);
+    Py_XDECREF(pyri);
+    Py_XDECREF(pydi);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_atoiq_doc,
+"\natoiq(type, ob1, ob2, astrom) -> ri, di\n"
+"Observed place at a groundbased site to to ICRS astrometric RA,Dec.\n"
+"The caller supplies UTC, site coordinates, ambient air conditions\n"
+"and observing wavelength.\n"
+"Given:\n"
+"    type   type of coordinates - ''R'', ''H'' or ''A''\n"
+"    ob1    observed Az, HA or RA (radians; Az is N=0,E=90)\n"
+"    ob2    observed ZD or Dec (radians)\n"
+"    astrom star-independent astrometry parameters\n"
+"Returned:\n"
+"    ri     CIRS right ascension (CIO-based, radians)\n"
+"    di     CIRS declination (radians)");
+
+static PyObject *
 _erfa_ld(PyObject *self, PyObject *args)
 {
     double *bm, *p, *q, *e, *em, *dlim, *p1;
@@ -14380,6 +14467,7 @@ static PyMethodDef _erfa_methods[] = {
     {"aticq", _erfa_aticq, METH_VARARGS, _erfa_aticq_doc},
     {"aticqn", _erfa_aticqn, METH_VARARGS, _erfa_aticqn_doc},
     {"atio13", _erfa_atio13, METH_VARARGS, _erfa_atio13_doc},
+    {"atoiq", _erfa_atoiq, METH_VARARGS, _erfa_atoiq_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"ldn", _erfa_ldn, METH_VARARGS, _erfa_ldn_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
