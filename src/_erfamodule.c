@@ -2837,6 +2837,100 @@ PyDoc_STRVAR(_erfa_atio13_doc,
 "    rob    observed right ascension (CIO-based, radians)");
 
 static PyObject *
+_erfa_atioq(PyObject *self, PyObject *args)
+{
+    double *ri, *di;
+    double *aob, *zob, *hob, *dob, *rob;
+    PyObject *pyri, *pydi;
+    PyObject *ari, *adi;
+    PyArrayObject *pyaob = NULL,  *pyzob = NULL, *pyhob = NULL, *pydob = NULL, *pyrob = NULL;
+    PyObject *pyastrom, *a;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i, len;
+    eraASTROM astrom;
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                          &PyArray_Type, &pyri,
+                          &PyArray_Type, &pydi,
+                          &PyList_Type, &pyastrom))      
+        return NULL;
+    ari = PyArray_FROM_OTF(pyri, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adi = PyArray_FROM_OTF(pydi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ari == NULL || adi == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ari);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ari);
+    len = (int)PyList_Size(pyastrom);
+    if (dims[0] != PyArray_DIMS(adi)[0] ||
+        dims[0] != len) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    ri = (double *)PyArray_DATA(ari);
+    di = (double *)PyArray_DATA(adi);
+    pyaob = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyzob = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyhob = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydob = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pyrob = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    aob = (double *)PyArray_DATA(pyaob);
+    zob = (double *)PyArray_DATA(pyzob);
+    hob = (double *)PyArray_DATA(pyhob);
+    dob = (double *)PyArray_DATA(pydob);
+    rob = (double *)PyArray_DATA(pyrob);
+
+    for (i=0;i<dims[0];i++) {
+        a = PyList_GetItem(pyastrom, i);
+        Py_INCREF(a);
+        astrom = _to_c_astrom(a);
+        Py_DECREF(a);
+        eraAtioq(ri[i], di[i], &astrom, &aob[i], &zob[i], &hob[i], &dob[i], &rob[i]);
+    }
+    Py_DECREF(ari);
+    Py_DECREF(adi);
+    Py_INCREF(pyaob);
+    Py_INCREF(pyzob);
+    Py_INCREF(pyhob);
+    Py_INCREF(pydob);
+    Py_INCREF(pyrob);
+    return Py_BuildValue("OOOOO", pyaob, pyzob, pyhob, pydob, pyrob);
+
+fail:
+    Py_XDECREF(ari);
+    Py_XDECREF(adi);
+    Py_XDECREF(pyaob);
+    Py_XDECREF(pyzob);
+    Py_XDECREF(pyhob);
+    Py_XDECREF(pydob);
+    Py_XDECREF(pyrob);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_atioq_doc,
+"\natioq(ri,di, astrom) -> aob, zob, hob, dob, rob\n"
+"Quick CIRS to observed place transformation.\n"
+"\n"
+"Use of this function is appropriate when efficiency is important and\n"
+"where many star positions are all to be transformed for one date.  The\n"
+"star-independent parameters can be obtained by calling\n"
+"apio[13], or apco[13].\n"
+"Given:\n"
+"    ri,di      CIRS RA,Dec (radians)\n"
+"    astrom     star-independent astrometry parameters\n"
+"Returned:\n"
+"    aob    observed azimuth (radians: N=0,E=90)\n"
+"    zob    observed zenith distance (radians)\n"
+"    hob    observed hour angle (radians)\n"
+"    dob    observed declination (radians)\n"
+"    rob    observed right ascension (CIO-based, radians)");
+
+static PyObject *
 _erfa_atoiq(PyObject *self, PyObject *args)
 {
     const char *type;
@@ -14467,6 +14561,7 @@ static PyMethodDef _erfa_methods[] = {
     {"aticq", _erfa_aticq, METH_VARARGS, _erfa_aticq_doc},
     {"aticqn", _erfa_aticqn, METH_VARARGS, _erfa_aticqn_doc},
     {"atio13", _erfa_atio13, METH_VARARGS, _erfa_atio13_doc},
+    {"atioq", _erfa_atioq, METH_VARARGS, _erfa_atioq_doc},
     {"atoiq", _erfa_atoiq, METH_VARARGS, _erfa_atoiq_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"ldn", _erfa_ldn, METH_VARARGS, _erfa_ldn_doc},

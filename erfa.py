@@ -222,6 +222,11 @@ def atio13(ri, di, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl):
     check_args(ri, di, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
     return _erfa.atio13(ri, di, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
 
+def atioq(ri, di, astrom):
+    check_args(ri, di)
+    check_astrom(astrom)
+    return _erfa.atioq(ri, di, astrom)
+
 def atoiq(c, ob1, ob2, astrom):
     check_args(ob1, ob2)
     check_astrom(astrom)
