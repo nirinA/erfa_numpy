@@ -843,12 +843,16 @@ def d2tf(ndp, a):
     check_args(a)
     return _erfa.d2tf(ndp, a)
 
-def tf2a(hour, min, sec):
-    check_args(hour, min, sec)
-    hour = cast_to_int32(hour)
-    min = cast_to_int32(min)
-    return _erfa.tf2a(hour, min, sec)
+def tf2a(hms):
+    check_args(hms)
+    return _erfa.tf2a(hms)
 
+##def tf2a(hour, min, sec):
+##    check_args(hour, min, sec)
+##    hour = cast_to_int32(hour)
+##    min = cast_to_int32(min)
+##    return _erfa.tf2a(hour, min, sec)
+##
 ## VectorMatrix/BuildRotations 
 def rx(phi, r):
     check_args(phi, r)

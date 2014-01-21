@@ -15246,48 +15246,68 @@ static PyObject *
 _erfa_tf2a(PyObject *self, PyObject *args)
 {
     char s = '+';
-    int *ihour, *imin, status;
-    double *sec, *rad;
-    PyObject *pyihour, *pyimin, *pysec;
+    int ihour, imin, status;
+    double sec, *rad;
+    PyObject *pyin;
     PyObject *aihour, *aimin, *asec;
+    PyObject *in_iter = NULL;
     PyArrayObject *pyrad = NULL;
     PyArray_Descr *dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
-    npy_intp *dims;
+    npy_intp *dims, dim_out[1];
     int ndim, i;
-    if (!PyArg_ParseTuple(args, "O!O!O!",
-                                 &PyArray_Type, &pyihour,
-                                 &PyArray_Type, &pyimin,
-                                 &PyArray_Type, &pysec)) {
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyin)) {
         return NULL;
     }
-    aihour = PyArray_FROM_OTF(pyihour, NPY_INT, NPY_ARRAY_IN_ARRAY);
-    aimin = PyArray_FROM_OTF(pyimin, NPY_INT, NPY_ARRAY_IN_ARRAY);
-    asec = PyArray_FROM_OTF(pysec, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-    if (aihour == NULL || aimin == NULL || asec == NULL) {
-        goto fail;
-    }
-    ndim = PyArray_NDIM(aihour);
+    ndim = PyArray_NDIM(pyin);
     if (!ndim) {
         PyErr_SetString(_erfaError, "argument is ndarray of length 0");
         goto fail;
     }
-    dims = PyArray_DIMS(aihour);
-    if (dims[0] != PyArray_DIMS(aimin)[0] ||
-        dims[0] != PyArray_DIMS(asec)[0]) {
-        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+    dims = PyArray_DIMS(pyin);
+    dim_out[0] = dims[0];
+    pyrad = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pyrad) goto fail;
+    rad = (double *)PyArray_DATA(pyrad);
+    in_iter = PyArray_IterNew((PyObject*)pyin);
+    if (in_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
         goto fail;
     }
-    pyrad = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
-    if (NULL == pyrad) goto fail;
-    ihour = (int *)PyArray_DATA(aihour);
-    imin = (int *)PyArray_DATA(aimin);
-    sec = (double *)PyArray_DATA(asec);
-    rad = (double *)PyArray_DATA(pyrad);
 
     for (i=0;i<dims[0];i++) {
-        if (ihour[i] < 0) s = '-';
-        status = eraTf2a(s, abs(ihour[i]), imin[i], sec[i], &rad[i]);
+        aihour = PyArray_GETITEM(pyin, PyArray_ITER_DATA(in_iter));
+        if (aihour == NULL) {
+            PyErr_SetString(_erfaError, "cannot retrieve data from args");
+            goto fail;
+        }
+        Py_INCREF(aihour);
+        ihour = (int)PyLong_AsLong(aihour);
+        if (ihour == -1 && PyErr_Occurred()) goto fail;
+        Py_DECREF(aihour);
+        PyArray_ITER_NEXT(in_iter);
+        aimin = PyArray_GETITEM(pyin, PyArray_ITER_DATA(in_iter));
+        if (aimin == NULL) {
+            PyErr_SetString(_erfaError, "cannot retrieve data from args");
+            goto fail;
+        }
+        Py_INCREF(aimin);
+        imin = (int)PyLong_AsLong(aimin);
+        if (imin == -1 && PyErr_Occurred()) goto fail;
+        Py_DECREF(aimin);
+        PyArray_ITER_NEXT(in_iter);
+        asec = PyArray_GETITEM(pyin, PyArray_ITER_DATA(in_iter));
+        if (asec == NULL) {
+            PyErr_SetString(_erfaError, "cannot retrieve data from args");
+            goto fail;
+        }
+        Py_INCREF(asec);
+        sec = (double)PyFloat_AsDouble(asec);
+        if (sec == -1 && PyErr_Occurred()) goto fail;
+        Py_DECREF(asec);
+        PyArray_ITER_NEXT(in_iter);
+        if (ihour < 0) s = '-';
+        status = eraTf2a(s, abs(ihour), imin, sec, &rad[i]);
         if (status == 1) {
             PyErr_WarnEx(PyExc_Warning, "hour outside range 0-23", 1);
         }
@@ -15298,16 +15318,11 @@ _erfa_tf2a(PyObject *self, PyObject *args)
             PyErr_WarnEx(PyExc_Warning, "sec outside range 0-59", 1);
         }
     }
-    Py_DECREF(aihour);
-    Py_DECREF(aimin);
-    Py_DECREF(asec);
-    Py_INCREF(pyrad);
+    Py_DECREF(in_iter);
     return PyArray_Return(pyrad);
 
 fail:
-    Py_XDECREF(aihour);
-    Py_XDECREF(aimin);
-    Py_XDECREF(asec);
+    Py_XDECREF(in_iter);
     Py_XDECREF(pyrad);
     return NULL;
 }

@@ -2311,8 +2311,12 @@ class Validate(unittest.TestCase):
         self.assertEqual(s, 13)
         self.assertEqual(f, 3333)
 
+##    def test_tf2a(self):
+##        a = erfa.tf2a(np.array([4]), np.array([58]), np.array([20.2]))[0]
+##        self.assertAlmostEqual(a, 1.301739278189537429, 12)
+##        
     def test_tf2a(self):
-        a = erfa.tf2a(np.array([4]), np.array([58]), np.array([20.2]))[0]
+        a = erfa.tf2a(np.array([[4, 58, 20.2]]))[0]
         self.assertAlmostEqual(a, 1.301739278189537429, 12)
         
 
