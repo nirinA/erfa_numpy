@@ -448,7 +448,6 @@ _erfa_ab(PyObject *self, PyObject *args)
     }    
     pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
     if (NULL == pyout) {
-        Py_DECREF(pyout);
         goto fail;
     }
     pnat = (double *)PyArray_DATA(apnat);
@@ -471,6 +470,7 @@ fail:
     Py_XDECREF(av);
     Py_XDECREF(as);
     Py_XDECREF(abm1);
+    Py_XDECREF(pyout);
     return NULL;
 }
 
@@ -3241,41 +3241,6 @@ fail:
     Py_XDECREF(pyri);
     Py_XDECREF(pydi);
     return NULL;
-
-/*
-
-
-
-    double ob1, ob2, utc1, utc2, dut1;
-    double elong, phi, hm, xp, yp, phpa, tc, rh, wl;
-    double ri, di;
-
-
-    if (!PyArg_ParseTuple(args, "sdddddddddddddd",
-                                 &type, &ob1, &ob2, &utc1, &utc2, &dut1,
-                                 &elong, &phi, &hm, &xp, &yp, &phpa, &tc, &rh, &wl))      
-        return NULL;
-    if (strcmp("R", type) == 0 || strcmp("H", type) == 0 || strcmp("A", type) == 0) {
-        j = eraAtoi13(type, ob1, ob2, utc1, utc2, dut1,
-                      elong, phi, hm, xp, yp, phpa, tc, rh, wl,
-                      &ri, &di);
-    }
-    else {
-        PyErr_SetString(_erfaError, "unknown type of coordinates");
-        return NULL;
-    }
-    if (j == +1) {
-        PyErr_SetString(_erfaError, "doubious year");
-        return NULL;
-    }
-    else if (j == -1) {
-        PyErr_SetString(_erfaError, "unacceptable date");
-        return NULL;
-    }
-    return Py_BuildValue("dd", ri, di);
-
-
-*/
 }
 
 PyDoc_STRVAR(_erfa_atoi13_doc,
@@ -3594,6 +3559,72 @@ PyDoc_STRVAR(_erfa_ldn_doc,
 "    sc   observer to star coord direction (unit vector)\n"
 "Returned:\n"
 "    sn    observer to deflected star (unit vector)");
+
+static PyObject *
+_erfa_ldsun(PyObject *self, PyObject *args)
+{
+    double *p, *e, *em, *p1;
+    PyObject *pyp, *pye, *pyem;
+    PyObject *ap, *ae, *aem;
+    PyArrayObject *pyp1;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                                 &PyArray_Type, &pyp,
+                                 &PyArray_Type, &pye,
+                                 &PyArray_Type, &pyem))
+        return NULL;
+    ap = PyArray_FROM_OTF(pyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ae = PyArray_FROM_OTF(pye, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aem = PyArray_FROM_OTF(pyem, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ap == NULL || ae == NULL || aem == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ap);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ap);
+    if (dims[0] != PyArray_DIMS(ae)[0] ||
+        dims[0] != PyArray_DIMS(aem)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    pyp1 = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyp1) goto fail;
+    p = (double *)PyArray_DATA(ap);
+    e = (double *)PyArray_DATA(ae);
+    em = (double *)PyArray_DATA(aem);
+    p1 = (double *)PyArray_DATA(pyp1);
+    for (i=0;i<dims[0];i++) {
+        eraLdsun(&p[i*3], &e[i*3], em[i], &p1[i*3]);
+    }
+    Py_DECREF(ap);
+    Py_DECREF(ae);
+    Py_DECREF(aem);
+    Py_INCREF(pyp1);
+    return PyArray_Return(pyp1);
+
+fail:
+    Py_XDECREF(ap);
+    Py_XDECREF(ae);
+    Py_XDECREF(aem);
+    Py_XDECREF(pyp1);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_ldsun_doc,
+"\nldsun(p[3], e[3], em) -> p1[3]\n"
+"Light deflection by the Sun.\n"
+"Given:\n"
+"    p      direction from observer to source (unit vector)\n"
+"    e      direction from Sun to observer (unit vector)\n"
+"    em     distance from Sun to observer (au)\n"
+"Returned:\n"
+"    p1     observer to deflected source (unit vector)");
 
 static PyObject *
 _erfa_pmsafe(PyObject *self, PyObject *args)
@@ -14939,6 +14970,7 @@ static PyMethodDef _erfa_methods[] = {
     {"atoiq", _erfa_atoiq, METH_VARARGS, _erfa_atoiq_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"ldn", _erfa_ldn, METH_VARARGS, _erfa_ldn_doc},
+    {"ldsun", _erfa_ldsun, METH_VARARGS, _erfa_ldsun_doc},
     {"pmsafe", _erfa_pmsafe, METH_VARARGS, _erfa_pmsafe_doc},
     {"pvstar", _erfa_pvstar, METH_VARARGS, _erfa_pvstar_doc},
     {"starpv", _erfa_starpv, METH_VARARGS, _erfa_starpv_doc},

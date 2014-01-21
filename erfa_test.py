@@ -743,6 +743,15 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(sn[1], -0.6086337636093002660, places=12)
         self.assertAlmostEqual(sn[2], -0.2167355420646328159, places=12)
 
+    def test_ldsun(self):
+        p = np.array([(-0.763276255, -0.608633767, -0.216735543)])
+        e = np.array([(-0.973644023, -0.20925523, -0.0907169552)])
+        em = np.array([0.999809214])
+        p1 = erfa.ldsun(p, e, em)[0]
+        self.assertAlmostEqual(p1[0], -0.7632762580731413169, places=12)
+        self.assertAlmostEqual(p1[1], -0.6086337635262647900, places=12)
+        self.assertAlmostEqual(p1[2], -0.2167355419322321302, places=12)
+
 ## Astronomy/SpaceMotion 
     def test_pmsafe(self):
         ra1 = np.array([1.234])
