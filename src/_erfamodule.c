@@ -14507,6 +14507,77 @@ PyDoc_STRVAR(_erfa_cr_doc,
 "   c           copy");
 
 static PyObject *
+_erfa_d2tf(PyObject *self, PyObject *args)
+{
+    double *d;
+    char sign = '+';
+    int ndp, df[4];
+    PyObject *pyd;
+    PyObject *ad;
+    PyArrayObject *pyout = NULL;
+    PyObject *out_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_INT);
+    npy_intp *dims, dim_out[2];
+    int ndim, i;
+    if (! PyArg_ParseTuple(args, "iO!",
+                                  &ndp,
+                                  &PyArray_Type, &pyd)) {
+        return NULL;
+    }
+    ad = PyArray_FROM_OTF(pyd, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ad == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ad);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ad);
+    dim_out[0] = dims[0];
+    dim_out[1] = 4;
+    pyout = (PyArrayObject *) PyArray_Zeros(2, dim_out, dsc, 0);
+    if (NULL == pyout) goto fail;
+    out_iter = PyArray_IterNew((PyObject*)pyout);
+    d = (double *)PyArray_DATA(ad);
+
+    for (i=0;i<dims[0];i++) {
+        eraD2tf(ndp, d[i], &sign, df);
+        if (sign == '-') df[0] *= -1;
+        int k;
+        for (k=0;k<4;k++) {
+            if (PyArray_SETITEM(pyout, PyArray_ITER_DATA(out_iter), PyLong_FromLong((long)df[k]))) {
+                PyErr_SetString(_erfaError, "unable to set df");
+                goto fail;
+            }
+            PyArray_ITER_NEXT(out_iter);
+        }
+    }
+    Py_DECREF(ad);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;
+
+fail:
+    Py_XDECREF(ad);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_d2tf_doc,
+"\nd2tf(n, d) -> +/-,h, m, s, f\n\n"
+"Decompose days to hours, minutes, seconds, fraction.\n"
+"Given:\n"
+"    n          resolution\n"
+"    d          interval in days\n"
+"Returned:\n"
+"    sign       '+' or '-'\n"
+"    h          hours\n"
+"    m          minutes\n"
+"    s          seconds\n"
+"    f          fraction");
+
+static PyObject *
 _erfa_gd2gc(PyObject *self, PyObject *args)
 {
     double *elong, *phi, *height, xyz[3];
@@ -15171,6 +15242,86 @@ PyDoc_STRVAR(_erfa_rz_doc,
 "Given and returned:\n"
 "   r           r-matrix, rotated");
 
+static PyObject *
+_erfa_tf2a(PyObject *self, PyObject *args)
+{
+    char s = '+';
+    int *ihour, *imin, status;
+    double *sec, *rad;
+    PyObject *pyihour, *pyimin, *pysec;
+    PyObject *aihour, *aimin, *asec;
+    PyArrayObject *pyrad = NULL;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!",
+                                 &PyArray_Type, &pyihour,
+                                 &PyArray_Type, &pyimin,
+                                 &PyArray_Type, &pysec)) {
+        return NULL;
+    }
+    aihour = PyArray_FROM_OTF(pyihour, NPY_INT, NPY_ARRAY_IN_ARRAY);
+    aimin = PyArray_FROM_OTF(pyimin, NPY_INT, NPY_ARRAY_IN_ARRAY);
+    asec = PyArray_FROM_OTF(pysec, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aihour == NULL || aimin == NULL || asec == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aihour);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aihour);
+    if (dims[0] != PyArray_DIMS(aimin)[0] ||
+        dims[0] != PyArray_DIMS(asec)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    pyrad = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyrad) goto fail;
+    ihour = (int *)PyArray_DATA(aihour);
+    imin = (int *)PyArray_DATA(aimin);
+    sec = (double *)PyArray_DATA(asec);
+    rad = (double *)PyArray_DATA(pyrad);
+
+    for (i=0;i<dims[0];i++) {
+        if (ihour[i] < 0) s = '-';
+        status = eraTf2a(s, abs(ihour[i]), imin[i], sec[i], &rad[i]);
+        if (status == 1) {
+            PyErr_WarnEx(PyExc_Warning, "hour outside range 0-23", 1);
+        }
+        else if (status == 2) {
+            PyErr_WarnEx(PyExc_Warning, "min outside range 0-59", 1);
+        }
+        else if (status == 3) {
+            PyErr_WarnEx(PyExc_Warning, "sec outside range 0-59", 1);
+        }
+    }
+    Py_DECREF(aihour);
+    Py_DECREF(aimin);
+    Py_DECREF(asec);
+    Py_INCREF(pyrad);
+    return PyArray_Return(pyrad);
+
+fail:
+    Py_XDECREF(aihour);
+    Py_XDECREF(aimin);
+    Py_XDECREF(asec);
+    Py_XDECREF(pyrad);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_tf2a_doc,
+"\ntf2a(hour, min, sec) -> rad\n\n"
+"Convert hours, minutes, seconds to radians.\n"
+"Given:\n"
+"   hour    hours\n"
+"   min     minutes\n"
+"   sec     seconds\n"
+"Returned:\n"
+"   rad     angle in radians");
+
 
 static PyMethodDef _erfa_methods[] = {
     {"ab", _erfa_ab, METH_VARARGS, _erfa_ab_doc},
@@ -15339,6 +15490,7 @@ static PyMethodDef _erfa_methods[] = {
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
     {"anpm", _erfa_anpm, METH_VARARGS, _erfa_anpm_doc},
     {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},
+    {"d2tf", _erfa_d2tf, METH_VARARGS, _erfa_d2tf_doc},
     {"gd2gc", _erfa_gd2gc, METH_VARARGS, _erfa_gd2gc_doc},
     {"gd2gce", _erfa_gd2gce, METH_VARARGS, _erfa_gd2gce_doc},
     {"rxp", _erfa_rxp, METH_VARARGS, _erfa_rxp_doc},
@@ -15346,6 +15498,7 @@ static PyMethodDef _erfa_methods[] = {
     {"rx", _erfa_rx, METH_VARARGS, _erfa_rx_doc},
     {"ry", _erfa_ry, METH_VARARGS, _erfa_ry_doc},
     {"rz", _erfa_rz, METH_VARARGS, _erfa_rz_doc},
+    {"tf2a", _erfa_tf2a, METH_VARARGS, _erfa_tf2a_doc},
     {NULL,		NULL}		/* sentinel */
 };
 

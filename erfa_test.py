@@ -2299,6 +2299,23 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(r[0], -0.7893115794313644842, 15)
         self.assertAlmostEqual(r[1], 0.7893115794313644842, 15)
 
+    def test_d2tf(self):
+        h,m,s,f = erfa.d2tf(4, np.array([-0.987654321]))[0]
+        self.assertEqual(h, -23)
+        self.assertEqual(m, 42)
+        self.assertEqual(s, 13)
+        self.assertEqual(f, 3333)
+        h,m,s,f = erfa.d2tf(4, np.array([0.987654321]))[0]
+        self.assertEqual(h, 23)
+        self.assertEqual(m, 42)
+        self.assertEqual(s, 13)
+        self.assertEqual(f, 3333)
+
+    def test_tf2a(self):
+        a = erfa.tf2a(np.array([4]), np.array([58]), np.array([20.2]))[0]
+        self.assertAlmostEqual(a, 1.301739278189537429, 12)
+        
+
 ## VectorMatrix/BuildRotations 
     def test_rx(self):
         phi = np.array([0.3456789])

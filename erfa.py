@@ -1,6 +1,7 @@
 '''ERFA wrapper
 note:
-    af2a has different form of arguments
+    af2a has different form of arguments: array of [h,m,s]
+    tf2a : array of [h], array of [m] , array of [s] 
 '''
 import math
 import numpy as np
@@ -227,18 +228,18 @@ def atioq(ri, di, astrom):
     check_astrom(astrom)
     return _erfa.atioq(ri, di, astrom)
 
-def atoc13(c, ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl):
+def atoc13(type, ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl):
     check_args(ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
-    return _erfa.atoc13(c, ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+    return _erfa.atoc13(type, ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
 
-def atoi13(c, ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl):
+def atoi13(type, ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl):
     check_args(ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
-    return _erfa.atoi13(c, ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
+    return _erfa.atoi13(type, ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl)
     
-def atoiq(c, ob1, ob2, astrom):
+def atoiq(type, ob1, ob2, astrom):
     check_args(ob1, ob2)
     check_astrom(astrom)
-    return _erfa.atoiq(c, ob1, ob2, astrom)
+    return _erfa.atoiq(type, ob1, ob2, astrom)
 
 def ld(bm, p, q, e, em, dlim):
     check_args(bm, p, q, e, em, dlim)
@@ -830,6 +831,24 @@ def af2a(a):
     check_args(a)
     return _erfa.af2a(a)
 
+def anp(a):
+    check_args(a)
+    return _erfa.anp(a)
+
+def anpm(a):
+    check_args(a)
+    return _erfa.anpm(a)
+
+def d2tf(ndp, a):
+    check_args(a)
+    return _erfa.d2tf(ndp, a)
+
+def tf2a(hour, min, sec):
+    check_args(hour, min, sec)
+    hour = cast_to_int32(hour)
+    min = cast_to_int32(min)
+    return _erfa.tf2a(hour, min, sec)
+
 ## VectorMatrix/BuildRotations 
 def rx(phi, r):
     check_args(phi, r)
@@ -853,14 +872,6 @@ def cr(a):
     return _erfa.cr(a)
 
 ## VectorMatrix/MatrixOps
-def anp(a):
-    check_args(a)
-    return _erfa.anp(a)
-
-def anpm(a):
-    check_args(a)
-    return _erfa.anpm(a)
-
 def rxr(a, b):
     check_args(a, b)
     return _erfa.rxr(a, b)
