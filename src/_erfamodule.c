@@ -3099,6 +3099,210 @@ PyDoc_STRVAR(_erfa_atoc13_doc,
 "    rc,dc  ICRS astrometric RA,Dec (radians)");
 
 static PyObject *
+_erfa_atoi13(PyObject *self, PyObject *args)
+{
+    int j;
+    const char *type;
+    double *ob1, *ob2, *utc1, *utc2, *dut1;
+    double *elong, *phi, *hm, *xp, *yp, *phpa, *tc, *rh, *wl;
+    double *ri, *di;
+    PyObject *pyob1, *pyob2, *pyutc1, *pyutc2, *pydut1, *pyelong, *pyphi, *pyhm, *pyxp, *pyyp, *pyphpa, *pytc, *pyrh, *pywl;
+    PyObject *aob1, *aob2, *autc1, *autc2, *adut1, *aelong, *aphi, *ahm, *axp, *ayp, *aphpa, *atc, *arh, *awl;
+    PyArrayObject *pyri = NULL, *pydi = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "sO!O!O!O!O!O!O!O!O!O!O!O!O!O!",
+                                 &type,
+                                 &PyArray_Type, &pyob1,
+                                 &PyArray_Type, &pyob2,
+                                 &PyArray_Type, &pyutc1,
+                                 &PyArray_Type, &pyutc2,
+                                 &PyArray_Type, &pydut1,
+                                 &PyArray_Type, &pyelong,
+                                 &PyArray_Type, &pyphi,
+                                 &PyArray_Type, &pyhm,
+                                 &PyArray_Type, &pyxp,
+                                 &PyArray_Type, &pyyp,
+                                 &PyArray_Type, &pyphpa,
+                                 &PyArray_Type, &pytc,
+                                 &PyArray_Type, &pyrh,
+                                 &PyArray_Type, &pywl))      
+        return NULL;
+    aob1 = PyArray_FROM_OTF(pyob1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aob2 = PyArray_FROM_OTF(pyob2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    autc1 = PyArray_FROM_OTF(pyutc1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    autc2 = PyArray_FROM_OTF(pyutc2, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    adut1 = PyArray_FROM_OTF(pydut1, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aelong = PyArray_FROM_OTF(pyelong, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphi = PyArray_FROM_OTF(pyphi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ahm = PyArray_FROM_OTF(pyhm, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    axp = PyArray_FROM_OTF(pyxp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ayp = PyArray_FROM_OTF(pyyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphpa = PyArray_FROM_OTF(pyphpa, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    atc = PyArray_FROM_OTF(pytc, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    arh = PyArray_FROM_OTF(pyrh, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    awl = PyArray_FROM_OTF(pywl, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aob1 == NULL || aob2 == NULL || autc1 == NULL ||
+        autc2 == NULL || adut1 == NULL || aelong == NULL ||
+        aphi == NULL || ahm == NULL || axp == NULL ||
+        ayp == NULL || aphpa == NULL || atc == NULL ||
+        arh == NULL || awl == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aob1);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aob1);
+    if (dims[0] != PyArray_DIMS(aob2)[0] ||
+        dims[0] != PyArray_DIMS(autc1)[0] || dims[0] != PyArray_DIMS(autc2)[0] ||
+        dims[0] != PyArray_DIMS(adut1)[0] || dims[0] != PyArray_DIMS(aelong)[0] ||
+        dims[0] != PyArray_DIMS(aphi)[0] || dims[0] != PyArray_DIMS(ahm)[0] ||
+        dims[0] != PyArray_DIMS(axp)[0] || dims[0] != PyArray_DIMS(ayp)[0] ||
+        dims[0] != PyArray_DIMS(aphpa)[0] || dims[0] != PyArray_DIMS(atc)[0] ||
+        dims[0] != PyArray_DIMS(arh)[0] || dims[0] != PyArray_DIMS(awl)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    ob1 = (double *)PyArray_DATA(aob1);
+    ob2 = (double *)PyArray_DATA(aob2);
+    utc1 = (double *)PyArray_DATA(autc1);
+    utc2 = (double *)PyArray_DATA(autc2);
+    dut1 = (double *)PyArray_DATA(adut1);
+    elong = (double *)PyArray_DATA(aelong);
+    phi = (double *)PyArray_DATA(aphi);
+    hm = (double *)PyArray_DATA(ahm);
+    xp = (double *)PyArray_DATA(axp);
+    yp = (double *)PyArray_DATA(ayp);
+    phpa = (double *)PyArray_DATA(aphpa);
+    tc = (double *)PyArray_DATA(atc);
+    rh = (double *)PyArray_DATA(arh);
+    wl = (double *)PyArray_DATA(awl);
+    pyri = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    pydi = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    ri = (double *)PyArray_DATA(pyri);
+    di = (double *)PyArray_DATA(pydi);
+    for (i=0;i<dims[0];i++) {
+        if (strcmp("R", type) == 0 || strcmp("H", type) == 0 || strcmp("A", type) == 0) {
+            j = eraAtoi13(type, ob1[i], ob2[i], utc1[i], utc2[i], dut1[i],
+                          elong[i], phi[i], hm[i], xp[i], yp[i], phpa[i],
+                          tc[i], rh[i], wl[i],
+                          &ri[i], &di[i]);
+        }
+        else {
+            PyErr_SetString(_erfaError, "unknown type of coordinates");
+            goto fail;
+        }
+        if (j == +1) {
+            PyErr_SetString(_erfaError, "doubious year");
+            goto fail;
+        }
+        if (j == -1) {
+            PyErr_SetString(_erfaError, "unacceptable date");
+            goto fail;
+        }
+    }
+    Py_DECREF(aob1);
+    Py_DECREF(aob2);
+    Py_DECREF(autc1);
+    Py_DECREF(autc2);
+    Py_DECREF(adut1);
+    Py_DECREF(aelong);
+    Py_DECREF(aphi);
+    Py_DECREF(ahm);
+    Py_DECREF(axp);
+    Py_DECREF(ayp);
+    Py_DECREF(aphpa);
+    Py_DECREF(atc);
+    Py_DECREF(arh);
+    Py_DECREF(awl);
+    Py_INCREF(pyri);
+    Py_INCREF(pydi);
+    return Py_BuildValue("OO", pyri, pydi);
+
+fail:
+    Py_XDECREF(aob1);
+    Py_XDECREF(aob2);
+    Py_XDECREF(autc1);
+    Py_XDECREF(autc2);
+    Py_XDECREF(adut1);
+    Py_XDECREF(aelong);
+    Py_XDECREF(aphi);
+    Py_XDECREF(ahm);
+    Py_XDECREF(axp);
+    Py_XDECREF(ayp);
+    Py_XDECREF(aphpa);
+    Py_XDECREF(atc);
+    Py_XDECREF(arh);
+    Py_XDECREF(awl);
+    Py_XDECREF(pyri);
+    Py_XDECREF(pydi);
+    return NULL;
+
+/*
+
+
+
+    double ob1, ob2, utc1, utc2, dut1;
+    double elong, phi, hm, xp, yp, phpa, tc, rh, wl;
+    double ri, di;
+
+
+    if (!PyArg_ParseTuple(args, "sdddddddddddddd",
+                                 &type, &ob1, &ob2, &utc1, &utc2, &dut1,
+                                 &elong, &phi, &hm, &xp, &yp, &phpa, &tc, &rh, &wl))      
+        return NULL;
+    if (strcmp("R", type) == 0 || strcmp("H", type) == 0 || strcmp("A", type) == 0) {
+        j = eraAtoi13(type, ob1, ob2, utc1, utc2, dut1,
+                      elong, phi, hm, xp, yp, phpa, tc, rh, wl,
+                      &ri, &di);
+    }
+    else {
+        PyErr_SetString(_erfaError, "unknown type of coordinates");
+        return NULL;
+    }
+    if (j == +1) {
+        PyErr_SetString(_erfaError, "doubious year");
+        return NULL;
+    }
+    else if (j == -1) {
+        PyErr_SetString(_erfaError, "unacceptable date");
+        return NULL;
+    }
+    return Py_BuildValue("dd", ri, di);
+
+
+*/
+}
+
+PyDoc_STRVAR(_erfa_atoi13_doc,
+"\natoi13(type, ob1, ob2, utc1, utc2, dut1, elong, phi, hm, xp, yp, phpa, tc, rh, wl) -> ri, di\n"
+"Observed place at a groundbased site to to ICRS astrometric RA,Dec.\n"
+"The caller supplies UTC, site coordinates, ambient air conditions\n"
+"and observing wavelength.\n"
+"Given:\n"
+"    type   type of coordinates - ''R'', ''H'' or ''A''\n"
+"    ob1    observed Az, HA or RA (radians; Az is N=0,E=90)\n"
+"    ob2    observed ZD or Dec (radians)\n"
+"    utc1   UTC as a 2-part...\n"
+"    utc2   ...quasi Julian Date\n"
+"    dut1   UT1-UTC (seconds\n"
+"    elong  longitude (radians, east +ve)\n"
+"    phi    geodetic latitude (radians)\n"
+"    hm     height above ellipsoid (m, geodetic)\n"
+"    xp,yp  polar motion coordinates (radians)\n"
+"    phpa   pressure at the observer (hPa = mB)\n"
+"    tc     ambient temperature at the observer (deg C)\n"
+"    rh     relative humidity at the observer (range 0-1)\n"
+"    wl     wavelength (micrometers)\n"
+"Returned:\n"
+"    ri     CIRS right ascension (CIO-based, radians)\n"
+"    di     CIRS declination (radians)");
+
+static PyObject *
 _erfa_atoiq(PyObject *self, PyObject *args)
 {
     const char *type;
@@ -14731,6 +14935,7 @@ static PyMethodDef _erfa_methods[] = {
     {"atio13", _erfa_atio13, METH_VARARGS, _erfa_atio13_doc},
     {"atioq", _erfa_atioq, METH_VARARGS, _erfa_atioq_doc},
     {"atoc13", _erfa_atoc13, METH_VARARGS, _erfa_atoc13_doc},
+    {"atoi13", _erfa_atoi13, METH_VARARGS, _erfa_atoi13_doc},
     {"atoiq", _erfa_atoiq, METH_VARARGS, _erfa_atoiq_doc},
     {"ld", _erfa_ld, METH_VARARGS, _erfa_ld_doc},
     {"ldn", _erfa_ldn, METH_VARARGS, _erfa_ldn_doc},
