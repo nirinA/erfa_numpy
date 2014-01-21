@@ -1,0 +1,150 @@
+'''example from sofa_ast_c.pdf'''
+import math
+import numpy as np
+import erfa
+
+def reprd(title, r, d):
+    print("%25s"%title) 
+    for c,a in erfa.a2tf(7, r):
+        print("    = %s"%c, end='')
+        print("%2.2d %2.2d %2.2d.%7.7d"%tuple(a))
+    for c,a in erfa.a2af(6, d):
+        print("    = %s"%c, end='')
+        print("%2.2d %2.2d %2.2d.%6.6d"%tuple(a))
+    
+# site longitude, latitude (radians) and height above the geoid (m).
+phi = erfa.af2a(np.array([[-70,44,11.560]]))
+elong = erfa.af2a(np.array([[-30,14,26.731]]))
+hm = np.array([2738.0])
+
+# Ambient pressure (HPa), temperature (C) and rel. humidity (frac).
+phpa = np.array([731.0])
+tc = np.array([12.8])
+rh = np.array([0.59])
+
+# Effective color (microns).
+wl = np.array([0.55])
+
+# UTC date
+y = np.array([2013], dtype='int32')
+m = np.array([4], dtype='int32')
+d = np.array([2], dtype='int32')
+h = np.array([23], dtype='int32')
+mn = np.array([15], dtype='int32')
+sec = np.array([43.55])
+utc1, utc2 = erfa.dtf2d("UTC", y, m, d, h, mn, sec)
+
+# TT date
+tai1, tai2 = erfa.utctai(utc1, utc2)
+tt1, tt2 = erfa.taitt(tai1, tai2)
+
+# EOPs: polar motion in radians, UT1-UTC in seconds. 
+xp = np.array([50.995e-3 * erfa.DAS2R])
+yp = np.array([376.723e-3 * erfa.DAS2R])
+dut1 = np.array([155.0675e-3])
+##print('xp, yp', xp, yp)
+# Corrections to IAU 2000A CIP (radians). 
+dx = 0.269e-3 * erfa.DAS2R
+dy = -0.274e-3 * erfa.DAS2R
+
+# Star ICRS RA,Dec (radians).
+rc = erfa.tf2a(np.array([[14,34,16.81183]]))
+dc = erfa.af2a(np.array([[-12,31,10.3965]]))
+##print('rc, dc', rc,dc)
+#
+reprd("ICRS, epoch J2000.0:", rc, dc)
+
+# Proper motion: RA/Dec derivatives, epoch J2000.0.
+pr = np.array([math.atan2(-354.45e-3 * erfa.DAS2R, math.cos(dc))])
+pd = np.array([595.35e-3 * erfa.DAS2R])
+#print('pr, pd: ', pr, pd)
+
+# Parallax (arcsec) and recession speed (km/s).
+px = np.array([164.99e-3])
+rv = np.array([0.0])
+
+# ICRS to CIRS (geocentric observer).
+ri, di, eo = erfa.atci13(rc, dc, pr, pd, px, rv, tt1, tt2)
+#print('ri, di', ri, di)
+#
+reprd ( "catalog -> CIRS:", ri, di )
+
+# CIRS to ICRS (astrometric).
+rca, dca, eo = erfa.atic13 ( ri, di, tt1, tt2)
+#
+reprd ( "CIRS -> astrometric:", rca, dca )
+
+#ICRS (astrometric) to CIRS (geocentric observer).
+ri, di, eo = erfa.atci13 ( rca, dca,
+                           np.array([0.0]), np.array([0.0]),
+                           np.array([0.0]), np.array([0.0]),
+                           tt1, tt2)
+reprd ( "astrometric -> CIRS:", ri, di );
+
+# Apparent place.
+ra = erfa.anp ( ri - eo )
+da = di
+reprd ( "geocentric apparent:", ra, da )
+
+# CIRS to topocentric.
+aot, zot, hot, dot, rot = erfa.atio13(ri, di, utc1, utc2, dut1,
+                                      elong, phi, hm, xp, yp,
+                                      np.array([0.0]), np.array([0.0]),
+                                      np.array([0.0]), np.array([0.0]))
+reprd( "CIRS -> topocentric:", rot, dot )
+
+# CIRS to topocentric.
+aob, zob, hob, dob, rob = erfa.atio13(ri, di, utc1, utc2, dut1,
+                                      elong, phi, hm, xp, yp,
+                                      phpa, tc, rh, wl)
+reprd( "CIRS -> observed:", rob, dob )
+
+# ICRS to observed.
+aob, zob, hob, dob, rob, eo = erfa.atco13 ( rc, dc, pr, pd, px, rv,
+                                            utc1, utc2, dut1,
+                                            elong, phi, hm, xp, yp,
+                                            phpa, tc, rh, wl)
+reprd ( "ICRS -> observed:", rob, dob )
+
+# ICRS to CIRS using some user-supplied parameters.
+# SOFA heliocentric Earth ephemeris.
+pvh, pvb = erfa.epv00(tt1, tt2)
+
+# JPL DE405 barycentric Earth ephemeris.
+pvb = np.array([((-0.9741704366519668, -0.2115201000882231, -0.0917583114068277),
+       (0.0036436589347388, -0.0154287318503146, -0.0066892203821059))])
+
+# era 2000A CIP.
+r = erfa.pnm00a(tt1, tt2)
+x, y = erfa.bpn2xy(r)
+
+# Apply IERS corrections.
+x += dx
+y += dy
+# SOFA CIO locator. */
+s = erfa.s06(tt1, tt2, x, y)
+
+# Populate the context.
+astrom = erfa.apci(tt1, tt2, pvb, pvh, x, y, s)
+
+# Carry out the transformation and report the results.
+ri, di = erfa.atciq(rc, dc, pr, pd, px, rv, astrom)
+reprd ( "ICRS -> CIRS (JPL, IERS):", ri, di )
+
+# The same but with Saturn then Jupiter then Sun light deflection.
+b0 = erfa.LDBODY((0.00028574, 3e-10,
+                  np.array(((-7.8101442680818964, -5.6095668114887358, -1.9807981923749924),
+                   (0.0030723248971152, -0.0040699547707598, -0.0018133584165345)))))
+b1 = erfa.LDBODY((0.00095435, 3e-9,
+                  np.array(((0.7380987962351833, .6365869247538951, 1.9693136030111202),
+                   (-0.0075581692172088, 0.0012691372216750, 0.0007279990012801)))))
+b2 = erfa.LDBODY((1.0, 6e-6,
+                  np.array(((-0.0007121743770509, -0.0023047830339257, -0.0010586596574639),
+                   (0.0000062923521264, -0.0000003308883872, -0.0000002964866231)))))
+b= [[b0, b1, b2]]
+ri, di = erfa.atciqn(rc, dc, pr, pd, px, rv, astrom, b)
+reprd ( "ICRS -> CIRS (+ planets):", ri, di )
+
+# CIRS to ICRS (astrometric).
+rca, dca = erfa.aticqn(ri, di, astrom, b)
+reprd ( "CIRS -> astrometric:", rca, dca )
