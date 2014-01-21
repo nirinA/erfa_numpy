@@ -857,6 +857,10 @@ def anp(a):
     check_args(a)
     return _erfa.anp(a)
 
+def anpm(a):
+    check_args(a)
+    return _erfa.anpm(a)
+
 def rxr(a, b):
     check_args(a, b)
     return _erfa.rxr(a, b)

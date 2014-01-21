@@ -2414,6 +2414,10 @@ class Validate(unittest.TestCase):
         r = erfa.anp(np.array([-0.1]))
         self.assertAlmostEqual(r[0], 6.183185307179586477, 15)
         
+    def test_anpm(self):
+        r = erfa.anpm(np.array([-4.0]))
+        self.assertAlmostEqual(r[0], 2.283185307179586477, 15)
+
 
 support.run_unittest(Validate)
 

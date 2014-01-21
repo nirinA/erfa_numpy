@@ -14440,6 +14440,53 @@ PyDoc_STRVAR(_erfa_anp_doc,
 "    a          angle in range 0-2pi");
 
 static PyObject *
+_erfa_anpm(PyObject *self, PyObject *args)
+{
+    double *a, *out;
+    PyObject *pya;
+    PyObject *aa = NULL;
+    PyArrayObject *pyout = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims;
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pya))      
+        return NULL;
+    ndim = PyArray_NDIM(pya);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pya);
+    aa = PyArray_FROM_OTF(pya, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aa == NULL) goto fail;
+    
+    pyout = (PyArrayObject *) PyArray_Zeros(ndim, dims, dsc, 0);
+    if (NULL == pyout) goto fail;
+    a = (double *)PyArray_DATA(aa);
+    out = (double *)PyArray_DATA(pyout);
+    for (i=0;i<dims[0];i++) {
+        out[i] = eraAnpm(a[i]);
+    }
+    Py_DECREF(aa);
+    Py_INCREF(pyout);
+    return (PyObject *)pyout;    
+
+fail:
+    Py_XDECREF(aa);
+    Py_XDECREF(pyout);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_anpm_doc,
+"\nanpm(a) -> -pi <= a < +pi\n\n"
+"Normalize angle into the range -pi <= a < +pi.\n"
+"Given:\n"
+"    a          angle (radians)\n"
+"Returned:\n"
+"    a          angle in range +/-pi");
+
+static PyObject *
 _erfa_cr(PyObject *self, PyObject *args)
 {
     PyArrayObject *r, *c;
@@ -15290,6 +15337,7 @@ static PyMethodDef _erfa_methods[] = {
     {"a2tf", _erfa_a2tf, METH_VARARGS, _erfa_a2tf_doc},
     {"af2a", _erfa_af2a, METH_VARARGS, _erfa_af2a_doc},
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
+    {"anpm", _erfa_anpm, METH_VARARGS, _erfa_anpm_doc},
     {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},
     {"gd2gc", _erfa_gd2gc, METH_VARARGS, _erfa_gd2gc_doc},
     {"gd2gce", _erfa_gd2gce, METH_VARARGS, _erfa_gd2gce_doc},
