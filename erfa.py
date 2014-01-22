@@ -890,6 +890,10 @@ def c2s(p):
     check_args(p)
     return _erfa.c2s(p)
     
+def p2s(p):
+    check_args(p)
+    return _erfa.p2s(p)
+    
 __all__ = ['anp', 'rxr']
 for a in __all__:
     setattr(eval(a), '__doc__',  getattr(_erfa, a).__doc__)

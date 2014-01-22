@@ -2449,6 +2449,12 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(t[0], -0.4636476090008061162, 15)
         self.assertAlmostEqual(p[0], 0.2199879773954594463, 15)
 
+    def test_p2s(self):
+        theta, phi, r = erfa.p2s(np.array([(100,-50,25)]))
+        self.assertAlmostEqual(theta[0], -0.4636476090008061162, 12)
+        self.assertAlmostEqual(phi[0], 0.2199879773954594463, 12)
+        self.assertAlmostEqual(r[0], 114.5643923738960002, 12)
+
 
 support.run_unittest(Validate)
 

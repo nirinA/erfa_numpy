@@ -14818,6 +14818,69 @@ PyDoc_STRVAR(_erfa_gd2gce_doc,
 "    xyz        geocentric vector in meters");
 
 static PyObject *
+_erfa_p2s(PyObject *self, PyObject *args)
+{
+    double *p, *theta, *phi, *r;
+    PyObject *pyp;
+    PyObject *ap;
+    PyArrayObject *pytheta = NULL, *pyphi = NULL, *pyr = NULL;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyp)) {
+        return NULL;
+    }
+    ap = PyArray_FROM_OTF(pyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ap == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ap);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ap);
+    dim_out[0] = dims[0];
+    p = (double *)PyArray_DATA(ap);
+    pytheta = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pyphi = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pyr = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pytheta || NULL == pyphi || NULL == pyr) {
+        goto fail;
+    }
+    theta = (double *)PyArray_DATA(pytheta);
+    phi = (double *)PyArray_DATA(pyphi);
+    r = (double *)PyArray_DATA(pyr);
+
+    for (i=0;i<dims[0];i++) {
+        eraP2s(&p[i*3], &theta[i], &phi[i], &r[i]);
+    }
+    Py_DECREF(ap);
+    Py_INCREF(pytheta);
+    Py_INCREF(pyphi);   
+    Py_INCREF(pyr);    
+    return Py_BuildValue("OOO", pytheta, pyphi, pyr);
+
+fail:
+    Py_XDECREF(ap);
+    Py_XDECREF(pytheta);
+    Py_XDECREF(pyphi);
+    Py_XDECREF(pyr);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_p2s_doc,
+"\np2s(p) -> theta, phi, r\n\n"
+"P-vector to spherical polar coordinates.\n"
+"Given:\n"
+"    p          p-vector\n"
+"Returned:\n"
+"    theta      longitude angle (radians)\n"
+"    phi        latitude angle (radians)\n"
+"    r          radial distance");
+
+static PyObject *
 _erfa_rxp(PyObject *self, PyObject *args)
 {
     double r[3][3], p[3], rp[3];
@@ -15662,6 +15725,7 @@ static PyMethodDef _erfa_methods[] = {
     {"d2tf", _erfa_d2tf, METH_VARARGS, _erfa_d2tf_doc},
     {"gd2gc", _erfa_gd2gc, METH_VARARGS, _erfa_gd2gc_doc},
     {"gd2gce", _erfa_gd2gce, METH_VARARGS, _erfa_gd2gce_doc},
+    {"p2s", _erfa_p2s, METH_VARARGS, _erfa_p2s_doc},
     {"rxp", _erfa_rxp, METH_VARARGS, _erfa_rxp_doc},
     {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
     {"rx", _erfa_rx, METH_VARARGS, _erfa_rx_doc},
