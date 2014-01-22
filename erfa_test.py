@@ -2293,6 +2293,14 @@ class Validate(unittest.TestCase):
         self.assertEqual(r[1][2], 22)
         self.assertEqual(r[1][3], 6484)
 
+    def test_anp(self):
+        r = erfa.anp(np.array([-0.1]))
+        self.assertAlmostEqual(r[0], 6.183185307179586477, 15)
+        
+    def test_anpm(self):
+        r = erfa.anpm(np.array([-4.0]))
+        self.assertAlmostEqual(r[0], 2.283185307179586477, 15)
+
     def test_af2a(self):
         a = np.array([[-45, 13, 27.2], [45, 13, 27.2]])
         r = erfa.af2a(a)
@@ -2435,13 +2443,11 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(atb[2][1], 10.0, places=12)
         self.assertAlmostEqual(atb[2][2], 15.0, places=12)
 
-    def test_anp(self):
-        r = erfa.anp(np.array([-0.1]))
-        self.assertAlmostEqual(r[0], 6.183185307179586477, 15)
-        
-    def test_anpm(self):
-        r = erfa.anpm(np.array([-4.0]))
-        self.assertAlmostEqual(r[0], 2.283185307179586477, 15)
+## VectorMatrix/SphericalCartesian
+    def test_c2s(self):
+        t, p = erfa.c2s(np.array([(100.,-50.,25.)]))
+        self.assertAlmostEqual(t[0], -0.4636476090008061162, 15)
+        self.assertAlmostEqual(p[0], 0.2199879773954594463, 15)
 
 
 support.run_unittest(Validate)

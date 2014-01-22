@@ -14487,6 +14487,64 @@ PyDoc_STRVAR(_erfa_anpm_doc,
 "    a          angle in range +/-pi");
 
 static PyObject *
+_erfa_c2s(PyObject *self, PyObject *args)
+{
+    double *theta, *phi, *p;
+    PyObject *pyp;
+    PyObject *ap;
+    PyArrayObject *pytheta = NULL, *pyphi = NULL;
+    PyArray_Descr *dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pyp)) {
+        return NULL;
+    }
+    ap = PyArray_FROM_OTF(pyp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (ap == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(ap);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(ap);
+    dim_out[0] = dims[0];
+    p = (double *)PyArray_DATA(ap);
+    pytheta = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pyphi = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pytheta || NULL == pyphi) {
+        goto fail;
+    }
+    phi = (double *)PyArray_DATA(pyphi);
+    theta = (double *)PyArray_DATA(pytheta);
+
+    for (i=0;i<dims[0];i++) {
+        eraC2s(&p[i*3], &theta[i], &phi[i]);
+    }
+    Py_DECREF(ap);
+    Py_INCREF(pytheta);
+    Py_INCREF(pyphi);   
+    return Py_BuildValue("OO", pytheta, pyphi);
+
+fail:
+    Py_XDECREF(ap);
+    Py_XDECREF(pytheta);
+    Py_XDECREF(pyphi);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_c2s_doc,
+"\nc2s(p) -> theta, phi\n\n"
+"P-vector to spherical coordinates.\n"
+"Given:\n"
+"    p          p-vector\n"
+"Returned:\n"
+"    theta      longitude angle (radians)\n"
+"    phi        latitude angle (radians)");
+
+static PyObject *
 _erfa_cr(PyObject *self, PyObject *args)
 {
     PyArrayObject *r, *c;
@@ -15599,6 +15657,7 @@ static PyMethodDef _erfa_methods[] = {
     {"af2a", _erfa_af2a, METH_VARARGS, _erfa_af2a_doc},
     {"anp", _erfa_anp, METH_VARARGS, _erfa_anp_doc},
     {"anpm", _erfa_anpm, METH_VARARGS, _erfa_anpm_doc},
+    {"c2s", _erfa_c2s, METH_VARARGS, _erfa_c2s_doc},
     {"cr", _erfa_cr, METH_VARARGS, _erfa_cr_doc},
     {"d2tf", _erfa_d2tf, METH_VARARGS, _erfa_d2tf_doc},
     {"gd2gc", _erfa_gd2gc, METH_VARARGS, _erfa_gd2gc_doc},

@@ -862,10 +862,6 @@ def rx(phi, r):
     check_args(phi, r)
     return _erfa.rx(phi, r)
 
-def rxp(r, p):
-    check_args(r, p)
-    return _erfa.rxp(r, p)
-
 def ry(theta, r):
     check_args(theta, r)
     return _erfa.ry(theta, r)
@@ -884,6 +880,16 @@ def rxr(a, b):
     check_args(a, b)
     return _erfa.rxr(a, b)
 
+## VectorMatrix/MatrixVectorProducts
+def rxp(r, p):
+    check_args(r, p)
+    return _erfa.rxp(r, p)
+
+## VectorMatrix/SphericalCartesian
+def c2s(p):
+    check_args(p)
+    return _erfa.c2s(p)
+    
 __all__ = ['anp', 'rxr']
 for a in __all__:
     setattr(eval(a), '__doc__',  getattr(_erfa, a).__doc__)
