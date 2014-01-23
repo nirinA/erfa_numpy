@@ -2443,6 +2443,13 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(atb[2][1], 10.0, places=12)
         self.assertAlmostEqual(atb[2][2], 15.0, places=12)
 
+## VectorMatrix/SeparationAndAngle
+    def test_pap(self):
+        a = np.array([(1.,0.1,0.2)])
+        b = np.array([(-3.,1e-3,0.2)])
+        theta = erfa.pap(a,b)
+        self.assertAlmostEqual(theta[0], 0.3671514267841113674, 12)
+
 ## VectorMatrix/SphericalCartesian
     def test_c2s(self):
         t, p = erfa.c2s(np.array([(100.,-50.,25.)]))

@@ -3538,6 +3538,10 @@ _erfa_ldn(PyObject *self, PyObject *args)
         Py_DECREF(ldbody);
         eraLdn(n, b, &ob[i*3], &sc[i*3], &sn[i*3]);
     }
+    Py_DECREF(aob);
+    Py_DECREF(asc);
+    Py_INCREF(pysn);
+    Py_DECREF(pyldbody);
     return PyArray_Return(pysn);
 
 fail:
@@ -14881,6 +14885,67 @@ PyDoc_STRVAR(_erfa_p2s_doc,
 "    r          radial distance");
 
 static PyObject *
+_erfa_pap(PyObject *self, PyObject *args)
+{
+    double *a, *b, *theta;
+    PyObject *pya, *pyb;
+    PyObject *aa, *ab;
+    PyArrayObject *pytheta = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pya,
+                                 &PyArray_Type, &pyb)) {
+        return NULL;
+    }
+    aa = PyArray_FROM_OTF(pya, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ab = PyArray_FROM_OTF(pyb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aa == NULL || ab == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aa);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aa);
+    if (dims[0] != PyArray_DIMS(ab)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    dim_out[0] = dims[0];
+    pytheta = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pytheta) goto fail;
+    a = (double *)PyArray_DATA(aa);
+    b = (double *)PyArray_DATA(ab);
+    theta = (double *)PyArray_DATA(pytheta);
+    for (i=0;i<dims[0];i++) {
+        theta[i] = eraPap(&a[i], &b[i]);
+    }
+    Py_DECREF(aa);
+    Py_DECREF(ab);
+    Py_INCREF(pytheta);    
+    return PyArray_Return(pytheta);
+
+fail:
+    Py_XDECREF(aa);
+    Py_XDECREF(ab);
+    Py_XDECREF(pytheta);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pap_doc,
+"\npap(a, b) -> theta\n\n"
+"Position-angle from two p-vectors.\n"
+"Given:\n"
+"   a       direction of reference point\n"
+"   b       direction of point whose PA is required\n"
+"Returned:\n"
+"   theta   position angle of b with respect to a (radians)");
+
+static PyObject *
 _erfa_rxp(PyObject *self, PyObject *args)
 {
     double r[3][3], p[3], rp[3];
@@ -15726,6 +15791,7 @@ static PyMethodDef _erfa_methods[] = {
     {"gd2gc", _erfa_gd2gc, METH_VARARGS, _erfa_gd2gc_doc},
     {"gd2gce", _erfa_gd2gce, METH_VARARGS, _erfa_gd2gce_doc},
     {"p2s", _erfa_p2s, METH_VARARGS, _erfa_p2s_doc},
+    {"pap", _erfa_pap, METH_VARARGS, _erfa_pap_doc},
     {"rxp", _erfa_rxp, METH_VARARGS, _erfa_rxp_doc},
     {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
     {"rx", _erfa_rx, METH_VARARGS, _erfa_rx_doc},

@@ -885,6 +885,11 @@ def rxp(r, p):
     check_args(r, p)
     return _erfa.rxp(r, p)
 
+## VectorMatrix/SeparationAndAngle
+def pap(a, b):
+    check_args(a, b)
+    return _erfa.pap(a, b)
+    
 ## VectorMatrix/SphericalCartesian
 def c2s(p):
     check_args(p)
