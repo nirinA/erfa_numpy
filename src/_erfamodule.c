@@ -14,6 +14,10 @@ static PyObject *_erfaError;
 static int initialized;
 
 /* local prototype */
+#if PY_VERSION_HEX < 0x03000000
+#define PyStructSequence_GET_ITEM(op, i) PyTuple_GET_ITEM(op, i)
+#endif
+
 double *pyvector_to_Carrayptrs(PyArrayObject *arrayin);
 double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
 double **ptrvector(long n);
