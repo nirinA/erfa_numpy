@@ -14950,6 +14950,80 @@ PyDoc_STRVAR(_erfa_pap_doc,
 "   theta   position angle of b with respect to a (radians)");
 
 static PyObject *
+_erfa_pas(PyObject *self, PyObject *args)
+{
+    double *al, *ap, *bl, *bp, *p;
+    PyObject *pyal, *pybl, *pyap, *pybp;
+    PyObject *aal, *abl, *aap, *abp;
+    PyArrayObject *pyp = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!",
+                                 &PyArray_Type, &pyal,
+                                 &PyArray_Type, &pyap,
+                                 &PyArray_Type, &pybl,
+                                 &PyArray_Type, &pybp)) 
+        return NULL;
+    aal = PyArray_FROM_OTF(pyal, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    abl = PyArray_FROM_OTF(pybl, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aap = PyArray_FROM_OTF(pyap, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    abp = PyArray_FROM_OTF(pybp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aal == NULL || abl == NULL ||
+        aap == NULL || abp == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aal);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aal);
+    if (dims[0] != PyArray_DIMS(aap)[0] ||
+        dims[0] != PyArray_DIMS(abl)[0] ||dims[0] != PyArray_DIMS(abp)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    dim_out[0] = dims[0];
+    pyp = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pyp) goto fail;
+    al = (double *)PyArray_DATA(aal);
+    bl = (double *)PyArray_DATA(abl);
+    ap = (double *)PyArray_DATA(aap);
+    bp = (double *)PyArray_DATA(abp);
+    p = (double *)PyArray_DATA(pyp);
+    for (i=0;i<dims[0];i++) {
+        p[i] = eraPas(al[i], ap[i], bl[i], bp[i]);
+    }
+    Py_DECREF(aal);
+    Py_DECREF(abl);
+    Py_DECREF(aap);
+    Py_DECREF(abp);
+    Py_INCREF(pyp);    
+    return PyArray_Return(pyp);
+
+fail:
+    Py_XDECREF(aal);
+    Py_XDECREF(abl);
+    Py_XDECREF(aap);
+    Py_XDECREF(abp);
+    Py_XDECREF(pyp);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pas_doc,
+"\npas(al, ap, bl, bp) -> p\n\n"
+"Position-angle from spherical coordinates.\n"
+"Given:\n"
+"   al  longitude of point A (e.g. RA) in radians\n"
+"   ap  latitude of point A (e.g. Dec) in radians\n"
+"   bl  longitude of point B\n"
+"   bp  latitude of point B\n"
+"Returned:\n"
+"   p   position angle of B with respect to A");
+
+static PyObject *
 _erfa_rxp(PyObject *self, PyObject *args)
 {
     double r[3][3], p[3], rp[3];
@@ -15796,6 +15870,7 @@ static PyMethodDef _erfa_methods[] = {
     {"gd2gce", _erfa_gd2gce, METH_VARARGS, _erfa_gd2gce_doc},
     {"p2s", _erfa_p2s, METH_VARARGS, _erfa_p2s_doc},
     {"pap", _erfa_pap, METH_VARARGS, _erfa_pap_doc},
+    {"pas", _erfa_pas, METH_VARARGS, _erfa_pas_doc},
     {"rxp", _erfa_rxp, METH_VARARGS, _erfa_rxp_doc},
     {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
     {"rx", _erfa_rx, METH_VARARGS, _erfa_rx_doc},

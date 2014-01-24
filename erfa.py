@@ -889,7 +889,11 @@ def rxp(r, p):
 def pap(a, b):
     check_args(a, b)
     return _erfa.pap(a, b)
-    
+
+def pas(al, ap, bl, bp):
+    check_args(al, ap, bl, bp)
+    return _erfa.pas(al, ap, bl, bp)
+
 ## VectorMatrix/SphericalCartesian
 def c2s(p):
     check_args(p)

@@ -2450,6 +2450,14 @@ class Validate(unittest.TestCase):
         theta = erfa.pap(a,b)
         self.assertAlmostEqual(theta[0], 0.3671514267841113674, 12)
 
+    def test_pas(self):
+        al = np.array([1.0])
+        ap = np.array([0.1])
+        bl = np.array([0.2])
+        bp = np.array([-1.0])
+        p = erfa.pas(al, ap, bl, bp)[0]
+        self.assertAlmostEqual(p, -2.724544922932270424, 12)
+
 ## VectorMatrix/SphericalCartesian
     def test_c2s(self):
         t, p = erfa.c2s(np.array([(100.,-50.,25.)]))
