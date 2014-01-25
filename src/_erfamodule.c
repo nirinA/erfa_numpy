@@ -2016,7 +2016,7 @@ _erfa_atciqn(PyObject *self, PyObject *args)
                     PyArray_ITER_NEXT(iter);
                 }
             }
-            PyArray_ITER_RESET(iter);
+            //PyArray_ITER_RESET(iter);
             Py_DECREF(iter);
 
             Py_DECREF(pypv);
@@ -2046,7 +2046,6 @@ fail:
     Py_XDECREF(arv);
     Py_XDECREF(pyri);
     Py_XDECREF(pydi);
-    Py_XDECREF(pyldbody);
     Py_XDECREF(pyastrom);
     return NULL;
 }
@@ -2622,7 +2621,7 @@ _erfa_aticqn(PyObject *self, PyObject *args)
                     PyArray_ITER_NEXT(iter);
                 }
             }
-            PyArray_ITER_RESET(iter);
+            //PyArray_ITER_RESET(iter);
             Py_DECREF(iter);
 
             Py_DECREF(pypv);
@@ -3449,13 +3448,15 @@ _erfa_ldn(PyObject *self, PyObject *args)
 {
     double *ob, *sc, *sn;
     PyObject *pyldbody, *ldbody, *pyob, *pysc;
+    PyObject *pyl, *pybm, *pydl, *pypv;
     PyObject *aob, *asc;
+    PyObject *a = NULL, *iter = NULL;
     PyArrayObject *pysn = NULL;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims, dim_out[2];
     int ndim, i;
-    int n, len;
+    int n, j, k, l, len;
     if (!PyArg_ParseTuple(args, "O!O!O!",
                                  &PyList_Type, &pyldbody,
                                  &PyArray_Type, &pyob,
@@ -3493,8 +3494,6 @@ _erfa_ldn(PyObject *self, PyObject *args)
         Py_INCREF(ldbody);
         n = (int)PyList_Size(ldbody);
         eraLDBODY b[n];
-        int j;
-        PyObject *pyl, *pybm, *pydl, *pypv;
         for (j=0;j<n;j++) {
             pyl = PyList_GetItem(ldbody, j);
             Py_INCREF(pyl);
@@ -3502,20 +3501,14 @@ _erfa_ldn(PyObject *self, PyObject *args)
             Py_INCREF(pybm);
             b[j].bm = (double)PyFloat_AsDouble(pybm);
             Py_DECREF(pybm);
-            Py_DECREF(pyl);
 
-            Py_INCREF(pyl);
             pydl = PyStructSequence_GET_ITEM(pyl, 1);
             Py_INCREF(pydl);
             b[j].dl = (double)PyFloat_AsDouble(pydl);
             Py_DECREF(pydl);
-            Py_DECREF(pyl);
 
-            Py_INCREF(pyl);
             pypv = PyStructSequence_GET_ITEM(pyl, 2);
-            Py_INCREF(pypv);
-            int k,l;
-            PyObject *a = NULL, *iter = NULL;
+            Py_INCREF(pypv); 
             iter = PyArray_IterNew(pypv);
             for (k=0;k<2;k++) {
                 for (l=0;l<3;l++) {
@@ -3524,7 +3517,7 @@ _erfa_ldn(PyObject *self, PyObject *args)
                         PyErr_SetString(_erfaError, "cannot retrieve data from args");
                         Py_XDECREF(a);
                         Py_XDECREF(pypv);
-                        return NULL;
+                        goto fail;
                     }
                     Py_INCREF(a);
                     b[j].pv[k][l] = (double)PyFloat_AsDouble(a);
@@ -3532,12 +3525,11 @@ _erfa_ldn(PyObject *self, PyObject *args)
                     PyArray_ITER_NEXT(iter);
                 }
             }
-            PyArray_ITER_RESET(iter);
+            //PyArray_ITER_RESET(iter);
             Py_DECREF(iter);
 
             Py_DECREF(pypv);
             Py_DECREF(pyl);
-            
         }
         Py_DECREF(ldbody);
         eraLdn(n, b, &ob[i*3], &sc[i*3], &sn[i*3]);
@@ -3545,14 +3537,12 @@ _erfa_ldn(PyObject *self, PyObject *args)
     Py_DECREF(aob);
     Py_DECREF(asc);
     Py_INCREF(pysn);
-    Py_DECREF(pyldbody);
     return PyArray_Return(pysn);
 
 fail:
     Py_XDECREF(aob);
     Py_XDECREF(asc);
     Py_XDECREF(pysn);
-    Py_XDECREF(pyldbody);
     return NULL;
 }
 
@@ -14926,7 +14916,7 @@ _erfa_pap(PyObject *self, PyObject *args)
     b = (double *)PyArray_DATA(ab);
     theta = (double *)PyArray_DATA(pytheta);
     for (i=0;i<dims[0];i++) {
-        theta[i] = eraPap(&a[i], &b[i]);
+        theta[i] = eraPap(&a[i*3], &b[i*3]);
     }
     Py_DECREF(aa);
     Py_DECREF(ab);
@@ -15507,6 +15497,67 @@ PyDoc_STRVAR(_erfa_rz_doc,
 "   r           r-matrix, rotated");
 
 static PyObject *
+_erfa_sepp(PyObject *self, PyObject *args)
+{
+    double *a, *b, *s;
+    PyObject *pya, *pyb;
+    PyObject  *aa, *ab;
+    PyArrayObject *pys = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pya,
+                                 &PyArray_Type, &pyb)) {
+        return NULL;
+    }
+    aa = PyArray_FROM_OTF(pya, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ab = PyArray_FROM_OTF(pyb, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aa == NULL || ab == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aa);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aa);
+    if (dims[0] != PyArray_DIMS(ab)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    dim_out[0] = dims[0];
+    pys = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pys) goto fail;
+    a = (double *)PyArray_DATA(aa);
+    b = (double *)PyArray_DATA(ab);
+    s = (double *)PyArray_DATA(pys);
+    for (i=0;i<dims[0];i++) {
+        s[i] = eraSepp(&a[i*3], &b[i*3]);
+    }
+    Py_DECREF(aa);
+    Py_DECREF(ab);
+    Py_INCREF(pys);    
+    return PyArray_Return(pys);
+
+fail:
+    Py_XDECREF(aa);
+    Py_XDECREF(ab);
+    Py_XDECREF(pys);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_sepp_doc,
+"\nsepp(a, b) -> s\n\n"
+"Angular separation between two p-vectors.\n"
+"Given:\n"
+"   a       first p-vector (not necessarily unit length)\n"
+"   b       second p-vector (not necessarily unit length)\n"
+"Returned:\n"
+"   s       angular separation (radians, always positive)");
+
+static PyObject *
 _erfa_tf2a(PyObject *self, PyObject *args)
 {
     char s = '+';
@@ -15876,6 +15927,7 @@ static PyMethodDef _erfa_methods[] = {
     {"rx", _erfa_rx, METH_VARARGS, _erfa_rx_doc},
     {"ry", _erfa_ry, METH_VARARGS, _erfa_ry_doc},
     {"rz", _erfa_rz, METH_VARARGS, _erfa_rz_doc},
+    {"sepp", _erfa_sepp, METH_VARARGS, _erfa_sepp_doc},
     {"tf2a", _erfa_tf2a, METH_VARARGS, _erfa_tf2a_doc},
     {"tf2d", _erfa_tf2d, METH_VARARGS, _erfa_tf2d_doc},
     {NULL,		NULL}		/* sentinel */
