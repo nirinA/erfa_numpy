@@ -2536,13 +2536,16 @@ _erfa_aticqn(PyObject *self, PyObject *args)
     double *rc, *dc, *ri, *di;
     PyObject *pyri, *pydi;
     PyObject *ari, *adi;
-    PyObject *pyldbody, *ldbody, *pyastrom, *a;
+    PyObject *pyldbody, *ldbody, *pyastrom, *ast;
+    PyObject *pyl, *pybm, *pydl, *pypv;
+    PyObject *a = NULL, *iter = NULL;
     PyArrayObject *pyrc = NULL, *pydc = NULL;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
-    int ndim, i, n, len_ldbody, len_astrom;
+    int ndim, i, j, k, l, n, len_ldbody, len_astrom;
     eraASTROM astrom;
+    eraLDBODY *b;
     if (!PyArg_ParseTuple(args, "O!O!O!O!",
                           &PyArray_Type, &pyri,
                           &PyArray_Type, &pydi,
@@ -2578,16 +2581,14 @@ _erfa_aticqn(PyObject *self, PyObject *args)
     dc = (double *)PyArray_DATA(pydc);
 
     for (i=0;i<dims[0];i++) {
-        a = PyList_GetItem(pyastrom, i);
-        Py_INCREF(a);
-        astrom = _to_c_astrom(a);
-        Py_DECREF(a);
+        ast = PyList_GetItem(pyastrom, i);
+        Py_INCREF(ast);
+        astrom = _to_c_astrom(ast);
+        Py_DECREF(ast);
         ldbody = PyList_GetItem(pyldbody, i);
         Py_INCREF(ldbody);
         n = (int)PyList_Size(ldbody);
-        eraLDBODY b[n];
-        int j;
-        PyObject *pyl, *pybm, *pydl, *pypv;
+        b = (eraLDBODY *)malloc(n * sizeof(eraLDBODY));
         for (j=0;j<n;j++) {
             pyl = PyList_GetItem(ldbody, j);
             Py_INCREF(pyl);
@@ -2595,20 +2596,14 @@ _erfa_aticqn(PyObject *self, PyObject *args)
             Py_INCREF(pybm);
             b[j].bm = (double)PyFloat_AsDouble(pybm);
             Py_DECREF(pybm);
-            Py_DECREF(pyl);
 
-            Py_INCREF(pyl);
             pydl = PyStructSequence_GET_ITEM(pyl, 1);
             Py_INCREF(pydl);
             b[j].dl = (double)PyFloat_AsDouble(pydl);
             Py_DECREF(pydl);
-            Py_DECREF(pyl);
 
-            Py_INCREF(pyl);
             pypv = PyStructSequence_GET_ITEM(pyl, 2);
             Py_INCREF(pypv);
-            int k,l;
-            PyObject *a = NULL, *iter = NULL;
             iter = PyArray_IterNew(pypv);
             for (k=0;k<2;k++) {
                 for (l=0;l<3;l++) {
@@ -2634,6 +2629,7 @@ _erfa_aticqn(PyObject *self, PyObject *args)
         }
         Py_DECREF(ldbody);
         eraAticqn(ri[i], di[i], &astrom, n, b, &rc[i], &dc[i]);
+        free(b);
     }
     Py_DECREF(ari);
     Py_DECREF(adi);
