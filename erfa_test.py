@@ -2472,6 +2472,18 @@ class Validate(unittest.TestCase):
         s = erfa.seps(al, ap, bl, bp)[0]
         self.assertAlmostEqual(s, 2.346722016996998842, 14)
 
+    def test_pv2s(self):
+        pv = np.array([((-0.4514964673880165,0.03093394277342585,0.05594668105108779),
+                        (1.292270850663260e-5,2.652814182060692e-6,2.568431853930293e-6))
+                       ])
+        theta, phi, r, td, pd, rd = erfa.pv2s(pv)
+        self.assertAlmostEqual(theta[0], 3.073185307179586515, places=12)
+        self.assertAlmostEqual(phi[0], 0.1229999999999999992, places=12)
+        self.assertAlmostEqual(r[0], 0.4559999999999999757, places=12)
+        self.assertAlmostEqual(td[0], -0.7800000000000000364e-5, places=16)
+        self.assertAlmostEqual(pd[0], 0.9010000000000001639e-5, places=16)
+        self.assertAlmostEqual(rd[0], -0.1229999999999999832e-4, places=16)
+
 ## VectorMatrix/SphericalCartesian
     def test_c2s(self):
         t, p = erfa.c2s(np.array([(100.,-50.,25.)]))

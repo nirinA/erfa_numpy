@@ -3457,6 +3457,7 @@ _erfa_ldn(PyObject *self, PyObject *args)
     npy_intp *dims, dim_out[2];
     int ndim, i;
     int n, j, k, l, len;
+    eraLDBODY *b;
     if (!PyArg_ParseTuple(args, "O!O!O!",
                                  &PyList_Type, &pyldbody,
                                  &PyArray_Type, &pyob,
@@ -3493,7 +3494,7 @@ _erfa_ldn(PyObject *self, PyObject *args)
         ldbody = PyList_GetItem(pyldbody, i);
         Py_INCREF(ldbody);
         n = (int)PyList_Size(ldbody);
-        eraLDBODY b[n];
+        b = (eraLDBODY *)malloc(n * sizeof(eraLDBODY));
         for (j=0;j<n;j++) {
             pyl = PyList_GetItem(ldbody, j);
             Py_INCREF(pyl);
@@ -3533,6 +3534,7 @@ _erfa_ldn(PyObject *self, PyObject *args)
         }
         Py_DECREF(ldbody);
         eraLdn(n, b, &ob[i*3], &sc[i*3], &sn[i*3]);
+        free(b);
     }
     Py_DECREF(aob);
     Py_DECREF(asc);
@@ -15014,6 +15016,101 @@ PyDoc_STRVAR(_erfa_pas_doc,
 "   p   position angle of B with respect to A");
 
 static PyObject *
+_erfa_pv2s(PyObject *self, PyObject *args)
+{
+    double pv[2][3], *theta, *phi, *r, *td, *pd, *rd;
+    int j,k;
+    double p;
+    PyObject *pypv, *apv;
+    PyObject *pv_iter = NULL;
+    PyArrayObject *pytheta = NULL, *pyphi = NULL, *pyr = NULL, *pytd = NULL, *pypd = NULL, *pyrd = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!", &PyArray_Type, &pypv)) {
+        return NULL;
+    }
+    pv_iter = PyArray_IterNew((PyObject *)pypv);
+    if (pv_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+    ndim = PyArray_NDIM(pypv);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(pypv);
+    dim_out[0] = dims[0];
+    pytheta = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pyphi = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pyr = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pytd = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pypd = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    pyrd = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pytheta || NULL == pyphi || NULL == pyr ||
+        NULL == pytd || NULL == pypd || NULL == pyrd)
+        goto fail;
+    theta = (double *)PyArray_DATA(pytheta);
+    phi = (double *)PyArray_DATA(pyphi);
+    r = (double *)PyArray_DATA(pyr);
+    td = (double *)PyArray_DATA(pytd);
+    pd = (double *)PyArray_DATA(pypd);
+    rd = (double *)PyArray_DATA(pyrd);
+
+    for (i=0;i<dims[0];i++) {
+        for (j=0;j<2;j++) {
+            for (k=0;k<3;k++) {
+                apv = PyArray_GETITEM(pypv, PyArray_ITER_DATA(pv_iter));
+                if (apv == NULL) {
+                    PyErr_SetString(_erfaError, "cannot retrieve data from args");
+                    goto fail;
+                }
+                Py_INCREF(apv);
+                p = (double)PyFloat_AsDouble(apv);
+                if (p == -1 && PyErr_Occurred()) goto fail;
+                pv[j][k] = p;
+                Py_DECREF(apv);
+                PyArray_ITER_NEXT(pv_iter);
+            }
+        }
+        eraPv2s(pv, &theta[i], &phi[i], &r[i], &td[i], &pd[i], &rd[i]);
+    }
+    Py_DECREF(pv_iter);
+    Py_INCREF(pytheta);
+    Py_INCREF(pyphi);
+    Py_INCREF(pyr);
+    Py_INCREF(pytd);
+    Py_INCREF(pypd);
+    Py_INCREF(pyrd);
+    return Py_BuildValue("OOOOOO", pytheta, pyphi, pyr, pytd, pypd, pyrd);
+
+fail:
+    Py_XDECREF(pv_iter);
+    Py_XDECREF(pytheta);
+    Py_XDECREF(pyphi);
+    Py_XDECREF(pyr);
+    Py_XDECREF(pytd);
+    Py_XDECREF(pypd);
+    Py_XDECREF(pyrd);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_pv2s_doc,
+"\npv2s(pv) -> theta, phi, r, td, pd, rd\n\n"
+"Convert position/velocity from Cartesian to spherical coordinates.\n"
+"Given:\n"
+"   pv          pv-vector\n"
+"Returned:\n"
+"   theta       longitude angle (radians)\n"
+"   phi         latitude angle (radians)\n"
+"   r           radial distance\n"
+"   td          rate of change of theta\n"
+"   pd          rate of change of phi\n"
+"   rd          rate of change of r");
+
+static PyObject *
 _erfa_rxp(PyObject *self, PyObject *args)
 {
     double r[3][3], p[3], rp[3];
@@ -15996,6 +16093,7 @@ static PyMethodDef _erfa_methods[] = {
     {"p2s", _erfa_p2s, METH_VARARGS, _erfa_p2s_doc},
     {"pap", _erfa_pap, METH_VARARGS, _erfa_pap_doc},
     {"pas", _erfa_pas, METH_VARARGS, _erfa_pas_doc},
+    {"pv2s", _erfa_pv2s, METH_VARARGS, _erfa_pv2s_doc},
     {"rxp", _erfa_rxp, METH_VARARGS, _erfa_rxp_doc},
     {"rxr", _erfa_rxr, METH_VARARGS, _erfa_rxr_doc},
     {"rx", _erfa_rx, METH_VARARGS, _erfa_rx_doc},
