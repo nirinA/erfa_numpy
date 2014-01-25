@@ -898,6 +898,10 @@ def sepp(a, b):
     check_args(a, b)
     return _erfa.sepp(a, b)
 
+def seps(al, ap, bl, bp):
+    check_args(al, ap, bl, bp)
+    return _erfa.seps(al, ap, bl, bp)
+
 ## VectorMatrix/SphericalCartesian
 def c2s(p):
     check_args(p)

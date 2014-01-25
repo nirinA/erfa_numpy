@@ -1915,13 +1915,16 @@ _erfa_atciqn(PyObject *self, PyObject *args)
     double *ri, *di;
     PyObject *pyrc, *pydc, *pypr, *pypd, *pypx, *pyrv;
     PyObject *arc, *adc, *apr, *apd, *apx, *arv;
-    PyObject *pyldbody, *ldbody, *pyastrom, *a;
+    PyObject *pyldbody, *ldbody, *pyastrom, *ast;
+    PyObject *pyl, *pybm, *pydl, *pypv;
     PyArrayObject *pyri = NULL, *pydi = NULL;
+    PyObject *a = NULL, *iter = NULL;
     PyArray_Descr * dsc;
     dsc = PyArray_DescrFromType(NPY_DOUBLE);
     npy_intp *dims;
     eraASTROM astrom;
-    int ndim, i, n, len_ldbody, len_astrom;
+    eraLDBODY *b;
+    int ndim, i, j, k, l, n, len_ldbody, len_astrom;
     if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!",
                                  &PyArray_Type, &pyrc,
                                  &PyArray_Type, &pydc,
@@ -1969,16 +1972,18 @@ _erfa_atciqn(PyObject *self, PyObject *args)
     di = (double *)PyArray_DATA(pydi);
 
     for (i=0;i<dims[0];i++) {
-        a = PyList_GetItem(pyastrom, i);
-        Py_INCREF(a);
-        astrom = _to_c_astrom(a);
-        Py_DECREF(a);
+        ast = PyList_GetItem(pyastrom, i);
+        Py_INCREF(ast);
+        astrom = _to_c_astrom(ast);
+        Py_DECREF(ast);
         ldbody = PyList_GetItem(pyldbody, i);
         Py_INCREF(ldbody);
         n = (int)PyList_Size(ldbody);
-        eraLDBODY b[n];
-        int j;
-        PyObject *pyl, *pybm, *pydl, *pypv;
+        b = (eraLDBODY *)malloc(n * sizeof(eraLDBODY));
+        if (NULL == b) {
+            PyErr_SetString(_erfaError, "malloc failed with LDBODY");
+            goto fail;
+        }
         for (j=0;j<n;j++) {
             pyl = PyList_GetItem(ldbody, j);
             Py_INCREF(pyl);
@@ -1998,8 +2003,6 @@ _erfa_atciqn(PyObject *self, PyObject *args)
             Py_INCREF(pyl);
             pypv = PyStructSequence_GET_ITEM(pyl, 2);
             Py_INCREF(pypv);
-            int k,l;
-            PyObject *a = NULL, *iter = NULL;
             iter = PyArray_IterNew(pypv);
             for (k=0;k<2;k++) {
                 for (l=0;l<3;l++) {
@@ -2025,6 +2028,7 @@ _erfa_atciqn(PyObject *self, PyObject *args)
         }
         Py_DECREF(ldbody);
         eraAtciqn(rc[i], dc[i], pr[i], pd[i], px[i], rv[i], &astrom, n, b, &ri[i], &di[i]);
+        free(b);
     }
     Py_DECREF(arc);
     Py_DECREF(adc);
@@ -15558,6 +15562,80 @@ PyDoc_STRVAR(_erfa_sepp_doc,
 "   s       angular separation (radians, always positive)");
 
 static PyObject *
+_erfa_seps(PyObject *self, PyObject *args)
+{
+    double *al, *ap, *bl, *bp, *s;
+    PyObject *pyal, *pybl, *pyap, *pybp;
+    PyObject *aal, *abl, *aap, *abp;
+    PyArrayObject *pys = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[1];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!",
+                                 &PyArray_Type, &pyal,
+                                 &PyArray_Type, &pyap,
+                                 &PyArray_Type, &pybl,
+                                 &PyArray_Type, &pybp)) 
+        return NULL;
+    aal = PyArray_FROM_OTF(pyal, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    abl = PyArray_FROM_OTF(pybl, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aap = PyArray_FROM_OTF(pyap, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    abp = PyArray_FROM_OTF(pybp, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (aal == NULL || abl == NULL ||
+        aap == NULL || abp == NULL) {
+        goto fail;
+    }
+    ndim = PyArray_NDIM(aal);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(aal);
+    if (dims[0] != PyArray_DIMS(aap)[0] ||
+        dims[0] != PyArray_DIMS(abl)[0] ||dims[0] != PyArray_DIMS(abp)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }
+    dim_out[0] = dims[0];
+    pys = (PyArrayObject *) PyArray_Zeros(1, dim_out, dsc, 0);
+    if (NULL == pys) goto fail;
+    al = (double *)PyArray_DATA(aal);
+    bl = (double *)PyArray_DATA(abl);
+    ap = (double *)PyArray_DATA(aap);
+    bp = (double *)PyArray_DATA(abp);
+    s = (double *)PyArray_DATA(pys);
+    for (i=0;i<dims[0];i++) {
+        s[i] = eraSeps(al[i], ap[i], bl[i], bp[i]);
+    }
+    Py_DECREF(aal);
+    Py_DECREF(abl);
+    Py_DECREF(aap);
+    Py_DECREF(abp);
+    Py_INCREF(pys);    
+    return PyArray_Return(pys);
+
+fail:
+    Py_XDECREF(aal);
+    Py_XDECREF(abl);
+    Py_XDECREF(aap);
+    Py_XDECREF(abp);
+    Py_XDECREF(pys);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_seps_doc,
+"seps(al, ap, bl, bp) -> s\n\n"
+"Angular separation between two sets of spherical coordinates.\n"
+"Given:\n"
+"   al  first longitude (radians)\n"
+"   ap  first latitude (radians)\n"
+"   bl  second longitude (radians)\n"
+"   bp  second latitude (radians)\n"
+"Returned:\n"
+"   s   angular separation (radians)");
+
+static PyObject *
 _erfa_tf2a(PyObject *self, PyObject *args)
 {
     char s = '+';
@@ -15928,6 +16006,7 @@ static PyMethodDef _erfa_methods[] = {
     {"ry", _erfa_ry, METH_VARARGS, _erfa_ry_doc},
     {"rz", _erfa_rz, METH_VARARGS, _erfa_rz_doc},
     {"sepp", _erfa_sepp, METH_VARARGS, _erfa_sepp_doc},
+    {"seps", _erfa_seps, METH_VARARGS, _erfa_seps_doc},
     {"tf2a", _erfa_tf2a, METH_VARARGS, _erfa_tf2a_doc},
     {"tf2d", _erfa_tf2d, METH_VARARGS, _erfa_tf2d_doc},
     {NULL,		NULL}		/* sentinel */
