@@ -15594,6 +15594,65 @@ PyDoc_STRVAR(_erfa_rz_doc,
 "   r           r-matrix, rotated");
 
 static PyObject *
+_erfa_s2c(PyObject *self, PyObject *args)
+{
+    double *theta, *phi, *c;
+    PyObject *pytheta, *pyphi;
+    PyObject *atheta, *aphi;
+    PyArrayObject *pyc = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[2];
+    int ndim, i;
+    if (!PyArg_ParseTuple(args, "O!O!",
+                                 &PyArray_Type, &pytheta,
+                                 &PyArray_Type, &pyphi))      
+        return NULL;
+    atheta = PyArray_FROM_OTF(pytheta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphi = PyArray_FROM_OTF(pyphi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ndim = PyArray_NDIM(atheta);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(atheta);
+    if (dims[0] != PyArray_DIMS(aphi)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    dim_out[0] = dims[0];
+    dim_out[1] = 3;
+    theta = (double *)PyArray_DATA(atheta);
+    phi = (double *)PyArray_DATA(aphi);
+    pyc = (PyArrayObject *) PyArray_Zeros(2, dim_out, dsc, 0);
+    if (NULL == pyc) goto fail;
+    c = (double *)PyArray_DATA(pyc);
+
+    for (i=0;i<dims[0];i++) {
+        eraS2c(theta[i], phi[i], &c[i*3]);
+    }
+    Py_DECREF(atheta);
+    Py_DECREF(aphi);
+    Py_INCREF(pyc);
+    return PyArray_Return(pyc);
+
+fail:
+    Py_XDECREF(atheta);
+    Py_XDECREF(aphi);
+    Py_XDECREF(pyc);
+    return NULL;
+}
+
+PyDoc_STRVAR(_erfa_s2c_doc,
+"\ns2c(theta, phi) -> c\n\n"
+"Convert spherical coordinates to Cartesian.\n"
+"Given:\n"
+"    theta   longitude angle (radians)\n"
+"    phi     latitude angle (radians)\n"
+"Returned:\n"
+"    c       direction cosines");
+
+static PyObject *
 _erfa_sepp(PyObject *self, PyObject *args)
 {
     double *a, *b, *s;
@@ -16099,6 +16158,7 @@ static PyMethodDef _erfa_methods[] = {
     {"rx", _erfa_rx, METH_VARARGS, _erfa_rx_doc},
     {"ry", _erfa_ry, METH_VARARGS, _erfa_ry_doc},
     {"rz", _erfa_rz, METH_VARARGS, _erfa_rz_doc},
+    {"s2c", _erfa_s2c, METH_VARARGS, _erfa_s2c_doc},
     {"sepp", _erfa_sepp, METH_VARARGS, _erfa_sepp_doc},
     {"seps", _erfa_seps, METH_VARARGS, _erfa_seps_doc},
     {"tf2a", _erfa_tf2a, METH_VARARGS, _erfa_tf2a_doc},

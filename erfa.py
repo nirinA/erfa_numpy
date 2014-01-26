@@ -915,6 +915,10 @@ def pv2s(pv):
     check_args(pv)
     return _erfa.pv2s(pv)
 
+def s2c(theta, phi):
+    check_args(theta, phi)
+    return _erfa.s2c(theta, phi)
+
 __all__ = ['anp', 'rxr']
 for a in __all__:
     setattr(eval(a), '__doc__',  getattr(_erfa, a).__doc__)

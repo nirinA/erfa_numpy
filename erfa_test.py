@@ -2496,6 +2496,12 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(phi[0], 0.2199879773954594463, 12)
         self.assertAlmostEqual(r[0], 114.5643923738960002, 12)
 
+    def test_s2c(self):
+        c = erfa.s2c(np.array([3.0123]), np.array([-0.999]))[0]
+        self.assertAlmostEqual(c[0], -0.5366267667260523906, places=12)
+        self.assertAlmostEqual(c[1],  0.0697711109765145365, places=12)
+        self.assertAlmostEqual(c[2], -0.8409302618566214041, places=12)
+
 
 support.run_unittest(Validate)
 
