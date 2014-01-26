@@ -15718,6 +15718,107 @@ PyDoc_STRVAR(_erfa_s2p_doc,
 "   p       direction cosines");
 
 static PyObject *
+_erfa_s2pv(PyObject *self, PyObject *args)
+{
+    double *theta, *phi, *r, *td, *pd, *rd, pv[2][3];
+    PyObject *pytheta, *pyphi, *pyr, *pytd, *pypd, *pyrd;
+    PyObject *atheta, *aphi, *ar, *atd, *apd, *ard;
+    PyArrayObject *pypv = NULL;
+    PyObject *pv_iter = NULL;
+    PyArray_Descr * dsc;
+    dsc = PyArray_DescrFromType(NPY_DOUBLE);
+    npy_intp *dims, dim_out[3];
+    int ndim, i, j, k;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!",
+                                 &PyArray_Type, &pytheta,
+                                 &PyArray_Type, &pyphi,
+                                 &PyArray_Type, &pyr,
+                                 &PyArray_Type, &pytd,
+                                 &PyArray_Type, &pypd,
+                                 &PyArray_Type, &pyrd))
+        return NULL;
+    atheta = PyArray_FROM_OTF(pytheta, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    aphi = PyArray_FROM_OTF(pyphi, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ar = PyArray_FROM_OTF(pyr, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    atd = PyArray_FROM_OTF(pytd, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    apd = PyArray_FROM_OTF(pypd, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ard = PyArray_FROM_OTF(pyrd, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    ndim = PyArray_NDIM(atheta);
+    if (!ndim) {
+        PyErr_SetString(_erfaError, "argument is ndarray of length 0");
+        goto fail;
+    }
+    dims = PyArray_DIMS(atheta);
+    if (dims[0] != PyArray_DIMS(aphi)[0] ||
+        dims[0] != PyArray_DIMS(ar)[0] ||dims[0] != PyArray_DIMS(atd)[0] ||
+        dims[0] != PyArray_DIMS(apd)[0] ||dims[0] != PyArray_DIMS(ard)[0]) {
+        PyErr_SetString(_erfaError, "arguments have incompatible shape ");
+        goto fail;
+    }    
+    theta = (double *)PyArray_DATA(pytheta);
+    phi = (double *)PyArray_DATA(pyphi);
+    r = (double *)PyArray_DATA(pyr);
+    td = (double *)PyArray_DATA(pytd);
+    pd = (double *)PyArray_DATA(pypd);
+    rd = (double *)PyArray_DATA(pyrd);
+    dim_out[0] = dims[0];
+    dim_out[1] = 2;
+    dim_out[2] = 3;
+    pypv = (PyArrayObject *) PyArray_Zeros(3, dim_out, dsc, 0);
+    if (NULL == pypv) {
+        goto fail;
+    }
+    pv_iter = PyArray_IterNew((PyObject*)pypv);
+    if (pv_iter == NULL) {
+        PyErr_SetString(_erfaError, "cannot create iterators");
+        goto fail;
+    }
+
+    for (i=0;i<dims[0];i++) {
+        eraS2pv(theta[i], phi[i], r[i], td[i], pd[i], rd[i], pv);
+        for (j=0;j<2;j++) {
+            for (k=0;k<3;k++) {            
+                if (PyArray_SETITEM(pypv, PyArray_ITER_DATA(pv_iter), PyFloat_FromDouble(pv[j][k]))) {
+                    PyErr_SetString(_erfaError, "unable to set pv");
+                    goto fail;
+                }
+                PyArray_ITER_NEXT(pv_iter);
+            }
+        }
+    }
+    Py_DECREF(atheta);
+    Py_DECREF(aphi);
+    Py_DECREF(ar);
+    Py_DECREF(atd);
+    Py_DECREF(apd);
+    Py_DECREF(ard);
+    Py_INCREF(pypv);
+    return PyArray_Return(pypv);
+
+fail:
+    Py_XDECREF(atheta);
+    Py_XDECREF(aphi);
+    Py_XDECREF(ar);
+    Py_XDECREF(atd);
+    Py_XDECREF(apd);
+    Py_XDECREF(ard);
+    Py_XDECREF(pypv);
+    return NULL;}
+
+PyDoc_STRVAR(_erfa_s2pv_doc,
+"\ns2pv(theta, phi, r, td, pd, rd) -> pv\n\n"
+"Convert position/velocity from spherical to Cartesian coordinates.\n"
+"Given:\n"
+"   theta   longitude angle (radians)\n"
+"   phi     latitude angle (radians)\n"
+"   r       radial distance\n"
+"   td      rate of change of theta\n"
+"   pd      rate of change of phi\n"
+"   rd      rate of change of r\n"
+"Returned:\n"
+"   pv      pv-vector");
+
+static PyObject *
 _erfa_sepp(PyObject *self, PyObject *args)
 {
     double *a, *b, *s;
@@ -16225,6 +16326,7 @@ static PyMethodDef _erfa_methods[] = {
     {"rz", _erfa_rz, METH_VARARGS, _erfa_rz_doc},
     {"s2c", _erfa_s2c, METH_VARARGS, _erfa_s2c_doc},
     {"s2p", _erfa_s2p, METH_VARARGS, _erfa_s2p_doc},
+    {"s2pv", _erfa_s2pv, METH_VARARGS, _erfa_s2pv_doc},
     {"sepp", _erfa_sepp, METH_VARARGS, _erfa_sepp_doc},
     {"seps", _erfa_seps, METH_VARARGS, _erfa_seps_doc},
     {"tf2a", _erfa_tf2a, METH_VARARGS, _erfa_tf2a_doc},

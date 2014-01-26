@@ -919,9 +919,13 @@ def s2c(theta, phi):
     check_args(theta, phi)
     return _erfa.s2c(theta, phi)
 
-def s2p(theta, phi, p):
-    check_args(theta, phi, p)
-    return _erfa.s2p(theta, phi, p)
+def s2p(theta, phi, r):
+    check_args(theta, phi, r)
+    return _erfa.s2p(theta, phi, r)
+
+def s2pv(theta, phi, r, td, pd, rd):
+    check_args(theta, phi, r, td, pd, rd)
+    return _erfa.s2pv(theta, phi, r, td, pd, rd)
 
 __all__ = ['anp', 'rxr']
 for a in __all__:
