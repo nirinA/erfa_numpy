@@ -919,6 +919,10 @@ def s2c(theta, phi):
     check_args(theta, phi)
     return _erfa.s2c(theta, phi)
 
+def s2p(theta, phi, p):
+    check_args(theta, phi, p)
+    return _erfa.s2p(theta, phi, p)
+
 __all__ = ['anp', 'rxr']
 for a in __all__:
     setattr(eval(a), '__doc__',  getattr(_erfa, a).__doc__)
