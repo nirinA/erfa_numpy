@@ -880,6 +880,10 @@ def rxr(a, b):
     check_args(a, b)
     return _erfa.rxr(a, b)
 
+def tr(r):
+    check_args(r)
+    return np.transpose(r)
+
 ## VectorMatrix/MatrixVectorProducts
 def rxp(r, p):
     check_args(r, p)

@@ -2443,6 +2443,23 @@ class Validate(unittest.TestCase):
         self.assertAlmostEqual(atb[2][1], 10.0, places=12)
         self.assertAlmostEqual(atb[2][2], 15.0, places=12)
 
+    def test_tr(self):
+        r = np.array([
+            ((2.0,3.0,2.0),
+             (3.0,2.0,3.0),
+             (3.0,4.0,5.0))
+            ])
+        rt = erfa.tr(r)
+        self.assertAlmostEqual(rt[0][0], 2.0, 0.0)
+        self.assertAlmostEqual(rt[0][1], 3.0, 0.0)
+        self.assertAlmostEqual(rt[0][2], 3.0, 0.0)
+        self.assertAlmostEqual(rt[1][0], 3.0, 0.0)
+        self.assertAlmostEqual(rt[1][1], 2.0, 0.0)
+        self.assertAlmostEqual(rt[1][2], 4.0, 0.0)
+        self.assertAlmostEqual(rt[2][0], 2.0, 0.0)
+        self.assertAlmostEqual(rt[2][1], 3.0, 0.0)
+        self.assertAlmostEqual(rt[2][2], 5.0, 0.0)        
+        
 ## VectorMatrix/SeparationAndAngle
     def test_pap(self):
         a = np.array([(1.,0.1,0.2)])
